@@ -20,7 +20,7 @@ apt-get update
 apt-get install -y \
     nginx \
     mariadb-server \
-    certbot python3-certbot-nginx \
+    certbot python3-certbot-nginx python3-certbot-dns-cloudflare \
     "php${PHP_VERSION}-fpm" \
     "php${PHP_VERSION}-mysql" \
     "php${PHP_VERSION}-curl" \
@@ -41,6 +41,16 @@ echo "==> Global nginx ayarlari"
 install -m 0644 "${REPO_DIR}/deploy/nginx/nginx.conf.d-00-tuning.conf" /etc/nginx/conf.d/00-tuning.conf
 install -m 0644 "${REPO_DIR}/deploy/nginx/snippets/security.conf"  /etc/nginx/snippets/security.conf
 install -m 0644 "${REPO_DIR}/deploy/nginx/snippets/wordpress.conf" /etc/nginx/snippets/wordpress.conf
+install -m 0644 "${REPO_DIR}/deploy/nginx/snippets/cloudflare-realip.conf" /etc/nginx/snippets/cloudflare-realip.conf
+
+echo "==> Cloudflare IP araliklari guncelleniyor"
+bash "${REPO_DIR}/deploy/scripts/update-cloudflare-ips.sh" || echo "    (atlanildi, repodaki liste kullanilacak)"
+
+echo "==> Cloudflare IP listesi icin aylik cron"
+cat > /etc/cron.d/cloudflare-ips <<EOF
+0 4 1 * * root ${REPO_DIR}/deploy/scripts/update-cloudflare-ips.sh >/dev/null 2>&1
+EOF
+chmod 644 /etc/cron.d/cloudflare-ips
 
 echo "==> Catch-all vhost"
 install -m 0644 "${REPO_DIR}/deploy/nginx/sites-available/000-default.conf" /etc/nginx/sites-available/000-default.conf

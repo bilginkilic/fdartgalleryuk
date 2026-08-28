@@ -49,6 +49,26 @@ Ikinci, ucuncu site icin sadece 2. adimi tekrarlayin:
 sudo bash deploy/scripts/add-site.sh ikincisite.com
 ```
 
+## Cloudflare
+
+DNS ve proxy Cloudflare uzerinde. Kurulum bunu hesaba katar:
+
+- `snippets/cloudflare-realip.conf` — `CF-Connecting-IP` ile gercek ziyaretci IP'si
+  geri kazanilir (loglar ve rate limit dogru calissin diye). Aylik cron ile guncellenir:
+  `sudo bash deploy/scripts/update-cloudflare-ips.sh`
+- **Cutover** (canliyi yeni sunucuya cevirme) — once kuru calistirma:
+  ```bash
+  bash deploy/scripts/cloudflare-dns.sh fdartgallery.com 57.129.128.118 --dry-run
+  bash deploy/scripts/cloudflare-dns.sh fdartgallery.com 57.129.128.118
+  ```
+  Sadece apex + `www` A kayitlarini degistirir; mail (Brevo DKIM/DMARC) ve
+  dogrulama kayitlarina dokunmaz. Geri almak icin ayni komut eski IP ile.
+- Proxy acikken sertifika icin DNS-01 daha guvenli:
+  `certbot certonly --dns-cloudflare --dns-cloudflare-credentials /root/.secrets/cloudflare.ini -d ...`
+- Cloudflare SSL modu **Full (strict)** olmali; *Flexible* yonlendirme dongusu yaratir.
+- Cutover sonrasi origin'i kilitle:
+  `sudo bash deploy/scripts/update-cloudflare-ips.sh --firewall`
+
 ## Onemli notlar
 
 - **Adim 3'u dosyalar tamamlanmadan calistirmayin.** `rsync --delete` kullaniyor,

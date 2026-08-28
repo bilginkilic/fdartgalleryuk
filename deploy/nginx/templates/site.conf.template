@@ -21,6 +21,9 @@ server {
         allow all;
     }
 
+    # Cloudflare proxy arkasinda gercek ziyaretci IP'si
+    include snippets/cloudflare-realip.conf;
+
     include snippets/wordpress.conf;
     include snippets/security.conf;
 
