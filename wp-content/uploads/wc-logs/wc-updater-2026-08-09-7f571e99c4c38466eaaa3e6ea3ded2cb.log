@@ -1,0 +1,15 @@
+2026-08-09T20:52:11+00:00 INFO Automatic database update triggered.
+2026-08-09T20:52:11+00:00 INFO Scheduling database updates (from 10.4.3)...
+2026-08-09T20:52:11+00:00 INFO   [10.5.0] Scheduled 'wc_update_1050_migrate_brand_permalink_setting'.
+2026-08-09T20:52:11+00:00 INFO   [10.5.0] Scheduled 'wc_update_1050_enable_autoload_options'.
+2026-08-09T20:52:11+00:00 INFO   [10.5.0] Scheduled 'wc_update_1050_add_idx_user_email'.
+2026-08-09T20:52:11+00:00 INFO   [10.5.0] Scheduled 'wc_update_1050_remove_deprecated_marketplace_option'.
+2026-08-09T20:52:11+00:00 INFO   [10.6.0] Scheduled 'wc_update_1060_add_woo_idx_comment_approved_type_index'.
+2026-08-09T20:52:11+00:00 INFO   [10.7.0] Scheduled 'wc_update_1070_disable_hpos_sync_on_read'.
+2026-08-09T20:52:11+00:00 INFO   [10.8.0] Scheduled 'wc_update_1080_migrate_analytics_import_option'.
+2026-08-09T20:52:11+00:00 INFO   [10.8.0] Scheduled 'wc_update_1080_backfill_email_template_sync_meta'.
+2026-08-09T20:52:11+00:00 INFO   [10.8.0-2] Scheduled 'wc_update_10802_restore_orders_meta_key_value_index'.
+2026-08-09T20:52:11+00:00 INFO   [10.9.0] Scheduled 'wc_update_1090_remove_task_list_reminder_bar_hidden_option'.
+2026-08-09T20:52:11+00:00 INFO   [10.9.2] Scheduled 'wc_update_10902_remove_deprecated_push_notifications_option'.
+2026-08-09T20:52:11+00:00 INFO   [11.0.0] Scheduled 'wc_update_1100_enable_point_of_sale_feature'.
+2026-08-09T20:52:11+00:00 INFO Database updates scheduled.

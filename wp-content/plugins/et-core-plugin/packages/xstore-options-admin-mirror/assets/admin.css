@@ -1,0 +1,187 @@
+#xstore-options-admin-root{
+  margin: 0 -20px;
+  min-height: calc(100vh - 32px);
+}
+
+.xstoreOptApp{
+  display:flex;
+  min-height: calc(100vh - 32px);
+  background:#f0f0f1;
+}
+
+.xstoreOptSidebar{
+  width: 290px;
+  background:#fff;
+  border-right:1px solid #dcdcde;
+  display:flex;
+  flex-direction:column;
+}
+
+.xstoreOptBrand{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:18px 16px;
+  border-bottom:1px solid #dcdcde;
+  font-weight:700;
+  font-size:18px;
+}
+
+.xstoreOptNav{
+  padding:10px 8px 16px;
+  overflow:auto;
+}
+
+.xstoreOptGroupHeader{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:10px 10px;
+  border-radius:10px;
+  cursor:pointer;
+}
+.xstoreOptGroupHeader:hover{ background:#f6f7f7; }
+
+.xstoreOptGroupTitle{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-size:14px;
+  font-weight:600;
+  color:#1d2327;
+}
+
+.xstoreOptNavItem{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 12px;
+  margin: 2px 0;
+  border-radius:10px;
+  cursor:pointer;
+  color:#1d2327;
+}
+.xstoreOptNavItem:hover{ background:#f6f7f7; }
+
+.xstoreOptNavItem.isActive{
+  background:#3858e9;
+  color:#fff;
+}
+.xstoreOptNavItem .dashicons{ font-size:18px; width:18px; height:18px; }
+
+.xstoreOptMain{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+}
+
+.xstoreOptTopbar{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:16px 18px;
+  background:#fff;
+  border-bottom:1px solid #dcdcde;
+}
+
+.xstoreOptTopbar .components-search-control{
+  max-width:520px;
+  flex:1;
+}
+
+.xstoreOptBtnSave.components-button.is-primary{
+  background:#46b450;
+  border-color:#46b450;
+}
+.xstoreOptBtnSave.components-button.is-primary:hover{
+  background:#3ea446;
+  border-color:#3ea446;
+}
+
+.xstoreOptContent{
+  padding:20px 18px 40px;
+  max-width: 1100px;
+}
+
+.xstoreOptSectionTitle{
+  font-size:34px;
+  line-height:1.1;
+  margin: 18px 0 18px;
+}
+
+.xstoreOptField{
+  padding:16px 0;
+  border-bottom:1px solid #dcdcde;
+  display:flex;
+  gap:16px;
+}
+
+.xstoreOptFieldMeta{ width: 42%; }
+.xstoreOptFieldLabel{ font-weight:600; margin-bottom:6px; }
+.xstoreOptFieldDesc{ color:#646970; font-size:13px; }
+.xstoreOptFieldControl{ flex:1; }
+
+.xstoreOptInlineRow{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+
+.xstoreOptColorSwatch{
+  width:36px; height:28px;
+  border:1px solid #dcdcde;
+  border-radius:6px;
+}
+
+.xstoreOptRadioImageGrid{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+}
+
+.xstoreOptRadioImageBtn{
+  border:1px solid #dcdcde;
+  border-radius:10px;
+  padding:8px;
+  background:#fff;
+  cursor:pointer;
+}
+.xstoreOptRadioImageBtn.isActive{
+  border-color:#3858e9;
+  box-shadow:0 0 0 1px #3858e9 inset;
+}
+.xstoreOptRadioImageBtn img{
+  display:block;
+  width:110px;
+  height:auto;
+}
+
+.xstoreOptRepeaterItem{
+  border:1px solid #dcdcde;
+  border-radius:10px;
+  background:#fff;
+  padding:12px;
+  margin-bottom:10px;
+}
+
+.xstoreOptRepeaterHeader{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  margin-bottom:10px;
+}
+
+.xstoreOptRepeaterTitle{
+  font-weight:600;
+}
+
+.xstoreOptRepeaterGrid{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap:12px;
+}
+
+@media (max-width: 1100px) {
+  .xstoreOptField{ flex-direction:column; }
+  .xstoreOptFieldMeta{ width: 100%; }
+}
+
+

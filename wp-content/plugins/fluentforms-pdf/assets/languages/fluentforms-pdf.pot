@@ -1,0 +1,510 @@
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Fluent Forms PDF Generator\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-11-27 09:34+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: \n"
+"Language: \n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Loco https://localise.biz/\n"
+"X-Loco-Version: 2.8.0; wp-6.8.3; php-8.2.28\n"
+"X-Domain: fluentforms-pdf"
+
+#: assets/views/admin_screen.php:30
+msgid " to check your global PDF feed settings"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:53
+msgid " to download and configure the settings"
+msgstr ""
+
+#: Classes/Controller/AvailableOptions.php:139
+#: Classes/Controller/GlobalPdfManager.php:603
+msgid "Accent color"
+msgstr ""
+
+#: Classes/Templates/InvoiceTemplate.php:63
+msgid "Add your invoice prefix which will be prepended with the invoice number"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:569
+msgid "All available templates are shown here, select a default template"
+msgstr ""
+
+#: assets/views/admin_screen.php:30
+msgid "All Looks good! You can now use Fluent Forms PDF Addon."
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:417
+msgid "Allow Download"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:418
+msgid ""
+"Allow this feed to be downloaded on form submission. Only logged in users "
+"will be able to download."
+msgstr ""
+
+#: Classes/Templates/InvoiceTemplate.php:38
+msgid "Business Logo"
+msgstr ""
+
+#: assets/views/admin_screen.php:18
+msgid "But Few Server Extensions are missing"
+msgstr ""
+
+#: assets/views/admin_screen.php:30
+msgid "Click Here"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:53
+msgid "click here"
+msgstr ""
+
+#: fluentforms-pdf.php:88
+msgid "Click Here to Activate the Plugin"
+msgstr ""
+
+#: fluentforms-pdf.php:85
+msgid "Click Here to Install the Plugin"
+msgstr ""
+
+#: Classes/Templates/GeneralTemplate.php:52
+msgid "Conditional PDF Body Content is supported in Fluent Forms Pro Version"
+msgstr ""
+
+#: Classes/Controller/FontManager.php:63
+msgid "Core Font API Response Failed"
+msgstr ""
+
+#: Classes/Templates/InvoiceTemplate.php:56
+msgid "Customer Address"
+msgstr ""
+
+#: Classes/Templates/InvoiceTemplate.php:175
+msgid "Customer Details"
+msgstr ""
+
+#: Classes/Templates/InvoiceTemplate.php:50
+msgid "Customer Email"
+msgstr ""
+
+#: Classes/Templates/InvoiceTemplate.php:44
+msgid "Customer Name"
+msgstr ""
+
+#: Classes/Controller/AvailableOptions.php:151
+msgid "Download"
+msgstr ""
+
+#. Description of the plugin
+msgid "Download entries as pdf with multiple template."
+msgstr ""
+
+#: Classes/Controller/AvailableOptions.php:146
+msgid "Entry view"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:307
+msgid "Feed has been created, edit the feed now"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:464
+msgid "Feed name is required"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:513
+msgid "Feed successfully deleted"
+msgstr ""
+
+#. Name of the plugin
+msgid "Fluent Forms PDF Generator"
+msgstr ""
+
+#: assets/views/admin_screen.php:18
+msgid "Fluent Forms PDF Module is now active"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:53
+msgid "Fluent Forms PDF require to download fonts. Please "
+msgstr ""
+
+#: fluentforms-pdf.php:91
+msgid "FluentForm pdf Add-On Requires Fluent Forms Plugin, "
+msgstr ""
+
+#: Classes/Controller/AvailableOptions.php:132
+#: Classes/Controller/GlobalPdfManager.php:592
+msgid "Font color"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:795
+msgid "Font Download failed. Please reload and try again"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:580
+msgid "Font Family"
+msgstr ""
+
+#: Classes/Controller/AvailableOptions.php:119
+msgid "Font family"
+msgstr ""
+
+#: Classes/Controller/AvailableOptions.php:126
+#: Classes/Controller/GlobalPdfManager.php:587
+msgid "Font size"
+msgstr ""
+
+#: assets/views/admin_screen.php:6
+msgid "Fonts are required for PDF Generation"
+msgstr ""
+
+#: Classes/Templates/GeneralTemplate.php:56
+msgid "Footer Content"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:823
+msgid "GD Library is enabled"
+msgstr ""
+
+#: Classes/Templates/GeneralTemplate.php:38
+msgid "Header Content"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:597
+msgid "Heading color"
+msgstr ""
+
+#. Author URI of the plugin
+msgid "https://wpmanageninja.com"
+msgstr ""
+
+#. URI of the plugin
+msgid "https://wpmanageninja.com/downloads/fluentform-pro-add-on/"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:410
+msgid ""
+"If you want to set password please enter password otherwise leave it empty"
+msgstr ""
+
+#: assets/views/admin_screen.php:10
+msgid "Install Fonts"
+msgstr ""
+
+#: Classes/Templates/InvoiceTemplate.php:68
+msgid "Invoice Body Text"
+msgstr ""
+
+#: Classes/Templates/InvoiceTemplate.php:74
+msgid "Invoice Footer Text"
+msgstr ""
+
+#: Classes/Templates/InvoiceTemplate.php:62
+msgid "Invoice Prefix"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:609
+msgid "Language Direction"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:831
+msgid "LibXml is OK"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:613
+msgid "LTR"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:815
+msgid "MBString is enabled"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:819
+msgid "MBString Regex is enabled"
+msgstr ""
+
+#: Classes/Controller/AvailableOptions.php:161
+#: Classes/Controller/AvailableOptions.php:172
+#: Classes/Controller/GlobalPdfManager.php:422
+msgid "No"
+msgstr ""
+
+#: Classes/Templates/InvoiceTemplate.php:170
+msgid "Order Number:"
+msgstr ""
+
+#: Classes/Controller/AvailableOptions.php:112
+#: Classes/Controller/GlobalPdfManager.php:574
+msgid "Orientation"
+msgstr ""
+
+#: Classes/Controller/AvailableOptions.php:104
+#: Classes/Controller/GlobalPdfManager.php:567
+msgid "Paper size"
+msgstr ""
+
+#: Classes/Templates/InvoiceTemplate.php:171
+msgid "Payment Date:"
+msgstr ""
+
+#: Classes/Templates/InvoiceTemplate.php:192
+msgid "Payment Details"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:897
+msgid "PDF"
+msgstr ""
+
+#: Classes/Templates/GeneralTemplate.php:44
+msgid "PDF Body Content"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:628
+msgid "PDF Downloads"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:112
+msgid "PDF Feeds"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:103
+msgid "PDF Settings"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:827
+msgid "PHP Dom is enabled"
+msgstr ""
+
+#: Classes/Templates/InvoiceTemplate.php:57
+msgid "Please select the customer address field from the smartcode dropdown"
+msgstr ""
+
+#: Classes/Templates/InvoiceTemplate.php:51
+msgid "Please select the customer email field from the smartcode dropdown"
+msgstr ""
+
+#: Classes/Templates/InvoiceTemplate.php:45
+msgid "Please select the customer name field from the smartcode dropdown"
+msgstr ""
+
+#: Classes/Templates/InvoiceTemplate.php:165
+msgid "RECEIPT:"
+msgstr ""
+
+#: Classes/Controller/AvailableOptions.php:166
+msgid "Reverse text"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:614
+msgid "RTL"
+msgstr ""
+
+#: Classes/Controller/AvailableOptions.php:168
+msgid "Script like Arabic and Hebrew are written right to left."
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:610
+msgid ""
+"Script like Arabic and Hebrew are written right to left. For Arabic/Hebrew "
+"please select RTL"
+msgstr ""
+
+#: Classes/Controller/AvailableOptions.php:107
+msgid "select a pdf paper size"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:582
+msgid "Select Font"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:598
+msgid "Select Heading Color"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:403
+msgid "Set as background"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:193
+#: Classes/Controller/GlobalPdfManager.php:493
+msgid "Settings successfully updated"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:428
+msgid "Shortcode"
+msgstr ""
+
+#: Classes/Controller/AvailableOptions.php:156
+msgid "Show empty fields"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:670
+msgid "Sorry! No feed found"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:345
+#: Classes/Controller/GlobalPdfManager.php:504
+msgid "Sorry! No feed found!"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:204
+#: Classes/Controller/GlobalPdfManager.php:227
+#: Classes/Controller/GlobalPdfManager.php:256
+#: Classes/Controller/GlobalPdfManager.php:333
+#: Classes/Controller/GlobalPdfManager.php:449
+msgid "Sorry! No form found!"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:697
+msgid "Sorry! No template class found"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:277
+#: Classes/Controller/GlobalPdfManager.php:373
+msgid "Sorry! No template Class found!"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:690
+msgid "Sorry! No template found"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:268
+#: Classes/Controller/GlobalPdfManager.php:364
+msgid "Sorry! No template found!"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:940
+msgid "Sorry! You have to login first."
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:604
+msgid "The accent color is used for the borders, breaks etc."
+msgstr ""
+
+#: Classes/Controller/AvailableOptions.php:141
+msgid "The accent color is used for the page, section titles and the border."
+msgstr ""
+
+#: Classes/Controller/AvailableOptions.php:134
+msgid "The font color will use in the PDF."
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:827
+msgid ""
+"The PHP DOM Extension was not found. Contact your web hosting provider to "
+"fix."
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:823
+msgid ""
+"The PHP Extension GD Image Library could not be detected. Contact your web "
+"hosting provider to fix."
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:831
+msgid ""
+"The PHP Extension libxml could not be detected. Contact your web hosting "
+"provider to fix"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:815
+msgid ""
+"The PHP Extension MB String could not be detected. Contact your web hosting "
+"provider to fix."
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:819
+msgid ""
+"The PHP Extension MB String does not have MB Regex enabled. Contact your web "
+"hosting provider to fix."
+msgstr ""
+
+#: assets/views/admin_screen.php:7
+msgid ""
+"This module requires to download fonts for PDF generation. Please click on "
+"the below button and it will download the required font files. This is one "
+"time job"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:429
+msgid "Use this shortcode on submission message to generate PDF link."
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:397
+msgid "Value should be between 1 to 100"
+msgstr ""
+
+#: Classes/Controller/AvailableOptions.php:150
+msgid "View"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:382
+msgid "Watermark Image"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:395
+msgid "Watermark Opacity"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:401
+msgid "Watermark Position"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:388
+msgid "Watermark Text"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:390
+msgid "Watermark text"
+msgstr ""
+
+#. Author of the plugin
+msgid "WPManageNinja LLC"
+msgstr ""
+
+#: Classes/Templates/InvoiceTemplate.php:69
+msgid "Write Invoice body text. This will show before the invoice items"
+msgstr ""
+
+#: Classes/Templates/InvoiceTemplate.php:75
+msgid "Write Invoice Footer Text. This will show at the end of the invoice"
+msgstr ""
+
+#: Classes/Templates/GeneralTemplate.php:45
+msgid "Write your Body content for actual PDF body"
+msgstr ""
+
+#: Classes/Templates/GeneralTemplate.php:57
+#: Classes/Templates/GeneralTemplate.php:59
+msgid "Write your Footer content which will be shown every page of the PDF"
+msgstr ""
+
+#: Classes/Templates/GeneralTemplate.php:39
+msgid "Write your header content which will be shown every page of the PDF"
+msgstr ""
+
+#: Classes/Controller/AvailableOptions.php:160
+#: Classes/Controller/AvailableOptions.php:171
+#: Classes/Controller/GlobalPdfManager.php:421
+msgid "Yes"
+msgstr ""
+
+#: Classes/Templates/GeneralTemplate.php:49
+msgid ""
+"You can use Conditional Content in PDF body, for details please check this"
+msgstr ""
+
+#: Classes/Controller/GlobalPdfManager.php:961
+msgid "You don't have permission to download the PDF."
+msgstr ""
+
+#: Classes/Templates/InvoiceTemplate.php:39
+msgid "Your Business Logo which will be shown in the invoice header"
+msgstr ""
