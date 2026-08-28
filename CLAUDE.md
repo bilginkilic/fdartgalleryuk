@@ -8,7 +8,10 @@ Bir adim tamamlandiginda bu dosyadaki kutucugu isaretle ve commit et.
 
 ## 1. Altyapi ozeti
 
-### VPS #1 (hedef sunucu — dogrulanmis)
+**Tek VPS var.** (Kullanici teyit etti — daha once "iki VPS" denmisti, gecerli degil.)
+Tum siteler asagidaki sunucuda barinacak.
+
+### VPS (hedef sunucu — dogrulanmis)
 
 | Alan | Deger |
 |---|---|
@@ -16,15 +19,13 @@ Bir adim tamamlandiginda bu dosyadaki kutucugu isaretle ve commit et.
 | IPv4 | `57.129.128.118` (gateway `57.129.128.1`) |
 | IPv6 | `2001:41d0:801:2000::7e80` |
 | Model | VPS-2 2027 — 4 vCore / 8 GB RAM / 75 GB SSD |
-| Bolge | `os-uk2` (Region OpenStack, UK) |
-| Durum | `running`, `lockStatus: none` |
+| Isletim sistemi | **Ubuntu 26.04** |
+| Bolge | `os-uk2` (Region OpenStack) — Londra, Birlesik Krallik |
+| Boot | LOCAL |
+| Durum | `running` / Active, `lockStatus: none` |
 | OVH URN | `urn:v1:ca:resource:vps:vps-913eb1fb.vps.ovh.net` |
 
-### VPS #2 — **BILGI EKSIK**
-
-Kullanici iki VPS oldugunu soyledi ama her ikisi icin de ayni hostname'i verdi.
-Ikinci sunucunun hostname'i alinmali. OVH API anahtari `GET /vps` listelemesine
-yetkili degil (sadece `/vps/*`), bu yuzden isim ogrenilmeden sorgulanamaz.
+### Eski origin
 
 DNS'te gorunen `147.45.254.181` **eski/mevcut origin**'dir (OVH araliginda degil,
 muhtemelen baska bir saglayici). fdartgallery.com su an bu IP'ye bakiyor ve
@@ -44,12 +45,12 @@ Cloudflare `521 Web server is down` donuyor → eski origin cevap vermiyor.
 Multi-site plani: bu domainler sirayla ayni VPS'e tasinacak
 (`deploy/scripts/add-site.sh <domain>`).
 
-### fdartgallery.com mevcut DNS kayitlari (28.08.2026)
+### fdartgallery.com DNS kayitlari (28.08.2026, cutover SONRASI)
 
 ```
-A     fdartgallery.com        -> 147.45.254.181   proxied=ON    (ESKI ORIGIN)
-A     www.fdartgallery.com    -> 147.45.254.181   proxied=ON    (ESKI ORIGIN)
-A     dev.fdartgallery.com    -> 147.45.254.181   proxied=OFF
+A     fdartgallery.com        -> 57.129.128.118   proxied=ON    (YENI VPS) ✓
+A     www.fdartgallery.com    -> 57.129.128.118   proxied=ON    (YENI VPS) ✓
+A     dev.fdartgallery.com    -> 147.45.254.181   proxied=OFF   (eski IP'de birakildi)
 CNAME brevo1._domainkey       -> b1.fdartgallery-com.dkim.brevo.com
 CNAME brevo2._domainkey       -> b2.fdartgallery-com.dkim.brevo.com
 CNAME _domainconnect         -> _domainconnect.gd.domaincontrol.com
@@ -58,8 +59,15 @@ TXT   @                       -> google-site-verification=xj6o_-...
 TXT   @                       -> brevo-code:33cb1e9c...
 ```
 
-**Onemli:** Mail (Brevo DKIM/DMARC) ve dogrulama kayitlarina dokunma.
-Cutover'da yalnizca apex + `www` A kayitlari degisecek.
+**Onemli:** Mail (Brevo DKIM/DMARC) ve dogrulama kayitlarina dokunulmadi.
+Cutover'da yalnizca apex + `www` A kayitlari degistirildi (proxy durumlari korundu).
+Kullanici karari: **`dev` tasinmayacak**, once `www` acilacak.
+Geri alma: `bash deploy/scripts/cloudflare-dns.sh fdartgallery.com 147.45.254.181 --names @,www`
+
+**Cloudflare SSL modu: `full`** → origin'de TLS zorunlu. Sertifika alinana kadar
+Cloudflare `526/522` dondurur. Sunucuda `certbot` calistirildiginda duzelir.
+Sertifikadan once siteyi acmak gerekirse SSL modu gecici `flexible` yapilabilir
+(guvenlik acisindan dusus; sertifika alinir alinmaz `full` / `full (strict)`'e donulmeli).
 Domain kayit sirketi GoDaddy gorunuyor (`_domainconnect`), DNS ise Cloudflare'de.
 
 ---
@@ -134,6 +142,10 @@ Degerler **ortam degiskenlerinde** tutulur; asla repoya yazilmaz, log'a basilmaz
 - [x] `setup-server.sh` / `add-site.sh` / `deploy-site.sh` yazildi ve
       sozdizimi dogrulandi (`bash -n`).
 - [x] OVH ve Cloudflare API erisimi dogrulandi, VPS ve zone bilgileri cikarildi.
+- [x] PHP surumu script'lerde sabit degil, dagitimdan otomatik tespit ediliyor
+      (Ubuntu 26.04 → PHP 8.4).
+- [x] **DNS cutover yapildi**: fdartgallery.com + www → `57.129.128.118`.
+      Sunucu kurulumu bekleniyor; o ana kadar Cloudflare 52x dondurur.
 
 ---
 
@@ -149,6 +161,13 @@ Degerler **ortam degiskenlerinde** tutulur; asla repoya yazilmaz, log'a basilmaz
 - [ ] `sudo bash deploy/scripts/add-site.sh fdartgallery.com`
 - [ ] `sudo bash deploy/scripts/deploy-site.sh fdartgallery.com --with-db`
       (dosyalar repoda tamamlandi; `database/backup_2026-08-25-2045.sql` ice aktarilir)
+- [ ] Sertifika: `sudo certbot --nginx -d fdartgallery.com -d www.fdartgallery.com`
+      (DNS zaten yeni IP'de, HTTP-01 Cloudflare proxy'si uzerinden calisir)
+- [ ] `dev.fdartgallery.com` — **simdilik yok**, eski IP'de birakildi. Ileride
+      istenirse: `add-site.sh dev.fdartgallery.com` + `wp search-replace` + `blog_public 0`.
+
+> PHP surumu: script'ler dagitimin varsayilanini otomatik secer
+> (Ubuntu 26.04 → PHP 8.4). Gerekirse `PHP_VERSION=8.3 sudo -E bash ...` ile ezilebilir.
 
 ### B. Cutover oncesi dogrulama (DNS'e dokunmadan)
 
@@ -171,13 +190,14 @@ Degerler **ortam degiskenlerinde** tutulur; asla repoya yazilmaz, log'a basilmaz
 - [ ] Alternatif: Cloudflare Origin CA sertifikasi (15 yil) + SSL modu **Full (strict)**
 - [ ] Cloudflare SSL modu **Flexible olmamali** — yonlendirme dongusu yaratir.
 
-### D. DNS cutover
+### D. DNS cutover — **YAPILDI (28.08.2026)**
 
-- [ ] Once kuru calistirma:
-      `bash deploy/scripts/cloudflare-dns.sh fdartgallery.com 57.129.128.118 --dry-run`
-- [ ] Onay alindiktan sonra gercek gecis (apex + www, proxy durumu korunur)
-- [ ] `dev.fdartgallery.com` kaydi ne olacak? Kullaniciya sor (eski sunucuda mi kalacak)
-- [ ] Gecisten sonra Cloudflare cache purge
+- [x] `bash deploy/scripts/cloudflare-dns.sh fdartgallery.com 57.129.128.118 --names @,www`
+      → apex ve `www` artik yeni VPS'e bakiyor, proxy acik kaldi.
+- [ ] Sunucu ayaga kalkinca Cloudflare cache purge:
+      `curl -X POST "$API/zones/$ZONE/purge_cache" -H "Authorization: Bearer $TOKEN" \
+       -H "Content-Type: application/json" --data '{"purge_everything":true}'`
+- [ ] Sertifika alindiktan sonra SSL modunu **Full (strict)**'e cek.
 
 ### E. Sertlestirme (cutover sonrasi)
 
@@ -193,8 +213,9 @@ Degerler **ortam degiskenlerinde** tutulur; asla repoya yazilmaz, log'a basilmaz
 
 - [ ] `fdsanatmerkezi.com`, `chemiartclick.uk`, `davetevet.com`, `byhio.com`,
       `wedreply.co.uk` — her biri icin `add-site.sh <domain>`, ardindan dosya + DB tasima
-- [ ] VPS #2 hostname'ini kullanicidan al; rolunu netlestir
-      (staging mi, yuk paylasimi mi, yedek mi?)
+- [ ] Kaynak takibi: 8 GB RAM / 4 vCore tek sunucuda 6+ WordPress. Havuz basina
+      `pm.max_children = 12` (ondemand). Site sayisi arttikca `pm.max_children`
+      degerlerini dusur veya MariaDB `innodb_buffer_pool_size`'i ayarla.
 
 ---
 

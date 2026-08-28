@@ -2,9 +2,13 @@
 # Cloudflare DNS kayitlarini yeni VPS IP'sine tasir (cutover).
 # CLOUDFLARE_API_TOKEN ortam degiskeni gereklidir.
 #
+# Varsayilan olarak apex, www ve dev A kayitlarini gunceller; mevcut olmayan
+# kayitlar atlanir, her kaydin proxy (turuncu bulut) durumu korunur.
+#
 # Kullanim:
 #   bash deploy/scripts/cloudflare-dns.sh fdartgallery.com 57.129.128.118 --dry-run
 #   bash deploy/scripts/cloudflare-dns.sh fdartgallery.com 57.129.128.118
+#   bash deploy/scripts/cloudflare-dns.sh fdartgallery.com 57.129.128.118 --names @,www,dev,shop
 #
 # DIKKAT: Bu canli yayini yeni sunucuya cevirir. Once yeni sunucuda siteyi
 #         /etc/hosts ile dogrulayin (bkz. CLAUDE.md).
@@ -13,12 +17,23 @@ set -euo pipefail
 
 DOMAIN="${1:-}"
 NEW_IP="${2:-}"
-DRY="${3:-}"
+shift 2 2>/dev/null || true
+
+DRY=""
+SUBS="@,www,dev"
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --dry-run) DRY="--dry-run"; shift ;;
+        --names)   SUBS="${2:-}"; shift 2 ;;
+        *) echo "Bilinmeyen parametre: $1" >&2; exit 1 ;;
+    esac
+done
+
 TOKEN="${CLOUDFLARE_API_TOKEN:-${cloudflare_api_token:-}}"
 API="https://api.cloudflare.com/client/v4"
 
 if [[ -z "$DOMAIN" || -z "$NEW_IP" ]]; then
-    echo "Kullanim: $0 <domain> <yeni-ip> [--dry-run]" >&2
+    echo "Kullanim: $0 <domain> <yeni-ip> [--dry-run] [--names @,www,dev]" >&2
     exit 1
 fi
 if [[ -z "$TOKEN" ]]; then
@@ -35,8 +50,13 @@ if [[ -z "$ZONE_ID" ]]; then
 fi
 echo "Zone: ${DOMAIN} (${ZONE_ID})"
 
-# Guncellenecek A kayitlari: apex + www
-for NAME in "$DOMAIN" "www.${DOMAIN}"; do
+# Guncellenecek A kayitlari (varsayilan: apex, www, dev)
+for SUB in ${SUBS//,/ }; do
+    if [[ "$SUB" == "@" || "$SUB" == "$DOMAIN" ]]; then
+        NAME="$DOMAIN"
+    else
+        NAME="${SUB}.${DOMAIN}"
+    fi
     REC="$(cf "${API}/zones/${ZONE_ID}/dns_records?type=A&name=${NAME}" \
         | python3 -c 'import sys,json
 r = json.load(sys.stdin)["result"]

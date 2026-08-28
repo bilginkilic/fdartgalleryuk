@@ -6,7 +6,6 @@
 
 set -euo pipefail
 
-PHP_VERSION="${PHP_VERSION:-8.3}"
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 if [[ $EUID -ne 0 ]]; then
@@ -14,9 +13,21 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-echo "==> Paketler kuruluyor (PHP ${PHP_VERSION})"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
+
+# Dagitimin varsayilan PHP surumu (Ubuntu 26.04 -> 8.4, 24.04 -> 8.3).
+# Gerekirse PHP_VERSION=8.3 bash setup-server.sh ile ezilebilir.
+if [[ -z "${PHP_VERSION:-}" ]]; then
+    PHP_VERSION="$(apt-cache depends php-fpm 2>/dev/null \
+        | grep -oE 'php[0-9]+\.[0-9]+-fpm' | grep -oE '[0-9]+\.[0-9]+' | sort -V | tail -1)"
+fi
+if [[ -z "$PHP_VERSION" ]]; then
+    echo "PHP surumu tespit edilemedi. PHP_VERSION=8.4 bash $0 seklinde belirtin." >&2
+    exit 1
+fi
+
+echo "==> Paketler kuruluyor (PHP ${PHP_VERSION})"
 apt-get install -y \
     nginx \
     mariadb-server \
@@ -29,9 +40,12 @@ apt-get install -y \
     "php${PHP_VERSION}-xml" \
     "php${PHP_VERSION}-zip" \
     "php${PHP_VERSION}-intl" \
-    "php${PHP_VERSION}-imagick" \
     "php${PHP_VERSION}-opcache" \
-    unzip curl ufw
+    unzip curl rsync ufw
+
+# imagick bazi dagitimlarda gecikmeli paketlenir; olmazsa kurulum durmasin
+apt-get install -y "php${PHP_VERSION}-imagick" || \
+    echo "    UYARI: php${PHP_VERSION}-imagick yok, WP gorsel isleme GD ile calisacak."
 
 echo "==> Dizinler"
 mkdir -p /var/www/letsencrypt /var/cache/nginx/fastcgi /var/log/php /etc/nginx/snippets

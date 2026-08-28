@@ -11,7 +11,8 @@
 set -euo pipefail
 
 DOMAIN="${1:-}"
-PHP_VERSION="${PHP_VERSION:-8.3}"
+# Kurulu PHP surumunu bul (Ubuntu 26.04 -> 8.4). PHP_VERSION ile ezilebilir.
+PHP_VERSION="${PHP_VERSION:-$(ls -1 /etc/php 2>/dev/null | grep -E '^[0-9]+\.[0-9]+$' | sort -V | tail -1)}"
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 if [[ -z "$DOMAIN" ]]; then
@@ -20,6 +21,10 @@ if [[ -z "$DOMAIN" ]]; then
 fi
 if [[ $EUID -ne 0 ]]; then
     echo "Bu script root olarak calistirilmali (sudo)." >&2
+    exit 1
+fi
+if [[ -z "$PHP_VERSION" || ! -d "/etc/php/${PHP_VERSION}/fpm" ]]; then
+    echo "PHP-FPM bulunamadi. Once: sudo bash deploy/scripts/setup-server.sh" >&2
     exit 1
 fi
 
