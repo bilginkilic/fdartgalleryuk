@@ -119,10 +119,27 @@ Degerler **ortam degiskenlerinde** tutulur; asla repoya yazilmaz, log'a basilmaz
 
 ## 3. Bu ortamin sinirlari (unutma)
 
-- **SSH bu container'dan mumkun degil.** `ssh` istemcisi kurulu degil, kurulumu
-  basarisiz oluyor ve disari cikis yalnizca HTTPS proxy uzerinden. `57.129.128.118:22`
-  baglantisi timeout veriyor. Sunucu komutlarini kullanici kendi terminalinden
-  calistirmali — bu repodaki script'ler tam da bunun icin hazirlandi.
+- **SSH bu oturumdan mumkun degil** — sebep agi politikasi, eksik istemci degil.
+  Dogrulama (28.08.2026):
+  - `apt-get update && apt-get install openssh-client` → **basarili**,
+    OpenSSH 9.6p1 kurulu. (Ilk denemede apt indeksi bayat oldugu icin 404 alinmisti.)
+  - Dogrudan `57.129.128.118:22` → `Connection timed out`.
+  - Agent proxy uzerinden (`nc -X connect -x 127.0.0.1:$PROXY_PORT`) →
+    `HTTP/1.1 200 Connection Established` doner ama **tek bayt akmaz**, SSH banner gelmez.
+  - Ayni test `github.com:22` icin de bantsiz → engel VPS'te degil,
+    **oturumun egress politikasinda**: yalnizca TLS/HTTPS trafigi geciyor
+    (proxy TLS'i yeniden sonlandiriyor; `gitSshRewrite: true` de bunu dogruluyor).
+  - `/__agentproxy/status` → `recentRelayFailures: []` (politika reddi kaydi yok,
+    trafik sessizce dusuyor).
+- **Ayrica bu container'da hicbir SSH anahtari yok** (`~/.ssh` bos, diskte
+  ozel anahtar bulunamadi). Ag acik olsa bile kimlik dogrulama yapilamazdi.
+- Sonuc: sunucu komutlarini kullanici kendi terminalinden calistirmali — bu repodaki
+  script'ler tam da bunun icin hazirlandi. Alternatif: SSH'a izin veren bir ag
+  politikasina sahip ortamda oturum acmak
+  (bkz. https://code.claude.com/docs/en/claude-code-on-the-web).
+- Buna karsilik **HTTPS API'leri sorunsuz calisiyor**: OVH (`/vps/*`) ve Cloudflare
+  uzerinden sunucu durumu, DNS ve zone ayarlari yonetilebiliyor — DNS cutover
+  bu yolla yapildi.
 - Ham IP'ye HTTP probe'lari da proxy uzerinden gittigi icin guvenilir degil;
   origin durumunu Cloudflare uzerinden veya sunucuda dogrula.
 - Yeni bir oturum SSH gerektiginde: kullanicidan ya sunucuda calistirmasini iste,
