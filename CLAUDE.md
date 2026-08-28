@@ -133,6 +133,20 @@ Degerler **ortam degiskenlerinde** tutulur; asla repoya yazilmaz, log'a basilmaz
     trafik sessizce dusuyor).
 - **Ayrica bu container'da hicbir SSH anahtari yok** (`~/.ssh` bos, diskte
   ozel anahtar bulunamadi). Ag acik olsa bile kimlik dogrulama yapilamazdi.
+- **Ikinci ortamda da test edildi (28.08.2026):** `Default — trusted network access`
+  (`env_011B9xyR8Rkq9wEjwa7YKdFZ`) ortaminda ayri bir oturum acilip ayni testler
+  kosuldu. Sonuc ayni: **SSH EGRESS: BLOCKED**. Ayrintili kanit
+  `claude/ssh-egress-probe` dalindaki `ssh-egress-probe.md` dosyasinda. Ozet:
+  - Port 22 → her iki hostta da (VPS ve github.com) 10s'de timeout;
+    port 443 → aninda baglaniyor. Engel **port bazli, host bazli degil**.
+  - `CONNECT host:22` → sahte `200 Connection Established`, sifir bayt, ilk
+    yazmada `ECONNRESET`. `CONNECT github.com:443` → tam TLS 1.3 el sikismasi.
+  - `ssh -vv` TCP connect asamasinda kaliyor; anahtar eksikligi belirleyici degil.
+  - Ek bulgu: **VPS 443'ten de erisilemiyor** — egress gateway `403` donuyor
+    (`CN=default.domain` yer tutucu sertifika, 13 ms). Yalnizca izin listesindeki
+    hostlar (ornegin github.com) disari cikiyor.
+  → Bulut ortamlarinda ag politikasini genistirmek **host** listesini genisletir,
+    ham TCP/22'yi acmaz. Bu yol denendi ve kapali.
 - Sonuc: sunucu komutlarini kullanici kendi terminalinden calistirmali — bu repodaki
   script'ler tam da bunun icin hazirlandi. Alternatif: SSH'a izin veren bir ag
   politikasina sahip ortamda oturum acmak
