@@ -1,0 +1,36 @@
+# Multi-site vhost sablonu.
+# Degiskenler: {{DOMAIN}} {{SITE_SLUG}} {{ROOT}} {{FPM_SOCK}}
+# Not: Bu dosya HTTP (80) uzerinden yayin yapar. Sertifika icin:
+#   certbot --nginx -d {{DOMAIN}} -d www.{{DOMAIN}}
+# certbot 443 server blogunu ve http->https yonlendirmesini kendisi ekler.
+
+server {
+    listen 80;
+    listen [::]:80;
+
+    server_name {{DOMAIN}} www.{{DOMAIN}};
+    root {{ROOT}};
+
+    access_log /var/log/nginx/{{SITE_SLUG}}.access.log;
+    error_log  /var/log/nginx/{{SITE_SLUG}}.error.log;
+
+    # Let's Encrypt dogrulamasi her zaman acik kalsin
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/www/letsencrypt;
+        default_type "text/plain";
+        allow all;
+    }
+
+    include snippets/wordpress.conf;
+    include snippets/security.conf;
+
+    # Giris sayfasina hiz limiti
+    location = /wp-login.php {
+        limit_req zone=wplogin burst=5 nodelay;
+        include snippets/fastcgi-php-{{SITE_SLUG}}.conf;
+    }
+
+    location ~ \.php$ {
+        include snippets/fastcgi-php-{{SITE_SLUG}}.conf;
+    }
+}

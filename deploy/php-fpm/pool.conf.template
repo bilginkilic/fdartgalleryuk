@@ -1,0 +1,28 @@
+; Site bazli PHP-FPM havuzu. Her site kendi kullanicisi ve socket'i ile calisir.
+; Degiskenler: {{SITE_SLUG}} {{SITE_USER}} {{ROOT}}
+
+[{{SITE_SLUG}}]
+user = {{SITE_USER}}
+group = {{SITE_USER}}
+
+listen = /run/php/php-fpm-{{SITE_SLUG}}.sock
+listen.owner = www-data
+listen.group = www-data
+listen.mode = 0660
+
+pm = ondemand
+pm.max_children = 12
+pm.process_idle_timeout = 20s
+pm.max_requests = 500
+
+php_admin_value[upload_max_filesize] = 128M
+php_admin_value[post_max_size] = 128M
+php_admin_value[memory_limit] = 256M
+php_admin_value[max_execution_time] = 300
+php_admin_value[open_basedir] = {{ROOT}}:/tmp:/usr/share/php
+php_admin_value[error_log] = /var/log/php/{{SITE_SLUG}}.error.log
+php_admin_flag[log_errors] = on
+php_admin_flag[display_errors] = off
+
+; Sistem cron ile calisacagi icin WP kendi cron'unu tetiklemesin
+env[WP_ENV] = production
