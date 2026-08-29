@@ -299,15 +299,26 @@ Cloudflare tuneli ile sunucuya erisim saglandiktan sonra sirasiyla:
        -H "Content-Type: application/json" --data '{"purge_everything":true}'`
 - [x] Cloudflare SSL modu **Full (strict)** yapildi.
 
-### E. Sertlestirme (cutover sonrasi)
+### E. Sertlestirme — **BUYUK OLCUDE TAMAMLANDI (29.08.2026)**
 
-- [ ] `sudo bash deploy/scripts/update-cloudflare-ips.sh --firewall`
-      → origin'e sadece Cloudflare edge IP'lerinden 80/443 acilir
-- [ ] OVH API ile **reverse DNS (PTR)** ayarla — su an `null`
+- [x] **Yedekleme R2'ye** — `setup-backup.sh` + `backup-site.sh` (bkz. 5e)
+- [x] **MariaDB sertlestirildi** — `harden-mysql.sh` (bkz. 5f)
+- [x] **Origin Cloudflare'e kilitlendi** — `update-cloudflare-ips.sh --firewall`;
+      22 Cloudflare araligi acik, `Nginx Full` kurali kaldirildi.
+      Dogrulandi: `http://57.129.128.118/` → baglanti yok; site Cloudflare
+      uzerinden 200. SSH (22) disariya acik kaldi — kasitli.
+- [x] **fail2ban kuruldu** — 3 jail, WordPress jail'leri Cloudflare edge'inde
+      engelliyor (bkz. 5g)
+- [ ] **PTR (reverse DNS) — YAPILAMADI, kullanici mudahalesi gerekiyor.**
+      Mevcut API anahtari yetersiz:
+      - `PUT /vps/{name}/ips/{ip}` → `403 not implemented` (bu VPS urununde yok)
+      - `GET|POST /ip/{ip}/reverse` → `403 This call has not been granted`
+        (consumer key yalnizca `/vps/*` kapsiyor)
+      Cozum: ya OVH Manager arayuzunden elle ayarlanmali (VPS → IP → reverse),
+      ya da `/ip/*` yetkisi olan yeni bir API anahtari uretilmeli.
+      Onerilen deger: `vps-913eb1fb.vps.ovh.net`
 - [ ] SSH: parola girisi kapali, anahtar zorunlu, root login `prohibit-password`
-- [ ] `fail2ban` kur (nginx + sshd jail)
-- [ ] Yedekleme: gunluk `mysqldump` + `wp-content` arsivi
-      (Cloudflare R2 anahtarlari mevcut — `cloudflare_access_keyid/key` ile rclone)
+      — henuz gozden gecirilmedi.
 
 ### F. Diger siteler
 
@@ -439,6 +450,87 @@ wp rewrite flush --hard
   `<link rel="canonical" href="https://fdartgallery.com/urun/bardak/">` var —
   yani mevcut baglantilar kirilmadi, SEO tarafinda dogru adres isaret ediliyor.
 - WooCommerce urun taban adresi: `urun` (`woocommerce_permalinks` ayarindan).
+
+---
+
+## 5e. Yedekleme — Cloudflare R2 (29.08.2026)
+
+**Onceki durum tehlikeliydi:** UpdraftPlus gunluk calisiyordu ama hedef depolama
+bos, yedekler `wp-content/updraft/` icinde **ayni diskte** duruyordu. Disk
+bozulsa veya site ele gecirilse yedek de giderdi.
+
+Sunucu seviyesinde, WordPress'ten bagimsiz yedekleme kuruldu:
+
+| Bilesen | Ayrinti |
+|---|---|
+| Kova | `ovh-vps-backups` (R2, `weur`), site basina klasor |
+| Anlik yedek | `snapshots/db-*.sql.gz` (~4.9 MB) + `files-*.tar.gz` (158 MB) + `wp-config-*.php` |
+| uploads | `uploads/` altina **artimli** (`rclone copy`) — sadece yeni dosyalar gider |
+| Cron | `/etc/cron.d/backup-fdartgallery_com`, her gece **04:15** |
+| Saklama | R2'de 30 gun (anlik yedekler), yerelde son 3 |
+| Kimlik | `/root/.config/rclone/rclone.conf` (mod 600) — repoda **yok** |
+
+Tasarim kararlari:
+- `files-*.tar.gz` **uploads icermez**; ilk denemede 1.36 GB'lik arsiv her gece
+  yeniden yukleniyordu. Simdi 158 MB (tema/eklenti/mu-plugin) + artimli uploads.
+- uploads icin `sync` degil **`copy`** kullaniliyor: sunucuda yanlislikla silinen
+  bir gorsel R2'deki yedekten de silinmesin.
+- `.webp` dosyalari yedeklenmiyor — orijinalinden her an yeniden uretilebiliyorlar
+  (`convert-webp.sh`), R2'de yer kaplamalarinin anlami yok.
+- `--s3-disable-checksum`: R2 bazi S3 cagrilarina `501 Not Implemented` donuyor.
+
+Geri yukleme: `rclone copy r2:ovh-vps-backups/<domain>/snapshots ./` → `.sql.gz`
+dosyasini `gunzip` + `mysql` ile ice aktar, `files-*.tar.gz`'i `public/` altina ac.
+
+---
+
+## 5f. MariaDB sertlestirildi (29.08.2026)
+
+`deploy/scripts/harden-mysql.sh` — `mysql_secure_installation`'in etkilesimsiz hali.
+
+**Bulunan sorun:** `root@localhost` **parolasizdi** (`mysql_native_password`, bos
+parola). Sunucuda herhangi bir kullanici — orn. bir eklenti acigindan giren
+saldirgan — `mysql -u root` ile tum sitelerin veritabanina erisebilirdi.
+
+**Yapilan:** `IDENTIFIED VIA unix_socket OR mysql_native_password` — yalnizca
+sistem root'u parolasiz baglanabilir; yedek parola `/root/.my.cnf` (mod 600).
+Anonim kullanici ve `test` veritabani zaten yoktu, uzaktan root girisi kapali.
+
+**Dogrulandi:**
+- `sudo -u web_fdartgallery_com mysql -u root` → `ERROR 1698 Access denied`
+- `mysql -u root -h 127.0.0.1 --password=""` → `ERROR 1698 Access denied`
+- `mysql` (sistem root, socket) → calisiyor
+
+---
+
+## 5g. fail2ban (29.08.2026)
+
+`deploy/scripts/setup-fail2ban.sh` — 3 jail:
+
+| Jail | Kaynak | Esik | Ban | Eylem |
+|---|---|---|---|---|
+| `sshd` | auth log | 5/10dk | 1 saat | yerel guvenlik duvari |
+| `wordpress-login` | nginx access log | 5/10dk | 1 saat | **Cloudflare edge** |
+| `wordpress-xmlrpc` | nginx **error** log | 3/10dk | 24 saat | **Cloudflare edge** |
+
+**Neden Cloudflare'de banliyoruz:** site proxy arkasinda oldugu icin paketler
+Cloudflare IP'lerinden geliyor. Saldirganin gercek IP'sini logda goruyoruz
+(`real_ip` modulu) ama onu yerel guvenlik duvarinda engellemek ise yaramaz.
+Cloudflare API'si ile engellendiginde istek origin'e **hic ulasmiyor**.
+Token `/root/.cloudflare-token` (mod 600), eylem dosyasi
+`/etc/fail2ban/action.d/cloudflare-token.conf`.
+
+**Yasanan hata:** xmlrpc filtresi once access log'a bakiyordu ve 979 satirin
+hicbirini yakalamadi — cunku `security.conf` bu adres icin `access_log off`
+yapiyor, denemeler **error log'a** dusuyor. Filtre error log'a yonlendirildi
+(`datepattern` ile birlikte): 318 satirin 250'si eslesti.
+
+**Uctan uca dogrulandi:** `103.137.148.42` xmlrpc denemeleri yuzunden banlandi
+ve Cloudflare'de kural olustu (`block ... | fail2ban xmlrpc`). sshd jail'i de
+ilk dakikada 2 gercek SSH brute-force IP'sini banladi.
+
+**Durum:** `sudo bash deploy/scripts/setup-fail2ban.sh --status`
+**Elle ban kaldirma:** `sudo fail2ban-client set <jail> unbanip <ip>`
 
 ---
 
