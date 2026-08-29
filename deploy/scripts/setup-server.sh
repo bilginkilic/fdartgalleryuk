@@ -59,6 +59,10 @@ chown -R www-data:www-data /var/cache/nginx /var/log/php
 
 echo "==> Global nginx ayarlari"
 install -m 0644 "${REPO_DIR}/deploy/nginx/nginx.conf.d-00-tuning.conf" /etc/nginx/conf.d/00-tuning.conf
+
+# Surum bilgisini gizle. Ubuntu bunu ana nginx.conf'ta tanimladigi icin
+# conf.d'den ezilemiyor (duplicate hatasi) — yerinde degistiriyoruz.
+sed -i 's/^\(\s*\)server_tokens\s\+[a-z]\+;/\1server_tokens off;/' /etc/nginx/nginx.conf
 install -m 0644 "${REPO_DIR}/deploy/nginx/snippets/security.conf"  /etc/nginx/snippets/security.conf
 install -m 0644 "${REPO_DIR}/deploy/nginx/snippets/wordpress.conf" /etc/nginx/snippets/wordpress.conf
 install -m 0644 "${REPO_DIR}/deploy/nginx/snippets/cloudflare-realip.conf" /etc/nginx/snippets/cloudflare-realip.conf
