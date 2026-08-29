@@ -39,10 +39,28 @@ echo "Guncellendi: ${SNIPPET}"
 # --firewall: origin'e sadece Cloudflare'den HTTP(S) gelsin
 if [[ "${1:-}" == "--firewall" ]]; then
     echo "==> ufw kurallari Cloudflare'e kisitlaniyor"
+    # Iki listeyi ayri ayri al ve aralarina satir sonu koy: cloudflare.com/ips-v4
+    # ciktisi yeni satirla bitmiyor, dogrudan birlestirilirse son IPv4 araligi ile
+    # ilk IPv6 araligi tek satirda birlesiyor ("Bad source address").
+    CIDRS="$(mktemp)"
+    trap 'rm -f "$CIDRS"' RETURN
+    { curl -fsSL https://www.cloudflare.com/ips-v4; echo; curl -fsSL https://www.cloudflare.com/ips-v6; echo; } \
+        | tr -d '\r' | grep -E '^[0-9a-fA-F:.]+/[0-9]+$' > "$CIDRS"
+
+    COUNT="$(wc -l < "$CIDRS")"
+    if [[ "$COUNT" -lt 10 ]]; then
+        echo "    Cloudflare IP listesi eksik gorunuyor (${COUNT} satir), kurallar degistirilmedi." >&2
+        rm -f "$CIDRS"
+        exit 1
+    fi
+
     while read -r cidr; do
-        [[ -n "$cidr" ]] && ufw allow from "$cidr" to any port 80,443 proto tcp comment 'cloudflare'
-    done < <(curl -fsSL https://www.cloudflare.com/ips-v4; curl -fsSL https://www.cloudflare.com/ips-v6)
+        ufw allow from "$cidr" to any port 80,443 proto tcp comment 'cloudflare'
+    done < "$CIDRS"
+
+    # Genel erisim yalnizca Cloudflare kurallari yerine oturduktan SONRA kapatilir.
     ufw delete allow 'Nginx Full' 2>/dev/null || true
     ufw reload
-    echo "    Dikkat: artik origin IP'ye dogrudan erisim kapali."
+    rm -f "$CIDRS"
+    echo "    ${COUNT} Cloudflare araligi eklendi; origin IP'ye dogrudan HTTP(S) erisimi kapali."
 fi
