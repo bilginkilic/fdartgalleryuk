@@ -40,12 +40,18 @@ apt-get install -y \
     "php${PHP_VERSION}-xml" \
     "php${PHP_VERSION}-zip" \
     "php${PHP_VERSION}-intl" \
-    "php${PHP_VERSION}-opcache" \
     unzip curl rsync ufw
 
-# imagick bazi dagitimlarda gecikmeli paketlenir; olmazsa kurulum durmasin
-apt-get install -y "php${PHP_VERSION}-imagick" || \
-    echo "    UYARI: php${PHP_VERSION}-imagick yok, WP gorsel isleme GD ile calisacak."
+# Surumden surume degisen/eksik olabilen eklentiler — kurulum bunlar icin durmasin.
+# (PHP 8.5'te opcache ayri paket degil, php-cli/fpm icinde geliyor.)
+for opt in imagick opcache; do
+    if apt-cache show "php${PHP_VERSION}-${opt}" >/dev/null 2>&1; then
+        apt-get install -y "php${PHP_VERSION}-${opt}" || \
+            echo "    UYARI: php${PHP_VERSION}-${opt} kurulamadi."
+    else
+        echo "    Bilgi: php${PHP_VERSION}-${opt} paketi yok, atlaniyor."
+    fi
+done
 
 echo "==> Dizinler"
 mkdir -p /var/www/letsencrypt /var/cache/nginx/fastcgi /var/log/php /etc/nginx/snippets
