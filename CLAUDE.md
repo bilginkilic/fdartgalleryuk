@@ -315,12 +315,35 @@ Teshis: `curl -I https://fdartgallery.com/` → `X-FastCGI-Cache: HIT|MISS|BYPAS
 Onbellek omru 10 dk. Hemen temizlemek icin:
 `sudo bash deploy/scripts/purge-cache.sh fdartgallery.com` (Cloudflare'i de bosaltir)
 
-### Siradaki performans adimlari (henuz yapilmadi)
+### WebP donusumu — YAPILDI (29.08.2026)
 
-- [ ] **Gorsel agirligi**: `uploads` 1.2 GB; 4108 JPEG'e karsilik yalnizca 12 WebP.
-      Kutuphanede 23 MB / 21 MB'lik islenmemis telefon fotograflari var.
-      WebP'ye cevirip kucultmek mobilde en buyuk kazanci verir.
-      (`image-optimization` eklentisi kurulu, yapilandirilabilir.)
+- [x] `deploy/scripts/convert-webp.sh fdartgallery.com` → her JPEG/PNG'nin yanina
+      `<dosya>.webp` uretildi. **Orijinaller silinmedi/degistirilmedi.**
+      Sonuc: 6377 webp / 494 MB (orijinal 1122 MB) — %56 kucuk.
+      Ana sayfadaki gorseller: 4398 KB → 1028 KB (**%76 kazanc**).
+- [x] `deploy/wordpress/mu-plugins/fd-webp-rewrite.php` — diskte `.webp` varsa
+      gorsel adreslerini ona cevirir; yoksa orijinal adres kalir. Veritabani
+      degismez, eklentiyi silmek her seyi geri alir.
+
+**Neden Accept pazarligi (Vary) kullanilmadi:** zone **Free** planda ve Cloudflare
+"Vary for Images" yalnizca Pro+ planlarda var. Free'de `Vary: Accept` donen
+gorseller edge'de `BYPASS` olur — yani tum gorseller origin'e duserdi.
+Ayri URL yontemi ile Cloudflare her iki dosyayi da normal onbellege aliyor
+(dogrulandi: `.webp` istegi MISS → HIT, `content-type: image/webp`).
+
+**Dikkat — bu yontemin bedeli:** WebP desteklemeyen cok eski tarayicilar
+(IE11, Safari 13 ve oncesi) gorselleri goremez. Gunumuzde destek ~%97-98.
+
+**Yasanan hata (duzeltildi):** mu-plugin'deki HTML duzenli ifadesi sona
+sabitlenmemisti; `foo.jpeg.webp` icindeki `foo.jpeg` ile eslesip ikinci bir
+`.webp` ekliyor (`.webp.webp` → 404) ve urun galerisi gorsellerini bozuyordu.
+Desene `(?!\.webp)` sarti eklendi, `filter_url` de `.webp` ile biten adresi
+dokunmadan geri donduruyor. 6 sayfa / 406 gorsel taranarak dogrulandi: 0 kirik.
+
+- [ ] Yeni yuklenen gorseller icin donusturucu periyodik calistirilmali
+      (haftalik cron) veya yukleme aninda tetiklenmeli — **henuz kurulmadi**.
+- [ ] Kutuphanedeki 23 MB / 21 MB'lik islenmemis orijinaller hala duruyor;
+      WordPress bunlari sayfada servis etmiyor ama disk kapliyor.
 - [ ] **Redis object cache** — dinamik sayfalarda ve panelde PHP suresini kisar.
 - [ ] Cloudflare: Brotli, Tiered Cache, statik icerik icin Cache Rules.
 - [ ] **Eklenti cakismasi**: hem `elementor-pro` hem `pro-elements` aktif —
