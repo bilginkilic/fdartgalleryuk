@@ -282,6 +282,55 @@ KVM konsolu notu: klavye eslemesi bozuk, `:` → `;` ve `|` → `\` gidiyor.
 
 ---
 
+## 5b. Performans — sayfa onbellegi (29.08.2026)
+
+nginx `fastcgi_cache` devreye alindi. Olculen etki (origin, ana sayfa):
+
+| Durum | Ilk bayt |
+|---|---|
+| Onbellek yokken | ~0.90 sn |
+| MISS (ilk istek) | ~1.03 sn |
+| **HIT** | **~0.006 sn** |
+
+Disaridan (Cloudflare uzerinden) toplam sure 1.71 sn → ~0.55 sn.
+
+**Atlama kurallari** (`00-tuning.conf` icindeki map'ler, dordu de 0 ise onbellek acik):
+- Cerez: `wordpress_logged_in_`, `wp-postpass_`, `comment_author_`,
+  `woocommerce_items_in_cart`, `woocommerce_cart_hash`, `wp_woocommerce_session_`
+- Adres: `/wp-admin`, `/wp-json`, `/wp-login.php`, `/xmlrpc.php`, `/wp-cron.php`,
+  `/wc-api`, `/cart`, `/checkout`, `/my-account`, `/sepet`, `/odeme`, `/hesabim`,
+  `add-to-cart=`, `/feed`, `sitemap*.xml`
+- Yontem: yalnizca GET/HEAD
+- Sorgu dizesi olan her istek (arama, filtre, utm)
+
+`Set-Cookie` donen yanitlar nginx'in kendi varsayilani geregi zaten
+onbelleklenmez — `fastcgi_ignore_headers` **bilerek kullanilmadi**, ikinci
+guvenlik katmani olarak duruyor.
+
+**Dogrulama yapildi:** ana sayfa HIT; sepet/odeme/hesabim/giris yapmis
+kullanici/arama BYPASS; gercek sepete-ekleme akisi (POST → cerez → sepet
+sayfasi) urunu dogru gosteriyor.
+
+Teshis: `curl -I https://fdartgallery.com/` → `X-FastCGI-Cache: HIT|MISS|BYPASS`
+Onbellek omru 10 dk. Hemen temizlemek icin:
+`sudo bash deploy/scripts/purge-cache.sh fdartgallery.com` (Cloudflare'i de bosaltir)
+
+### Siradaki performans adimlari (henuz yapilmadi)
+
+- [ ] **Gorsel agirligi**: `uploads` 1.2 GB; 4108 JPEG'e karsilik yalnizca 12 WebP.
+      Kutuphanede 23 MB / 21 MB'lik islenmemis telefon fotograflari var.
+      WebP'ye cevirip kucultmek mobilde en buyuk kazanci verir.
+      (`image-optimization` eklentisi kurulu, yapilandirilabilir.)
+- [ ] **Redis object cache** — dinamik sayfalarda ve panelde PHP suresini kisar.
+- [ ] Cloudflare: Brotli, Tiered Cache, statik icerik icin Cache Rules.
+- [ ] **Eklenti cakismasi**: hem `elementor-pro` hem `pro-elements` aktif —
+      ikincisi Elementor Pro'nun kopyasi. Kurulumdaki fatal error da Elementor
+      Pro'daydi. Incelenmeli (canliyi etkileyecegi icin kullanici karari).
+- [ ] CDN notu: **harici CDN gerekmiyor** — gorseller Cloudflare edge'inde
+      `HIT` doneyor (`Cache-Control: public, max-age=2592000, immutable`).
+
+---
+
 ## 6. Sunucu duzeni (site basina)
 
 | Bilesen | Ornek: fdartgallery.com |
