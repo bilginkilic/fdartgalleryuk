@@ -17,15 +17,22 @@ fastcgi_read_timeout 300s;
 fastcgi_intercept_errors off;
 
 # --- Sayfa onbellegi ---------------------------------------------------------
-# $skip_cache 00-tuning.conf'taki map'lerden gelir (giris yapmis kullanici,
-# sepet/odeme/hesabim, POST, sorgu dizesi -> onbellek atlanir).
-# Set-Cookie donen yanitlar nginx tarafindan zaten onbelleklenmez; bu ikinci
-# guvenlik katmanini bilerek koruyoruz (fastcgi_ignore_headers kullanilmiyor).
+# Iki katmanli karar:
+#   $skip_cache             -> ISTEK tarafi (giris cerezi, sepet/odeme adresi,
+#                              POST, sorgu dizesi)
+#   $wpc_bypass_respcookie  -> YANIT tarafi (PHP oturum/kimlik cerezi kuruyorsa)
+# Ikisi de 00-tuning.conf'taki map'lerden gelir.
+#
+# Set-Cookie yok sayiliyor ki WooCommerce'in zararsiz `recently_viewed` cerezi
+# urun sayfalarinin onbelleklenmesini engellemesin. Guvenlik yanit tarafindaki
+# map ile saglaniyor: oturum/kimlik cerezi tasiyan yanit asla onbellege girmez.
+fastcgi_ignore_headers Set-Cookie;
+
 fastcgi_cache WPCACHE;
 fastcgi_cache_valid 200 301 302 10m;
 fastcgi_cache_valid 404 1m;
 fastcgi_cache_bypass $skip_cache;
-fastcgi_no_cache    $skip_cache;
+fastcgi_no_cache    $skip_cache $wpc_bypass_respcookie;
 fastcgi_cache_lock on;
 fastcgi_cache_lock_timeout 10s;
 fastcgi_cache_background_update on;
