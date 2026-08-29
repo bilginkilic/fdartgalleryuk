@@ -59,13 +59,13 @@ mysqldump --single-transaction --quick --default-character-set=utf8mb4 \
     --routines --events "$DB_NAME" | gzip -6 > "${DEST}/db-${STAMP}.sql.gz"
 echo "    $(du -h "${DEST}/db-${STAMP}.sql.gz" | cut -f1)"
 
-echo "==> wp-content arsivi"
-# Onbellek, gecici dosyalar ve eklentinin kendi yedekleri disarida — bunlar
-# yeniden uretilebilir ve arsivi gereksiz sisirir.
+echo "==> Kod arsivi (tema/eklenti/mu-plugin)"
+# uploads BURAYA GIRMEZ — asagida artimli olarak ayrica kopyalanir. Her gece
+# 1+ GB'lik ayni arsivi yeniden yuklemenin anlami yok.
 tar -C "$ROOT" -czf "${DEST}/files-${STAMP}.tar.gz" \
+    --exclude='wp-content/uploads' \
     --exclude='wp-content/cache' \
     --exclude='wp-content/updraft' \
-    --exclude='wp-content/uploads/*/*.webp' \
     --exclude='*.log' \
     wp-content 2>/dev/null || true
 echo "    $(du -h "${DEST}/files-${STAMP}.tar.gz" | cut -f1)"
@@ -78,11 +78,25 @@ if [[ "$LOCAL_ONLY" == "0" ]]; then
         echo "    UYARI: rclone yapilandirilmamis, R2'ye kopyalanmadi." >&2
         echo "    Kurulum: sudo bash deploy/scripts/setup-backup.sh" >&2
     else
-        echo "==> R2'ye kopyalaniyor: ${REMOTE}"
-        rclone copy "$DEST" "$REMOTE" --include "*-${STAMP}.*" --transfers 2 --retries 3 -q
+        # R2, S3'un bazi ucra ozelliklerini desteklemiyor; checksum dogrulamasini
+        # kapatmak "501 Not Implemented" gurultusunu onler.
+        RC_OPTS=(--transfers 2 --retries 3 --s3-disable-checksum -q)
+
+        echo "==> Veritabani + kod arsivi R2'ye"
+        rclone copy "$DEST" "${REMOTE}/snapshots" --include "*-${STAMP}.*" "${RC_OPTS[@]}"
         echo "    tamam"
-        echo "==> R2'de ${KEEP_REMOTE_DAYS} gunden eski yedekler siliniyor"
-        rclone delete "$REMOTE" --min-age "${KEEP_REMOTE_DAYS}d" -q || true
+
+        # uploads ARTIMLI kopyalanir: yalnizca yeni/degisen dosyalar gider.
+        # `copy` kullaniliyor, `sync` degil — boylece sunucuda yanlislikla silinen
+        # bir gorsel R2'deki yedekten de silinmez.
+        # .webp dosyalari haric: orijinalinden her an yeniden uretilebiliyorlar.
+        echo "==> uploads artimli kopyalaniyor"
+        rclone copy "${ROOT}/wp-content/uploads" "${REMOTE}/uploads" \
+            --exclude '*.webp' "${RC_OPTS[@]}"
+        echo "    tamam"
+
+        echo "==> R2'de ${KEEP_REMOTE_DAYS} gunden eski anlik yedekler siliniyor"
+        rclone delete "${REMOTE}/snapshots" --min-age "${KEEP_REMOTE_DAYS}d" -q || true
     fi
 fi
 
