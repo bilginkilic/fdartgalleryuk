@@ -209,6 +209,43 @@ KVM konsolu notu: klavye eslemesi bozuk, `:` → `;` ve `|` → `\` gidiyor.
 
 ---
 
+## 4b. Oturum ozeti — tunel sonrasi yapilanlar (29.08.2026)
+
+Cloudflare tuneli ile sunucuya erisim saglandiktan sonra sirasiyla:
+
+| # | Is | Sonuc |
+|---|---|---|
+| 1 | `setup-server.sh` | nginx + PHP 8.5-FPM + MariaDB + certbot + ufw + wp-cli |
+| 2 | `add-site.sh fdartgallery.com` | izole kullanici, FPM havuzu, DB, cron |
+| 3 | `deploy-site.sh --with-db` | dosyalar + 71 MB yedek ice aktarildi |
+| 4 | `certbot --nginx` | Let's Encrypt, bitis 27.11.2026, oto-yenileme |
+| 5 | Cloudflare | cache purge + SSL `full (strict)` |
+| 6 | Sayfa onbellegi | TTFB 0.90 sn → **0.006 sn** |
+| 7 | WebP donusumu | 6394 dosya; ana sayfa gorselleri **-%76** |
+| 8 | WebP cron | her gece 03:30, artimli |
+| 9 | Redis object cache | site basina izole (db indeksi + onek) |
+| 10 | Kalici baglantilar | sade → `/%postname%/`; urun sayfalari onbelleklenir |
+
+**Kurulum sirasinda bulunup duzeltilen hatalar** (hepsi script'lere islendi):
+
+1. `php8.5-opcache` paketi Ubuntu 26.04'te yok (PHP'ye gomulu) → opsiyonel
+   eklenti dongusu.
+2. Ubuntu 26.04 `nginx.conf` icinde `server_tokens` ve `gzip on` zaten tanimli
+   → "directive is duplicate"; conf.d'den cikarildi.
+3. `rsync --exclude 'database/'` **her seviyedeki** `database` dizinini
+   atliyordu → Elementor Pro'nun `submissions/database` klasoru eksik kaldi,
+   site fatal error verdi. Kaliplar `/database/` ile koke sabitlendi (15 dizin).
+4. Yedegin tablo oneki `wp_` degil `fdArt0Og_` → `deploy-site.sh` artik onegi
+   veritabanindan okur.
+5. `fastcgi_cache_use_stale` `http_502/504` kabul etmiyor → gecerli kodlar.
+6. WebP mu-plugin'inde duzenli ifade sona sabitlenmemisti → `.webp.webp` (404),
+   **urun galerisi gorselleri bozuldu** (kullanici fark etti). `(?!\.webp)`
+   sarti eklendi; 406 gorsel tarandi, 0 kirik.
+7. `Set-Cookie` donen yanitlarin onbelleklenmemesi urun sayfalarini hep yavas
+   birakiyordu → guvenlik yanit-tarafi map'e tasindi.
+
+---
+
 ## 5. YAPILACAKLAR
 
 ### A. Sunucu kurulumu — **TAMAMLANDI (29.08.2026)**
@@ -303,9 +340,17 @@ Disaridan (Cloudflare uzerinden) toplam sure 1.71 sn → ~0.55 sn.
 - Yontem: yalnizca GET/HEAD
 - Sorgu dizesi olan her istek (arama, filtre, utm)
 
-`Set-Cookie` donen yanitlar nginx'in kendi varsayilani geregi zaten
-onbelleklenmez — `fastcgi_ignore_headers` **bilerek kullanilmadi**, ikinci
-guvenlik katmani olarak duruyor.
+**Yanit tarafi ikinci katman** (`$wpc_bypass_respcookie`): PHP `Set-Cookie` ile
+`wordpress_logged_in_`, `wordpress_sec_`, `wp-postpass_`, `wp-settings-`,
+`comment_author_`, `wp_woocommerce_session_`, `woocommerce_cart_hash` veya
+`woocommerce_items_in_cart` kuruyorsa o yanit **asla** onbellege yazilmaz.
+Bu sart olmadan bir ziyaretcinin oturum cerezi baskalarina servis edilebilirdi
+(WooCommerce'te sepetlerin karismasi demek).
+
+`fastcgi_ignore_headers Set-Cookie` bilerek aciktir: WooCommerce urun
+sayfalarinda zararsiz `woocommerce_recently_viewed` cerezi kuruyor ve nginx'in
+varsayilan davranisi yuzunden **hicbir urun sayfasi onbellege girmiyordu**
+(~1 sn). Guvenlik yukaridaki yanit-tarafi map'e tasindi.
 
 **Dogrulama yapildi:** ana sayfa HIT; sepet/odeme/hesabim/giris yapmis
 kullanici/arama BYPASS; gercek sepete-ekleme akisi (POST → cerez → sepet
@@ -340,8 +385,9 @@ sabitlenmemisti; `foo.jpeg.webp` icindeki `foo.jpeg` ile eslesip ikinci bir
 Desene `(?!\.webp)` sarti eklendi, `filter_url` de `.webp` ile biten adresi
 dokunmadan geri donduruyor. 6 sayfa / 406 gorsel taranarak dogrulandi: 0 kirik.
 
-- [ ] Yeni yuklenen gorseller icin donusturucu periyodik calistirilmali
-      (haftalik cron) veya yukleme aninda tetiklenmeli — **henuz kurulmadi**.
+- [x] Yeni yuklenen gorseller icin gunluk cron kuruldu:
+      `/etc/cron.d/webp-fdartgallery_com` (her gece 03:30, artimli — mevcut
+      `.webp` dosyalari atlanir). Kurulum: `convert-webp.sh <domain> --cron`.
 - [ ] Kutuphanedeki 23 MB / 21 MB'lik islenmemis orijinaller hala duruyor;
       WordPress bunlari sayfada servis etmiyor ama disk kapliyor.
 - [ ] **Redis object cache** — dinamik sayfalarda ve panelde PHP suresini kisar.
@@ -351,6 +397,48 @@ dokunmadan geri donduruyor. 6 sayfa / 406 gorsel taranarak dogrulandi: 0 kirik.
       Pro'daydi. Incelenmeli (canliyi etkileyecegi icin kullanici karari).
 - [ ] CDN notu: **harici CDN gerekmiyor** — gorseller Cloudflare edge'inde
       `HIT` doneyor (`Cache-Control: public, max-age=2592000, immutable`).
+
+---
+
+## 5c. Redis object cache (29.08.2026)
+
+`deploy/scripts/setup-redis.sh fdartgallery.com` ile kuruldu.
+
+- Redis yalnizca `127.0.0.1`, `maxmemory 256mb`, `maxmemory-policy allkeys-lru`.
+- **Multi-site izolasyonu**: her site kendi Redis veritabani indeksini
+  (slug'dan `cksum % 16`) ve anahtar onekini (`<slug>:`) kullanir —
+  siteler birbirinin onbellegini goremez veya silemez.
+- WordPress tarafi: `redis-cache` eklentisi + drop-in (`Status: Connected`,
+  `PhpRedis 6.2.0`). Tanimlar `wp-config.php` icinde (`WP_REDIS_*`).
+- Etki: onbellek disi (BYPASS) sayfalarda ~%10 (0.95 sn → 0.85 sn). Asil fayda
+  yonetim panelinde ve tekrarlanan sorgularda.
+- Kapatmak: `sudo bash deploy/scripts/setup-redis.sh fdartgallery.com --disable`
+- Bosaltmak: `sudo -u web_fdartgallery_com wp --path=... redis flush`
+
+---
+
+## 5d. Kalici baglantilar duzeltildi (29.08.2026)
+
+**Sorun:** `permalink_structure` bostu (sade/plain). Urun adresleri
+`?product=bardak` seklindeydi. Daha kotusu: `/urun/bardak/`, `/shop/` ve hatta
+`/boyle-bir-sayfa-yok/` gibi **her adres 200 ile ANA SAYFAYI donduruyordu** —
+yani yumusak 404 + yaygin ikizlenmis icerik. Ayrica sorgu dizeli adresler
+sayfa onbellegini hep atliyordu.
+
+**Yapilan:** once `mysqldump` yedegi (`/root/backups/before-permalinks-*.sql`,
+71 MB), sonra:
+```
+wp option update permalink_structure '/%postname%/'
+wp rewrite flush --hard
+```
+
+**Sonuc:**
+- `/urun/bardak/` → 200, basligi "Bardak"; `/shop/` → "Shop"; `/cart/` → "Cart"
+- Urun sayfalari artik onbellege giriyor: **1.20 sn → 0.006 sn**
+- Eski `?product=...` adresleri **calismaya devam ediyor** (200) ve sayfada
+  `<link rel="canonical" href="https://fdartgallery.com/urun/bardak/">` var —
+  yani mevcut baglantilar kirilmadi, SEO tarafinda dogru adres isaret ediliyor.
+- WooCommerce urun taban adresi: `urun` (`woocommerce_permalinks` ayarindan).
 
 ---
 
