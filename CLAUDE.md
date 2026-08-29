@@ -28,8 +28,8 @@ Tum siteler asagidaki sunucuda barinacak.
 ### Eski origin
 
 DNS'te gorunen `147.45.254.181` **eski/mevcut origin**'dir (OVH araliginda degil,
-muhtemelen baska bir saglayici). fdartgallery.com su an bu IP'ye bakiyor ve
-Cloudflare `521 Web server is down` donuyor → eski origin cevap vermiyor.
+muhtemelen baska bir saglayici). Cutover oncesi fdartgallery.com bu IP'ye bakiyordu
+ve Cloudflare `521` donuyordu. Artik yalnizca `dev` kaydi bu IP'de.
 
 ### Cloudflare hesabindaki zone'lar
 
@@ -64,10 +64,9 @@ Cutover'da yalnizca apex + `www` A kayitlari degistirildi (proxy durumlari korun
 Kullanici karari: **`dev` tasinmayacak**, once `www` acilacak.
 Geri alma: `bash deploy/scripts/cloudflare-dns.sh fdartgallery.com 147.45.254.181 --names @,www`
 
-**Cloudflare SSL modu: `full`** → origin'de TLS zorunlu. Sertifika alinana kadar
-Cloudflare `526/522` dondurur. Sunucuda `certbot` calistirildiginda duzelir.
-Sertifikadan once siteyi acmak gerekirse SSL modu gecici `flexible` yapilabilir
-(guvenlik acisindan dusus; sertifika alinir alinmaz `full` / `full (strict)`'e donulmeli).
+**Cloudflare SSL modu: `full (strict)`** (29.08.2026'da yukseltildi) — origin'de
+gecerli Let's Encrypt sertifikasi var. `flexible`a **dusurmeyin**, yonlendirme
+dongusu yaratir.
 Domain kayit sirketi GoDaddy gorunuyor (`_domainconnect`), DNS ise Cloudflare'de.
 
 ---
@@ -147,10 +146,27 @@ Degerler **ortam degiskenlerinde** tutulur; asla repoya yazilmaz, log'a basilmaz
     hostlar (ornegin github.com) disari cikiyor.
   → Bulut ortamlarinda ag politikasini genistirmek **host** listesini genisletir,
     ham TCP/22'yi acmaz. Bu yol denendi ve kapali.
-- Sonuc: sunucu komutlarini kullanici kendi terminalinden calistirmali — bu repodaki
-  script'ler tam da bunun icin hazirlandi. Alternatif: SSH'a izin veren bir ag
-  politikasina sahip ortamda oturum acmak
-  (bkz. https://code.claude.com/docs/en/claude-code-on-the-web).
+### COZUM: Cloudflare tuneli (29.08.2026 — calisti)
+
+Ham TCP/22 gecmiyor ama **HTTPS geciyor**, o yuzden SSH'i Cloudflare uzerinden
+tasidik ve oturum sunucuya tam erisim kazandi:
+
+1. Sunucuda (KVM konsolundan, tek sefer):
+   `sudo bash deploy/scripts/claude-access.sh`
+   → oturumun gecici public key'ini `authorized_keys`'e ekler, `cloudflared`
+     kurar, `cloudflared tunnel --url ssh://localhost:22` calistirir ve
+     `xxx.trycloudflare.com` adresini basar.
+2. Oturum tarafinda:
+   `ssh -o "ProxyCommand=cloudflared access ssh --hostname <adres>" root@vps`
+3. Is bitince **mutlaka**: `sudo bash /root/claude-access.sh --stop`
+   (tuneli kapatir, gecici anahtari siler)
+
+Uyari: quick tunnel adresinin onunde Access politikasi yoktur; adresi bilen
+22. porta ulasir (giris yine anahtarla korunur). Kalici cozum icin adlandirilmis
+tunel + Cloudflare Access service token kurulmali.
+
+KVM konsolu notu: klavye eslemesi bozuk, `:` → `;` ve `|` → `\` gidiyor.
+`sudo loadkeys us` bunu duzeltir; yoksa `|` iceren komutlar calismaz.
 - Buna karsilik **HTTPS API'leri sorunsuz calisiyor**: OVH (`/vps/*`) ve Cloudflare
   uzerinden sunucu durumu, DNS ve zone ayarlari yonetilebiliyor — DNS cutover
   bu yolla yapildi.
@@ -176,29 +192,45 @@ Degerler **ortam degiskenlerinde** tutulur; asla repoya yazilmaz, log'a basilmaz
 - [x] PHP surumu script'lerde sabit degil, dagitimdan otomatik tespit ediliyor
       (Ubuntu 26.04 → PHP 8.4).
 - [x] **DNS cutover yapildi**: fdartgallery.com + www → `57.129.128.118`.
-      Sunucu kurulumu bekleniyor; o ana kadar Cloudflare 52x dondurur.
+- [x] **SITE YAYINDA (29.08.2026)** — sunucu kurulumu bastan sona tamamlandi:
+      Ubuntu 26.04 + nginx + **PHP 8.5**-FPM + MariaDB + Let's Encrypt.
+      `https://fdartgallery.com` → 200, `www` → apex'e 301, wp-login calisiyor.
+      Cloudflare cache purge edildi, SSL modu `full (strict)`.
+- [x] Kurulum sirasinda cikan ve duzeltilen hatalar (script'lere islendi):
+      - `php8.5-opcache` paketi yok (PHP'ye gomulu) → opsiyonel eklenti dongusu.
+      - Ubuntu 26.04 nginx.conf'ta `server_tokens`/`gzip on` zaten var → duplicate
+        hatasi; conf.d'den cikarildi, `server_tokens` yerinde `off` yapiliyor.
+      - `rsync --exclude 'database/'` **her seviyedeki** `database` dizinini
+        atliyordu → Elementor Pro'nun `submissions/database` klasoru eksik kaldi ve
+        site fatal error verdi. Kaliplar `/database/` seklinde koke sabitlendi
+        (15 dizin bu yuzden kayboluyordu).
+      - Yedegin tablo oneki `wp_` degil **`fdArt0Og_`** → `deploy-site.sh` artik
+        onegi veritabanindan okuyup `wp-config.php`'ye yaziyor.
 
 ---
 
 ## 5. YAPILACAKLAR
 
-### A. Sunucu kurulumu (kullanici sunucuda calistirir)
+### A. Sunucu kurulumu — **TAMAMLANDI (29.08.2026)**
 
-- [ ] Repoyu sunucuya al:
+- [x] Repoyu sunucuya al:
       `sudo git clone https://github.com/bilginkilic/fdartgalleryuk.git /opt/fdartgalleryuk`
       `cd /opt/fdartgalleryuk && git checkout claude/ovhcloud-vps-multisite-0eb3xj`
-- [ ] `sudo bash deploy/scripts/setup-server.sh` (nginx, PHP 8.3-FPM, MariaDB, certbot, ufw, wp-cli)
-- [ ] `sudo mysql_secure_installation`
-- [ ] `sudo bash deploy/scripts/add-site.sh fdartgallery.com`
-- [ ] `sudo bash deploy/scripts/deploy-site.sh fdartgallery.com --with-db`
+- [x] `sudo bash deploy/scripts/setup-server.sh` (nginx, PHP 8.3-FPM, MariaDB, certbot, ufw, wp-cli)
+- [ ] `sudo mysql_secure_installation` — **hala yapilmadi**
+- [ ] Tunel kapatma + gecici anahtari silme: `sudo bash /root/claude-access.sh --stop`
+- [x] `sudo bash deploy/scripts/add-site.sh fdartgallery.com`
+- [x] `sudo bash deploy/scripts/deploy-site.sh fdartgallery.com --with-db`
       (dosyalar repoda tamamlandi; `database/backup_2026-08-25-2045.sql` ice aktarilir)
-- [ ] Sertifika: `sudo certbot --nginx -d fdartgallery.com -d www.fdartgallery.com`
+- [x] Sertifika alindi (Let's Encrypt, bitis 27.11.2026, otomatik yenileme kurulu)
       (DNS zaten yeni IP'de, HTTP-01 Cloudflare proxy'si uzerinden calisir)
 - [ ] `dev.fdartgallery.com` — **simdilik yok**, eski IP'de birakildi. Ileride
       istenirse: `add-site.sh dev.fdartgallery.com` + `wp search-replace` + `blog_public 0`.
 
-> PHP surumu: script'ler dagitimin varsayilanini otomatik secer
-> (Ubuntu 26.04 → PHP 8.4). Gerekirse `PHP_VERSION=8.3 sudo -E bash ...` ile ezilebilir.
+> **PHP surumu: 8.5** — Ubuntu 26.04 depolarinda baska surum yok (8.4/8.3 icin
+> `ondrej/php` PPA gerekir). WordPress 7.1 ve eklentiler su an 8.5'te sorunsuz
+> calisiyor; ileride bir eklenti 8.5 ile bozulursa PPA ekleyip
+> `PHP_VERSION=8.4 sudo -E bash deploy/scripts/add-site.sh ...` ile dusurulebilir.
 
 ### B. Cutover oncesi dogrulama (DNS'e dokunmadan)
 
@@ -225,10 +257,10 @@ Degerler **ortam degiskenlerinde** tutulur; asla repoya yazilmaz, log'a basilmaz
 
 - [x] `bash deploy/scripts/cloudflare-dns.sh fdartgallery.com 57.129.128.118 --names @,www`
       → apex ve `www` artik yeni VPS'e bakiyor, proxy acik kaldi.
-- [ ] Sunucu ayaga kalkinca Cloudflare cache purge:
+- [x] Cloudflare cache purge yapildi:
       `curl -X POST "$API/zones/$ZONE/purge_cache" -H "Authorization: Bearer $TOKEN" \
        -H "Content-Type: application/json" --data '{"purge_everything":true}'`
-- [ ] Sertifika alindiktan sonra SSL modunu **Full (strict)**'e cek.
+- [x] Cloudflare SSL modu **Full (strict)** yapildi.
 
 ### E. Sertlestirme (cutover sonrasi)
 
@@ -256,7 +288,7 @@ Degerler **ortam degiskenlerinde** tutulur; asla repoya yazilmaz, log'a basilmaz
 |---|---|
 | Kok dizin | `/var/www/fdartgallery.com/public` |
 | Sistem kullanicisi | `web_fdartgallery_com` |
-| PHP-FPM havuzu | `/etc/php/8.3/fpm/pool.d/fdartgallery_com.conf` |
+| PHP-FPM havuzu | `/etc/php/8.5/fpm/pool.d/fdartgallery_com.conf` |
 | Socket | `/run/php/php-fpm-fdartgallery_com.sock` |
 | vhost | `/etc/nginx/sites-available/fdartgallery.com.conf` |
 | DB | `wp_fdartgallery_com` (kendi kullanicisi) |
