@@ -19,11 +19,13 @@ set -euo pipefail
 DOMAIN="${1:-}"
 QUALITY=82
 CLEAN=0
+CRON=0
 shift || true
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --quality) QUALITY="${2:-82}"; shift 2 ;;
         --clean)   CLEAN=1; shift ;;
+        --cron)    CRON=1; shift ;;
         *) echo "Bilinmeyen parametre: $1" >&2; exit 1 ;;
     esac
 done
@@ -54,6 +56,18 @@ if [[ "$CLEAN" == "1" ]]; then
 fi
 
 command -v cwebp >/dev/null 2>&1 || { apt-get update -qq && apt-get install -y webp; }
+
+# Yeni yuklenen gorseller icin gunluk otomatik donusum.
+if [[ "$CRON" == "1" ]]; then
+    SCRIPT_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
+    CRON_FILE="/etc/cron.d/webp-${SITE_SLUG}"
+    cat > "$CRON_FILE" <<EOF
+# Yeni yuklenen gorselleri her gece WebP'ye cevirir (mevcutlar atlanir).
+30 3 * * * root ${SCRIPT_PATH} ${DOMAIN} --quality ${QUALITY} >/var/log/webp-${SITE_SLUG}.log 2>&1
+EOF
+    chmod 644 "$CRON_FILE"
+    echo "==> Gunluk cron kuruldu: ${CRON_FILE} (her gece 03:30)"
+fi
 
 BEFORE="$(du -sh "$UPLOADS" | cut -f1)"
 echo "==> Kaynak: ${UPLOADS} (${BEFORE})"
