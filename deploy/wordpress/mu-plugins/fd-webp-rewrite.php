@@ -58,6 +58,10 @@ final class FD_WebP_Rewrite {
 		if ( ! is_string( $url ) || '' === $this->baseurl ) {
 			return $url;
 		}
+		// Zaten .webp ise bir daha ekleme (cift filtre gecisine karsi).
+		if ( preg_match( '/\.webp$/i', $url ) ) {
+			return $url;
+		}
 		if ( ! preg_match( '/\.(jpe?g|png)$/i', $url ) ) {
 			return $url;
 		}
@@ -112,8 +116,10 @@ final class FD_WebP_Rewrite {
 		}
 		$quoted = preg_quote( $this->baseurl, '#' );
 
+		// (?!\.webp) sart: adres zaten .webp ile bitiyorsa on ekiyle eslesip
+		// ikinci bir .webp eklenmesini engeller (.webp.webp -> 404 olurdu).
 		return preg_replace_callback(
-			'#' . $quoted . '[^"\'\s\)]+?\.(?:jpe?g|png)#i',
+			'#' . $quoted . '[^"\'\s\)]+?\.(?:jpe?g|png)(?!\.webp)(?![^"\'\s\)]*\.webp)#i',
 			function ( $m ) {
 				return $this->filter_url( $m[0] );
 			},
