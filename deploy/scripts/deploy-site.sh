@@ -33,10 +33,13 @@ if [[ ! -d "$ROOT" ]]; then
 fi
 
 echo "==> Dosyalar kopyalaniyor -> ${ROOT}"
+# Basindaki / bu kaliplari repo koku ile sinirlar. Aksi halde rsync ayni isimli
+# ic dizinleri de atlar — orn. eklentilerin kendi database/ klasorleri.
 rsync -a --delete \
-    --exclude '.git/' \
-    --exclude 'deploy/' \
-    --exclude 'database/' \
+    --exclude '/.git/' \
+    --exclude '/deploy/' \
+    --exclude '/database/' \
+    --exclude '/CLAUDE.md' \
     --exclude 'wp-config.php' \
     "${REPO_DIR}/" "${ROOT}/"
 
@@ -92,6 +95,19 @@ if [[ "$WITH_DB" == "--with-db" ]]; then
     source "$CRED_FILE"
     echo "==> Yedek yukleniyor: ${DUMP} -> ${DB_NAME}"
     mysql --default-character-set=utf8mb4 "$DB_NAME" < "$DUMP"
+fi
+
+# Yedegin tablo oneki 'wp_' olmayabilir (guvenlik icin rastgele onek yaygin).
+# wp-config.php'yi veritabaninda gercekte bulunan onekle esitle.
+if [[ -f "$CRED_FILE" ]]; then
+    # shellcheck disable=SC1090
+    source "$CRED_FILE"
+    PREFIX="$(mysql -N -B "$DB_NAME" -e 'SHOW TABLES LIKE "%options"' 2>/dev/null \
+        | grep -E 'options$' | head -1 | sed 's/options$//')"
+    if [[ -n "$PREFIX" ]] && ! grep -q "table_prefix = '${PREFIX}'" "${ROOT}/wp-config.php"; then
+        sed -i "s/^\$table_prefix = .*/\$table_prefix = '${PREFIX}';/" "${ROOT}/wp-config.php"
+        echo "==> Tablo oneki wp-config.php'de guncellendi: ${PREFIX}"
+    fi
 fi
 
 echo "==> Izinler"
