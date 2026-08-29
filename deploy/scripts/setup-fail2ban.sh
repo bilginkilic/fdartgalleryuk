@@ -73,10 +73,15 @@ ignoreregex =
 EOF
 
 cat > /etc/fail2ban/filter.d/wordpress-xmlrpc.conf <<'EOF'
-# xmlrpc.php'ye yapilan istekler (nginx zaten 403 doner; kaynak yine de harcanir)
+# xmlrpc.php denemeleri ERROR log'da aranir: security.conf bu adres icin
+# `access_log off` yaptigi icin access log'da hic gorunmuyorlar.
+# Ornek satir:
+#   2026/08/29 09:43:12 [error] 127054#127054: *4217 access forbidden by rule,
+#   client: 207.154.203.32, server: fdartgallery.com, request: "POST /xmlrpc.php HTTP/1.1"
 [Definition]
-failregex = ^<HOST> .*"(GET|POST) /xmlrpc\.php
+failregex = ^.* \[error\] .*access forbidden by rule, client: <HOST>, .*request: "[A-Z]+ /xmlrpc\.php
 ignoreregex =
+datepattern = ^%%Y/%%m/%%d %%H:%%M:%%S
 EOF
 
 echo "==> Jail'ler"
@@ -103,7 +108,7 @@ action   = cloudflare-token[cfzone=<CFZONE>, name=wp-login]
 [wordpress-xmlrpc]
 enabled  = true
 filter   = wordpress-xmlrpc
-logpath  = /var/log/nginx/*.access.log
+logpath  = /var/log/nginx/*.error.log
 maxretry = 3
 findtime = 10m
 bantime  = 24h
