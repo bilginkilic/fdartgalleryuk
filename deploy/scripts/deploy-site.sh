@@ -43,6 +43,14 @@ rsync -a --delete \
     --exclude 'wp-config.php' \
     "${REPO_DIR}/" "${ROOT}/"
 
+# mu-plugins repoda deploy/ altinda durur (rsync disi), her dagitimda kopyalanir.
+if compgen -G "${REPO_DIR}/deploy/wordpress/mu-plugins/*.php" >/dev/null; then
+    echo "==> mu-plugins"
+    mkdir -p "${ROOT}/wp-content/mu-plugins"
+    cp -f "${REPO_DIR}"/deploy/wordpress/mu-plugins/*.php "${ROOT}/wp-content/mu-plugins/"
+    ls -1 "${REPO_DIR}"/deploy/wordpress/mu-plugins/*.php | xargs -n1 basename | sed 's/^/    /'
+fi
+
 echo "==> wp-config.php"
 if [[ ! -f "${ROOT}/wp-config.php" ]]; then
     if [[ ! -f "$CRED_FILE" ]]; then
