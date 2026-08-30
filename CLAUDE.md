@@ -58,7 +58,9 @@ TXT   _dmarc                  -> v=DMARC1; p=quarantine; ...
 TXT   @                       -> google-site-verification=xj6o_-...
 TXT   @                       -> brevo-code:33cb1e9c...   (eski kayit, duruyor)
 TXT   @                       -> brevo-code:856ab74d...   (30.08 eklendi, AKTIF dogrulama)
-TXT   @                       -> v=spf1 include:spf.brevo.com ~all   (30.08 eklendi)
+TXT   @                       -> v=spf1 include:spf.brevo.com include:_spf.mx.cloudflare.net ~all
+MX    @                       -> route1/2/3.mx.cloudflare.net  (Email Routing, 30.08)
+TXT   cf2024-1._domainkey      -> v=DKIM1; ...  (Email Routing)
 ```
 
 **Onemli:** Mail (Brevo DKIM/DMARC) ve dogrulama kayitlarina dokunulmadi.
@@ -1071,6 +1073,51 @@ bounce yonetimi, kara liste takibi ve IP isitma sureci kalici bakis yuku getirir
 olarak kurmak — sunucunun kendisi (cron, certbot suresi doluyor uyarilari,
 fail2ban, mdadm) mail atabilsin diye. Gonderim yine Brevo/587 uzerinden gider,
 WordPress tarafina dokunmaz.
+
+---
+
+## 5j. MX / gelen posta — Cloudflare Email Routing (30.08.2026)
+
+**Sorun:** `fdartgallery.com`'un **hic MX kaydi yoktu**. Yani `info@fdartgallery.com`
+gonderebiliyor (Brevo) ama **alamiyordu** — musteri siparis mailini yanitlarsa
+mesaj hicbir yere gitmiyordu. Kullanici karari: **Cloudflare Email Routing**
+(ucretsiz yonlendirme), gercek posta kutusu yerine.
+
+| Bilesen | Deger |
+|---|---|
+| Zone | fdartgallery.com |
+| MX | `route1/2/3.mx.cloudflare.net` (prio 63 / 21 / 18) — Cloudflare OTOMATIK ekledi |
+| DKIM | `cf2024-1._domainkey` TXT — otomatik eklendi |
+| Hedef adresler | `swordbros@gmail.com`, `chemiartclick@gmail.com` |
+| Kural | `info@fdartgallery.com` → `swordbros@gmail.com` |
+| Catch-all | **KAPALI** — bilerek. Acik olsaydi rastgele adreslere gelen spam de yonlenirdi. |
+
+**KRITIK — SPF tek kayit olmak zorunda.** Cloudflare `v=spf1 include:_spf.mx.cloudflare.net ~all`
+eklemenizi ister; ayri kayit olarak eklenirse **iki SPF kaydi olur ve ikisi de
+gecersizlesir** (`permerror`). Mevcut kayit GUNCELLENDI, yenisi eklenmedi:
+```
+v=spf1 include:spf.brevo.com include:_spf.mx.cloudflare.net ~all
+```
+Dogrulandi: genel DNS'te **1 adet** SPF kaydi goruluyor.
+
+**API notlari (tekrar gerekirse):**
+- `POST /zones/{zone}/email/routing/enable` — routing acilir; ardindan MX ve DKIM
+  kayitlarini Cloudflare **kendisi** yazar. Elle MX eklemeye calisirsaniz
+  `890190 This zone is managed by Email Routing` alirsiniz — normaldir.
+- `GET /zones/{zone}/email/routing/dns` — gereken kayitlari listeler.
+- `POST /accounts/{acc}/email/routing/addresses` — hedef adres ekler ve
+  **dogrulama maili gonderir**.
+- `POST /zones/{zone}/email/routing/rules` — **hedef adres dogrulanmadan
+  CALISMAZ**: `2054 Destination address is not verified`.
+
+**KALAN ADIM (kullanici):** `swordbros@gmail.com` kutusundaki Cloudflare
+dogrulama linkine tiklamak. Sonrasinda `info@` yonlendirme kurali olusturulur.
+
+**Gonderim tarafi degismedi** — `info@` adresinden cikis hala Brevo uzerinden.
+Gmail'den `info@fdartgallery.com` kimligiyle yanit verebilmek icin:
+Gmail → Ayarlar → Hesaplar → "Baska bir adresten posta gonder" →
+SMTP `smtp-relay.brevo.com:587`, kullanici adi Brevo SMTP kullanicisi,
+parola Brevo SMTP anahtari (API anahtari DEGIL — Brevo panelinde ayri uretilir).
 
 ---
 
