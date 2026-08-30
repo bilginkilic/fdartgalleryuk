@@ -147,8 +147,10 @@ fi
 if [[ -f "$CRED_FILE" ]]; then
     # shellcheck disable=SC1090
     source "$CRED_FILE"
+    # `|| true` sart: veritabani bosken grep bos doner, `set -e` + `pipefail`
+    # altinda bu tum script'i sessizce durdurur (izinler hic uygulanmaz).
     PREFIX="$(mysql -N -B "$DB_NAME" -e 'SHOW TABLES LIKE "%options"' 2>/dev/null \
-        | grep -E 'options$' | head -1 | sed 's/options$//')"
+        | grep -E 'options$' | head -1 | sed 's/options$//' || true)"
     if [[ -n "$PREFIX" ]] && ! grep -q "table_prefix = '${PREFIX}'" "${ROOT}/wp-config.php"; then
         sed -i "s/^\$table_prefix = .*/\$table_prefix = '${PREFIX}';/" "${ROOT}/wp-config.php"
         echo "==> Tablo oneki wp-config.php'de guncellendi: ${PREFIX}"
