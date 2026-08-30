@@ -1088,9 +1088,30 @@ mesaj hicbir yere gitmiyordu. Kullanici karari: **Cloudflare Email Routing**
 | Zone | fdartgallery.com |
 | MX | `route1/2/3.mx.cloudflare.net` (prio 63 / 21 / 18) — Cloudflare OTOMATIK ekledi |
 | DKIM | `cf2024-1._domainkey` TXT — otomatik eklendi |
-| Hedef adresler | `swordbros@gmail.com`, `chemiartclick@gmail.com` |
-| Kural | `info@fdartgallery.com` → `swordbros@gmail.com` |
+| Hedef adresler | `blgnklc@gmail.com`, `fusundogan80@gmail.com`, `chemiartclick@gmail.com` (hepsi dogrulanmis) |
+| Kural | `info@fdartgallery.com` → **Worker** `fdart-info-dagitim` → iki alici |
 | Catch-all | **KAPALI** — bilerek. Acik olsaydi rastgele adreslere gelen spam de yonlenirdi. |
+
+### Neden Worker gerekti — Cloudflare'in iki siniri
+
+Email Routing bir adresi **birden fazla kisiye dagitamaz**:
+- `forward action must contain exactly one destination` (kod 2007) — bir eylemde tek hedef
+- `only one action per rule is allowed` (kod 2007) — bir kuralda tek eylem
+- Ayni adres icin ikinci kural: `2014 Duplicated Zone rule`
+
+Cozum: kural bir **Email Worker**'a baglandi. Worker `message.forward()` cagrisini
+her alici icin tekrarliyor. Kaynak: `deploy/cloudflare/email-worker.js`
+
+```
+Worker adi : fdart-info-dagitim
+Yukleme    : PUT /accounts/{acc}/workers/scripts/fdart-info-dagitim
+             (multipart: metadata.json + worker.js, type=application/javascript+module)
+Kural      : actions:[{"type":"worker","value":["fdart-info-dagitim"]}]
+```
+
+**Alici eklemek/cikarmak:** `deploy/cloudflare/email-worker.js` icindeki `ALICILAR`
+dizisini duzenleyip Worker'i yeniden yukleyin. **Yeni adres once Email Routing'de
+hedef olarak eklenip DOGRULANMALI**, yoksa Worker o adrese gonderemez.
 
 **KRITIK — SPF tek kayit olmak zorunda.** Cloudflare `v=spf1 include:_spf.mx.cloudflare.net ~all`
 eklemenizi ister; ayri kayit olarak eklenirse **iki SPF kaydi olur ve ikisi de
