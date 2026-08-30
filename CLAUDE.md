@@ -365,6 +365,13 @@ Cloudflare tuneli ile sunucuya erisim saglandiktan sonra sirasiyla:
       **Cozum (kullanici yapmali):** OVH Manager → VPS → IP → reverse DNS,
       deger `vps-913eb1fb.vps.ovh.net`; ya da `/ip/*` yetkili YENI consumer key
       uretip ortam degiskenlerine koymak.
+      **DUZELTME (30.08.2026):** PTR aslinda **BOS DEGIL**. API'de `reverse: null`
+      gorunuyor ama DNS'te OVH'nin varsayilan kaydi duruyor ve ileri-dogrulamali
+      (FCrDNS tam):
+      `57.129.128.118 -> vps-913eb1fb.vps.ovh.net -> 57.129.128.118`
+      Yani "PTR yok" onceki notu yanlisti. Yapilabilecek iyilestirme, PTR'yi
+      posta alan adina (orn. `mail.fdartgallery.com`) cevirmek — ama bu ancak
+      sunucudan DOGRUDAN mail gonderilirse anlamli.
       **Oncelik dusuk:** mail Brevo uzerinden gidiyor (DKIM/DMARC DNS'te), sunucu
       dogrudan mail gondermedigi surece teslimat etkilenmez.
 - [ ] SSH: parola girisi kapali, anahtar zorunlu, root login `prohibit-password`
@@ -957,6 +964,46 @@ wp eval 'add_action("wp_mail_failed",function($e){echo $e->get_error_message();}
 
 Not: FluentSMTP ayarinda `log_emails: yes` ama `<onek>fsmtp_email_logs` tablosu
 **yok** — mail calismaya baslayinca eklenti onu kendisi olusturacak.
+
+### "Kendi SMTP'mizi kuralim mi?" — inceleme (30.08.2026)
+
+Sunucunun mail gondermeye teknik uygunlugu olculdu:
+
+| Kontrol | Sonuc |
+|---|---|
+| 25. porta cikis | **ACIK** (gmail-smtp-in.l.google.com:25 baglandi) |
+| 587 (Brevo relay) | ACIK |
+| PTR / FCrDNS | **TAM** — `57.129.128.118 <-> vps-913eb1fb.vps.ovh.net` |
+| `fdartgallery.com` SPF | **HIC YOK** (`v=spf1` kaydi bulunamadi) |
+| DKIM | Brevo'nunki DNS'te duruyor (`brevo1/2._domainkey`) |
+| DMARC | `p=quarantine; adkim=r; aspf=r` |
+| MX | **HIC YOK** → `info@fdartgallery.com` gercek bir posta kutusu DEGIL |
+| Sunucuda MTA | kurulu degil |
+
+**Karar: kendi MTA'mizdan MUSTERI e-postasi gondermek ONERILMEZ.** Sebep
+teknik yetersizlik degil, teslimat: taze bir OVH IP'sinin gonderim itibari
+sifirdir; Gmail/Outlook boyle IP'leri once erteler, sonra spam'e atar. Siparis
+onayi gibi islem e-postalarinda bu kabul edilemez. Ustelik SPF/DKIM uretimi,
+bounce yonetimi, kara liste takibi ve IP isitma sureci kalici bakis yuku getirir.
+
+**Yapilmasi gerekenler (oncelik sirasiyla):**
+1. Brevo API anahtarini yeniden gir (5i) — DKIM zaten DNS'te, ucretsiz kota
+   gunde 300 mail.
+2. **Eksik SPF kaydini ekle** — su an hic yok:
+   `TXT @  "v=spf1 include:spf.brevo.com ~all"`  (proxy'siz, Cloudflare'de)
+   DMARC `aspf=r` oldugu icin bu hizalanir; simdilik DMARC'i yalnizca DKIM
+   tasiyor, bu kirilgan bir durum.
+3. **MX kararı** — `info@fdartgallery.com` adresine gelen mailler ve yanitlar
+   su an HICBIR YERE gitmiyor (MX yok, bounce). Ya bir posta kutusu saglayicisi
+   secilmeli ya da gonderen adres gercek bir kutuya cevrilmeli.
+4. Brevo'dan cikilmak istenirse alternatif kimlik dogrulamali relay'ler:
+   Google Workspace SMTP, Amazon SES, Mailgun, Postmark — FluentSMTP hepsini
+   destekler. Hicbiri "kendi MTA" degildir; itibar saglayicida kalir.
+
+**Yine de yapilmasi mantikli olan tek MTA isi:** Postfix'i *null-client relay*
+olarak kurmak — sunucunun kendisi (cron, certbot suresi doluyor uyarilari,
+fail2ban, mdadm) mail atabilsin diye. Gonderim yine Brevo/587 uzerinden gider,
+WordPress tarafina dokunmaz.
 
 ---
 
