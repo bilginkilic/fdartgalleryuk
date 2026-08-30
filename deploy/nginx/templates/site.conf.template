@@ -1,14 +1,14 @@
 # Multi-site vhost sablonu.
-# Degiskenler: {{DOMAIN}} {{SITE_SLUG}} {{ROOT}} {{FPM_SOCK}}
+# Degiskenler: {{DOMAIN}} {{SERVER_NAMES}} {{SITE_SLUG}} {{ROOT}} {{FPM_SOCK}}
 # Not: Bu dosya HTTP (80) uzerinden yayin yapar. Sertifika icin:
-#   certbot --nginx -d {{DOMAIN}} -d www.{{DOMAIN}}
+#   certbot --nginx -d {{SERVER_NAMES // bosluklar -d ile}}
 # certbot 443 server blogunu ve http->https yonlendirmesini kendisi ekler.
 
 server {
     listen 80;
     listen [::]:80;
 
-    server_name {{DOMAIN}} www.{{DOMAIN}};
+    server_name {{SERVER_NAMES}};
     root {{ROOT}};
 
     access_log /var/log/nginx/{{SITE_SLUG}}.access.log;

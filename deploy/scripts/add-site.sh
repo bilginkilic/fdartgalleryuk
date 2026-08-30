@@ -5,8 +5,10 @@
 #   sudo bash deploy/scripts/add-site.sh fdartgallery.com
 #   sudo bash deploy/scripts/add-site.sh ikincisite.com          # ayni VPS, ikinci site
 #
-# Sertifika icin (DNS A kaydi VPS IP'sine baktiktan SONRA):
-#   sudo certbot --nginx -d fdartgallery.com -d www.fdartgallery.com
+#   sudo bash deploy/scripts/add-site.sh blog.ornek.com    # alt alan adi
+#
+# Sertifika icin gereken tam komut kurulum sonunda ekrana basilir
+# (apex'te www dahil, alt alan adinda yalnizca kendisi).
 
 set -euo pipefail
 
@@ -29,13 +31,41 @@ if [[ -z "$PHP_VERSION" || ! -d "/etc/php/${PHP_VERSION}/fpm" ]]; then
 fi
 
 SITE_SLUG="$(echo "$DOMAIN" | tr '.' '_' | tr -cd '[:alnum:]_')"
-SITE_USER="web_${SITE_SLUG:0:26}"
 SITE_HOME="/var/www/${DOMAIN}"
 ROOT="${SITE_HOME}/public"
 FPM_SOCK="/run/php/php-fpm-${SITE_SLUG}.sock"
 
+# Kullanici adi: Linux siniri 32 karakter. Kisaltma gerekiyorsa sonuna slug'in
+# kisa ozetini ekliyoruz — aksi halde ilk 26 karakteri ayni olan iki uzun alan
+# adi AYNI sistem kullanicisini paylasir ve site izolasyonu coker.
+if [[ ${#SITE_SLUG} -le 26 ]]; then
+    SITE_USER="web_${SITE_SLUG}"
+else
+    SUFFIX="$(printf '%s' "$SITE_SLUG" | cksum | cut -d' ' -f1 | tail -c 5)"
+    SITE_USER="web_$(echo "${SITE_SLUG:0:21}" | sed 's/_*$//')_${SUFFIX}"
+fi
+
+# Site daha once kurulduysa mevcut sahibini koru: adlandirma kurali degisse bile
+# dosyalar sahipsiz kalmasin, ikinci bir kullanici olusmasin.
+if [[ -d "$SITE_HOME" ]]; then
+    EXISTING_USER="$(stat -c %U "$SITE_HOME" 2>/dev/null || true)"
+    if [[ -n "$EXISTING_USER" && "$EXISTING_USER" != "root" ]]; then
+        SITE_USER="$EXISTING_USER"
+    fi
+fi
+
+# Alt alan adlarinda `www.` uretmek anlamsiz (www.blog.site.com kimse kullanmaz).
+# co.uk / com.tr gibi iki parcali uzantilar hala apex sayilir.
+if [[ "$(echo "$DOMAIN" | tr -cd '.' | wc -c)" -ge 2 ]] \
+   && ! echo "$DOMAIN" | grep -qE '\.(co|com|org|net|gov|edu|ac)\.[a-z]{2}$'; then
+    SERVER_NAMES="$DOMAIN"
+else
+    SERVER_NAMES="$DOMAIN www.${DOMAIN}"
+fi
+
 render() {  # render <template> <hedef>
     sed -e "s|{{DOMAIN}}|${DOMAIN}|g" \
+        -e "s|{{SERVER_NAMES}}|${SERVER_NAMES}|g" \
         -e "s|{{SITE_SLUG}}|${SITE_SLUG}|g" \
         -e "s|{{SITE_USER}}|${SITE_USER}|g" \
         -e "s|{{ROOT}}|${ROOT}|g" \
@@ -55,8 +85,18 @@ render "${REPO_DIR}/deploy/php-fpm/pool.conf.template" "/etc/php/${PHP_VERSION}/
 
 echo "==> nginx vhost"
 render "${REPO_DIR}/deploy/nginx/templates/fastcgi-php.conf.template" "/etc/nginx/snippets/fastcgi-php-${SITE_SLUG}.conf"
-render "${REPO_DIR}/deploy/nginx/templates/site.conf.template"        "/etc/nginx/sites-available/${DOMAIN}.conf"
-ln -sfn "/etc/nginx/sites-available/${DOMAIN}.conf" "/etc/nginx/sites-enabled/${DOMAIN}.conf"
+
+VHOST="/etc/nginx/sites-available/${DOMAIN}.conf"
+# certbot TLS blogunu ve yonlendirmeyi bu dosyaya ekliyor. Sablonu uzerine
+# yazmak sertifikayi devre disi birakir — o yuzden dokunmuyoruz.
+if [[ -f "$VHOST" ]] && grep -q "managed by Certbot" "$VHOST"; then
+    echo "    Mevcut vhost certbot tarafindan duzenlenmis, korunuyor: ${VHOST}"
+    echo "    Sablonu yeniden uygulamak isterseniz once yedekleyin:"
+    echo "      sudo cp ${VHOST} ${VHOST}.bak"
+else
+    render "${REPO_DIR}/deploy/nginx/templates/site.conf.template" "$VHOST"
+fi
+ln -sfn "$VHOST" "/etc/nginx/sites-enabled/${DOMAIN}.conf"
 
 echo "==> Veritabani"
 DB_NAME="wp_${SITE_SLUG:0:24}"
@@ -96,6 +136,9 @@ nginx -t
 systemctl reload "php${PHP_VERSION}-fpm"
 systemctl reload nginx
 
+CERTBOT_ARGS=""
+for n in $SERVER_NAMES; do CERTBOT_ARGS="${CERTBOT_ARGS}-d ${n} "; done
+
 cat <<EOF
 
 Site hazir: ${DOMAIN}
@@ -108,5 +151,5 @@ Siradaki adimlar:
   1. Dosyalari ${ROOT} icine yukleyin, sonra:
        sudo chown -R ${SITE_USER}:${SITE_USER} ${ROOT}
   2. DNS A kaydini VPS IP'sine yonlendirin.
-  3. Sertifika: sudo certbot --nginx -d ${DOMAIN} -d www.${DOMAIN}
+  3. Sertifika: sudo certbot --nginx ${CERTBOT_ARGS}
 EOF
