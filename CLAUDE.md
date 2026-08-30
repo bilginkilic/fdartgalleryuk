@@ -130,6 +130,11 @@ Degerler **ortam degiskenlerinde** tutulur; asla repoya yazilmaz, log'a basilmaz
     (proxy TLS'i yeniden sonlandiriyor; `gitSshRewrite: true` de bunu dogruluyor).
   - `/__agentproxy/status` → `recentRelayFailures: []` (politika reddi kaydi yok,
     trafik sessizce dusuyor).
+- **GitHub reposu artik sunucudan erisilemiyor (30.08.2026):** hem
+  `fdartgalleryuk` hem `chestnyznakuk` sunucudan `404` / kimlik istegi donuyor
+  (repolar ozel). Sunucuda `git pull` CALISMAZ. Script guncellemeleri ve site
+  dosyalari tunel uzerinden `rsync` ile aktariliyor:
+  `rsync -az -e "<tunel ssh>" deploy/ root@vps:/opt/fdartgalleryuk/deploy/`
 - **Ayrica bu container'da hicbir SSH anahtari yok** (`~/.ssh` bos, diskte
   ozel anahtar bulunamadi). Ag acik olsa bile kimlik dogrulama yapilamazdi.
 - **Ikinci ortamda da test edildi (28.08.2026):** `Default — trusted network access`
@@ -322,10 +327,11 @@ Cloudflare tuneli ile sunucuya erisim saglandiktan sonra sirasiyla:
 
 ### F. Diger siteler
 
-#### chestnyznak.chemiartclick.uk — **ALTYAPI HAZIR, kod bekleniyor (29.08.2026)**
+#### chestnyznak.chemiartclick.uk — **YAYINDA (30.08.2026)**
 
-Repo: `bilginkilic/chestnyznakuk` (su an **bos** — kullanici WordPress kodunu
-push edecek). Alt alan adi olarak `chemiartclick.uk` zone'una eklendi.
+Repo: `bilginkilic/chestnyznakuk` (**ozel** repo). Docker tabanli proje:
+WordPress koku `files/`, veritabani yedegi `db/wp_chestnyznak.sql` (47 MB).
+Kaynak site **`https://chestnyznak.com.tr`** idi; buraya tasindi.
 
 | Bilesen | Deger |
 |---|---|
@@ -335,7 +341,11 @@ push edecek). Alt alan adi olarak `chemiartclick.uk` zone'una eklendi.
 | Sistem kullanici | `web_chestnyznak_chemiartclick_` |
 | Socket | `/run/php/php-fpm-chestnyznak_chemiartclick_uk.sock` |
 | DB | `wp_chestnyznak_chemiartclick` |
-| Durum | `https://...` → 403 (dizin bos, kod gelince dolacak) |
+| DB | `wp_chestnyznak_chemiartclic`, tablo oneki **`ChestZna_`**, 170 tablo |
+| Tema | `qwery-child` (ust tema `qwery`) |
+| Durum | `https://...` → **200**, sayfa onbellegi HIT (6 ms) |
+| Arama motorlari | **KAPALI** (`blog_public=0`) — chestnyznak.com.tr hala yayinda,
+  ikizlenmis icerik olmasin diye. Yayina alirken: `wp option update blog_public 1` |
 
 **proxied=ON zorunlu**: origin guvenlik duvari yalnizca Cloudflare IP'lerini
 kabul ediyor; turuncu bulut kapatilirsa site tamamen erisilemez olur.
@@ -344,13 +354,29 @@ Zone `chemiartclick.uk` SSL modu **`full`** (apex Cloudflare Pages'e bakiyor).
 Sertifika alindi, `full (strict)`'e cekilebilir — ama zone genelinde etkili,
 Pages siteleri de etkilenir, kullaniciya sorulmali.
 
-Kod push edildikten sonra:
+**Yapilan kurulum (30.08.2026):**
 ```
-cd /var/www/chestnyznak.chemiartclick.uk && sudo git clone <repo> tmp   # veya deploy-site.sh
+# repo OZEL -> sunucu klonlayamiyor; dosyalar tunelden rsync ile aktarildi
+rsync -az -e "<tunel ssh>" chestnyznakuk/files/ root@vps:/opt/chestnyznakuk/files/
+rsync -az -e "<tunel ssh>" chestnyznakuk/db/    root@vps:/opt/chestnyznakuk/db/
+sudo bash deploy/scripts/deploy-site.sh chestnyznak.chemiartclick.uk \
+     --source /opt/chestnyznakuk/files --db-file /opt/chestnyznakuk/db/wp_chestnyznak.sql
+wp search-replace 'https://chestnyznak.com.tr' 'https://chestnyznak.chemiartclick.uk' --all-tables
+     # 14.174 + 179 degisiklik
 sudo bash deploy/scripts/setup-redis.sh    chestnyznak.chemiartclick.uk
 sudo bash deploy/scripts/convert-webp.sh   chestnyznak.chemiartclick.uk --cron
 sudo bash deploy/scripts/backup-site.sh    chestnyznak.chemiartclick.uk --cron
 ```
+
+WebP: 5755 dosya, 320 MB → 70 MB (**%78**). uploads toplam 663 MB.
+
+**Dikkat — `wp-super-cache` aktif** ama etkisiz: `advanced-cache.php` drop-in'i yok
+ve `wp-config.php`'de `WP_CACHE` tanimli degil. Etkinlestirilirse nginx sayfa
+onbellegiyle cakisir; aktif etmeyin.
+
+**PHP 8.5 uyarilari:** Elementor `atomic-global-styles.php` icinde "Implicitly
+marking parameter nullable is deprecated" notice'lari uretiyor. Olumcul degil,
+site calisiyor; Elementor guncellemesi bunu kapatacaktir.
 
 #### Kalan siteler
 
