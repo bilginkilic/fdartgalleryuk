@@ -424,6 +424,43 @@ onbellegiyle cakisir; aktif etmeyin.
 marking parameter nullable is deprecated" notice'lari uretiyor. Olumcul degil,
 site calisiyor; Elementor guncellemesi bunu kapatacaktir.
 
+#### chestnyznak.com.tr — ASIL ADRES OLACAK (kullanici karari, 30.08.2026)
+
+Alan adi **arkadasinin Cloudflare hesabinda** kalacak; biz yalnizca origin'iz.
+Bu calisir: ufw Cloudflare'in TUM IP araliklarini kabul ediyor, hangi hesaptan
+proxy'lendigi fark etmez.
+
+**Mevcut durum (kazara calisiyor):**
+`chestnyznak.com.tr` → 301 → `chestnyznak.chemiartclick.uk`
+Sebep: A kaydi bizim IP'ye bakiyor ve proxy acik, ama sunucuda o alan adi icin
+vhost YOK. HTTPS istegi SNI ile eslesen blok bulamayinca nginx ilk 443 bloguna
+dusuyor, oradaki WordPress kendi `siteurl`'una kanonik yonlendirme yapiyor.
+Sunulan sertifika da baska alan adina ait — arkadasinin SSL modu `Full (strict)`
+olsaydi bu bile calismazdi.
+
+**Yapilacaklar (sunucu erisimi gelince, sirayla):**
+1. Vhost'a alan adlarini ekle:
+   `server_name chestnyznak.chemiartclick.uk chestnyznak.com.tr www.chestnyznak.com.tr;`
+2. Sertifika — **arkadastan TXT istemeye GEREK YOK**: alan adi zaten bizim
+   sunucuya proxy'leniyor, HTTP-01 Cloudflare uzerinden calisir:
+   `certbot --nginx -d chestnyznak.com.tr -d www.chestnyznak.com.tr -d chestnyznak.chemiartclick.uk`
+3. Adresleri asil alan adina cevir:
+   `wp search-replace 'https://chestnyznak.chemiartclick.uk' 'https://chestnyznak.com.tr' --all-tables`
+   + `wp option update siteurl/home`
+4. `chestnyznak.chemiartclick.uk` → asil adrese **301** yonlendirme (ayri server blogu).
+   Dev kopyasi zaten `dev.chestnyznak.chemiartclick.uk` uzerinde duracak.
+5. Onbellek temizligi (nginx + her iki Cloudflare hesabi).
+6. **Arkadasina soylenecek:** SSL/TLS modunu **Full (strict)** yap. (Bizim
+   hesabimizdaki zone'lari biz ayarliyoruz; onunkini goremiyoruz, o yapmali.)
+
+**Arkadasina verilecek kalici talimat:**
+- `@` ve `www` A kayitlari `57.129.128.118`, **turuncu bulut ACIK** (gri olursa
+  site erisilemez — origin sadece Cloudflare'i kabul ediyor)
+- `webmail`, `mail`, MX, SPF, DKIM, DMARC **degismez** — mail timeweb'de kalir
+- SSL/TLS: **Full (strict)**, asla `Flexible`
+
+Eski origin `5.42.123.26` (timeweb) geri donus yolu olarak durmali.
+
 #### Dev / staging ortamlari — **DNS HAZIR, siteler kurulmadi (30.08.2026)**
 
 Amac: Elementor optimizasyonlari ve eklenti denetimi once burada denenecek,
