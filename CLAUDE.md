@@ -151,31 +151,63 @@ Degerler **ortam degiskenlerinde** tutulur; asla repoya yazilmaz, log'a basilmaz
     hostlar (ornegin github.com) disari cikiyor.
   → Bulut ortamlarinda ag politikasini genistirmek **host** listesini genisletir,
     ham TCP/22'yi acmaz. Bu yol denendi ve kapali.
-### COZUM: Cloudflare tuneli (29.08.2026 — calisti)
+### COZUM: Cloudflare tuneli — SSH'i HTTPS uzerinden tasimak
 
-Ham TCP/22 gecmiyor ama **HTTPS geciyor**, o yuzden SSH'i Cloudflare uzerinden
-tasidik ve oturum sunucuya tam erisim kazandi:
+Ham TCP/22 gecmiyor ama **HTTPS geciyor**. Iki nesil kullanildi:
 
-1. Sunucuda (KVM konsolundan, tek sefer):
-   `sudo bash deploy/scripts/claude-access.sh`
-   → oturumun gecici public key'ini `authorized_keys`'e ekler, `cloudflared`
-     kurar, `cloudflared tunnel --url ssh://localhost:22` calistirir ve
-     `xxx.trycloudflare.com` adresini basar.
-2. Oturum tarafinda:
-   `ssh -o "ProxyCommand=cloudflared access ssh --hostname <adres>" root@vps`
-3. Is bitince **mutlaka**: `sudo bash /root/claude-access.sh --stop`
-   (tuneli kapatir, gecici anahtari siler)
+#### 1) Quick tunnel (29.08.2026 — ilk kurulum boyle yapildi, ARTIK KAPALI)
 
-**DURUM (30.08.2026): tunel KAPATILDI, gecici anahtar silindi.** Yeni bir
-oturumun sunucuya erisebilmesi icin 1. adim KVM konsolundan tekrar
-calistirilmali — ve script'teki `KEY_URL` o oturumun kendi public key'ini
-gostermeli (`deploy/claude-session-key.pub` guncellenmeli). Repolar artik ozel
-oldugu icin `curl` ile anahtar cekmek de calismayabilir; o durumda anahtari
-konsoldan elle `/root/.ssh/authorized_keys`'e eklemek gerekir.
+`cloudflared tunnel --url ssh://localhost:22` → rastgele `xxx.trycloudflare.com`.
+Kurulumun tamami (fdartgallery + chestnyznak) bu yolla yapildi. Sakincasi:
+**onunde kimlik dogrulama yoktu** — adresi bilen SSH giris ekranina ulasiyordu.
+Is bitince kapatildi, gecici anahtar `authorized_keys`'ten silindi.
 
-Uyari: quick tunnel adresinin onunde Access politikasi yoktur; adresi bilen
-22. porta ulasir (giris yine anahtarla korunur). Kalici cozum icin adlandirilmis
-tunel + Cloudflare Access service token kurulmali.
+#### 2) Adlandirilmis tunel + Cloudflare Access (30.08.2026 — KALICI YOL)
+
+| Bilesen | Deger |
+|---|---|
+| Tunel adi | `ovh-vps` |
+| Tunel ID | `10207ab7-28c8-4a96-a56c-3fa0c8d79711` |
+| Adres | `ssh.fdartgallery.com` (CNAME → `<id>.cfargotunnel.com`, proxied) |
+| Yonlendirme | `ssh.fdartgallery.com` → `ssh://localhost:22` |
+| Access uygulamasi | "OVH VPS SSH" — id `51ecfcce-e8e8-4e27-ad20-6a2af7c68187` |
+| Zero Trust takim | `chemiartclick.cloudflareaccess.com` |
+
+Quick tunnel'dan farki: **adresi bilmek yetmez**, Cloudflare kapida service
+token ister. Dogrulandi — tokensiz `403 + Cloudflare Access` sayfasi.
+
+**DURUM (30.08.2026): yarim kurulu.**
+- [x] Tunel kaydi, DNS, ingress, Access uygulamasi — hazir
+- [ ] **Sunucuda `cloudflared` servisi kurulmadi** → tunel `inactive`,
+      `ssh.fdartgallery.com` → `530`. Konsoldan tek komut:
+      `sudo cloudflared service install <TUNEL_TOKEN>`
+      (token: Cloudflare paneli → Zero Trust → Networks → Tunnels → ovh-vps)
+      veya repodan: `sudo bash deploy/scripts/setup-named-tunnel.sh <token-dosyasi>`
+- [ ] **Service token ve politika YOK** (kullanici karariyla iptal edildi —
+      kimlik bilgisi oturumun gecici alaninda degil, parola yoneticisinde
+      durmali). Kullanicinin yapmasi gereken:
+      1. Zero Trust → Access → Service Auth → **Create Service Token**
+         (ad orn. `ops-ssh`, sure 1 yil) → `Client ID` + `Client Secret`
+         degerlerini **parola yoneticisine** kaydet (secret bir daha gosterilmez)
+      2. Access → Applications → "OVH VPS SSH" → Policies → Add a policy →
+         Action **Service Auth** → Include: **Service Token** = olusturulan token
+- [ ] Politika eklenene kadar adres kimseyi iceri almaz (`302` → Access girisi).
+      **Bu guvenli bir durum**, aceleye gerek yok.
+
+**Bir oturum nasil baglanir** (token elinde oldugunda):
+```
+export TUNNEL_SERVICE_TOKEN_ID=<client_id>
+export TUNNEL_SERVICE_TOKEN_SECRET=<client_secret>
+ssh -o "ProxyCommand=cloudflared access ssh --hostname ssh.fdartgallery.com" root@vps
+```
+`cloudflared` ikilisi GitHub release'inden indirilebiliyor (bu oturumda calisti).
+Ayrica sunucuda oturumun public key'i `authorized_keys`'te olmali —
+`deploy/claude-session-key.pub` her oturumda YENILENMELI.
+
+**Uyari:** kurulum sirasinda tunel token'i sohbet penceresine yazildi (kullanici
+konsola girebilsin diye). Tunel token'i yalnizca "bu tunel icin baglayici
+calistirma" yetkisi verir, sunucuya giris yetkisi vermez — ama sohbet kanalini
+guvenilmez sayiyorsaniz tuneli silip yeniden olusturarak token'i dondurun.
 
 KVM konsolu notu: klavye eslemesi bozuk, `:` → `;` ve `|` → `\` gidiyor.
 `sudo loadkeys us` bunu duzeltir; yoksa `|` iceren komutlar calismaz.
@@ -391,6 +423,44 @@ onbellegiyle cakisir; aktif etmeyin.
 **PHP 8.5 uyarilari:** Elementor `atomic-global-styles.php` icinde "Implicitly
 marking parameter nullable is deprecated" notice'lari uretiyor. Olumcul degil,
 site calisiyor; Elementor guncellemesi bunu kapatacaktir.
+
+#### Dev / staging ortamlari — **DNS HAZIR, siteler kurulmadi (30.08.2026)**
+
+Amac: Elementor optimizasyonlari ve eklenti denetimi once burada denenecek,
+dogrulandiktan sonra canliya uygulanacak.
+
+| Dev adresi | Kaynak | DNS |
+|---|---|---|
+| `dev.fdartgallery.com` | fdartgallery.com | A → 57.129.128.118, **proxied=ON** |
+| `dev.chestnyznak.chemiartclick.uk` | chestnyznak.chemiartclick.uk | A → 57.129.128.118, **proxied=ON** |
+
+`dev.fdartgallery.com` eskiden `147.45.254.181`'e bakiyordu; o sunucu **olu**
+(HTTP 503, HTTPS cevapsiz) — dogrulanip uzerine alindi.
+**Dikkat:** `cloudflare-dns.sh` proxy durumunu KORUDUGU icin `dev` kaydi
+proxied=OFF olarak tasindi ve elle ON'a cekildi. Origin yalnizca Cloudflare
+IP'lerini kabul ettigi icin proxy kapaliyken site erisilemez olur.
+
+Sunucu erisimi gelince yapilacaklar (her iki dev icin):
+```
+sudo bash deploy/scripts/add-site.sh   dev.fdartgallery.com
+sudo certbot --nginx -d dev.fdartgallery.com
+sudo bash deploy/scripts/clone-site.sh fdartgallery.com dev.fdartgallery.com
+```
+
+`clone-site.sh` canliyi staging'e kopyalar (dosya + veritabani, sunucu icinde,
+agdan veri gitmez), adresleri degistirir ve **canliya hic yazmaz**.
+
+**Staging korumasi** — `deploy/wordpress/staging-mu-plugins/fd-staging-guard.php`
+otomatik kurulur. Staging canli veritabaninin kopyasidir; icinde gercek musteri
+adresleri, siparisler ve WooCommerce zamanlanmis gorevleri vardir. Eklenti:
+- giden e-postayi **PHPMailer seviyesinde** keser (eklentiler "gonderildi" sanir,
+  hicbir mesaj disari cikmaz) — aksi halde staging gercek musterilere
+  "siparisiniz kargolandi" maili gonderebilir
+- `blog_public` degerini veritabanindan ne gelirse gelsin **0'a zorlar**
+- panelde ve sayfa altinda "DENEME ORTAMI" bandi gosterir
+
+Bu eklenti `deploy/wordpress/mu-plugins/` icinde **degildir** — `deploy-site.sh`
+oradakileri her siteye kopyalar; staging korumasi canliya asla bulasmamali.
 
 #### Kalan siteler
 
