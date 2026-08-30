@@ -518,6 +518,11 @@ Gorsel ve icerik dogru; tikladiginda canliya giden birkac menu baglantisi var.
       `davetevet.com`, `byhio.com`, `wedreply.co.uk` — her biri icin
       `add-site.sh <domain>`, ardindan dosya + DB tasima.
       **Gerekli:** her site icin dosya arsivi + `.sql` yedegi.
+      **Ayrica ORIJINAL `wp-config.php`'yi de isteyin** (salt'lari icin) —
+      yoksa 5i'deki e-posta arizasi bu sitelerde de tekrarlanir.
+- [ ] **Her tasimadan SONRA e-posta testi zorunlu** (5i):
+      `wp eval 'var_dump(wp_mail(get_option("admin_email"),"t","t"));'`
+      FALSE donuyorsa SMTP kimlik bilgisi panelden yeniden girilmeli.
 - [ ] Kaynak takibi: 8 GB RAM / 4 vCore tek sunucuda 6+ WordPress. Havuz basina
       `pm.max_children = 12` (ondemand). Site sayisi arttikca `pm.max_children`
       degerlerini dusur veya MariaDB `innodb_buffer_pool_size`'i ayarla.
@@ -862,6 +867,96 @@ JS yuklenmeden Enter'a basilirsa bunlardan biri gonderilebilir.
 `fluent/woo_login/login = 1`, her iki sitede de 4 widget blogu).
 
 Kaldirmak icin: `wp plugin deactivate simple-cloudflare-turnstile`.
+
+**Canli form dogrulamasi (30.08.2026):** kullanici canlida gercek bir gonderim
+yapti — `fluentform_submissions` id **58**, 16:00:15, Chrome, kaynak
+`https://fdartgallery.com/contact-us/`. Turnstile'siz sunucu tarafi POST
+denemeleri ise dogru sekilde reddedildi (`Please verify that you are human.`)
+— yani koruma canlida gercekten calisiyor.
+
+Not: `admin-ajax.php`'ye `X-Requested-With: XMLHttpRequest` basligi OLMADAN
+POST atilirsa 302 doner. Teshis sirasinda bunu Turnstile hatasi sanmayin;
+FluentForm'un AJAX yolu bu basligi bekler.
+
+---
+
+## 5i. E-POSTA GITMIYOR — tasima kaynakli, ACIK SORUN (30.08.2026)
+
+**Belirti:** her iki sitede de `wp_mail()` **FALSE** donuyor. Yani yalnizca form
+bildirimleri degil; WooCommerce siparis e-postalari, parola sifirlama, stok
+uyarilari — **hicbiri gonderilmiyor**.
+
+| Site | Saglayici | Hata |
+|---|---|---|
+| fdartgallery.com | Brevo/Sendinblue API (`fluent-smtp`) | `401 authentication not found in headers` |
+| chestnyznak.com.tr | SMTP `smtp.timeweb.ru:465` (`fluent-smtp`) | `SMTP hatasi: Kimlik dogrulanamadi` |
+
+**Sebep — bizim tasimamiz.** FluentSMTP kayitli API anahtarini/parolasini
+`wp-config.php` icindeki `LOGGED_IN_KEY` (anahtar) + `LOGGED_IN_SALT` (tuz) ile
+sifreliyor (`fluent-smtp/app/Functions/helpers.php`, `fluentMailEncryptDecrypt`,
+`aes-256-ctr`). Tasimada **yeni salt'larla yeni bir `wp-config.php` uretildi**
+(fdartgallery: 29.08.2026 09:02), bu yuzden depodaki sifreli deger artik
+cozulemiyor:
+
+```
+fdartgallery  Brevo api_key : ham 296 bayt -> cozulen 0
+chestnyznak   SMTP password : ham 156 bayt -> cozulen 0
+```
+
+Bos anahtar → saglayici 401 → mail yok.
+
+**Kurtarma denendi, MUMKUN DEGIL.** Eski salt'lar elimizde yok:
+- fdartgallery'nin orijinal `wp-config.php`'si git'e hic girmemis
+  (`.gitignore` satir 3 — dogrusu da bu).
+- chestnyznak'inki Docker'dan geliyor:
+  `define('LOGGED_IN_KEY', getenv_docker('WORDPRESS_LOGGED_IN_KEY', '<yedek>'))`.
+  Dosyadaki yedek degerlerle cozme denendi → `COZULEMEDI`; demek ki konteyner
+  kendi ortam degiskenlerini veriyordu ve o degerler kayip.
+
+**COZUM (kullanici yapmali, site basina ~2 dk):**
+WP paneli → **FluentSMTP** → baglantiya tikla → anahtari/parolayi **yeniden gir**
+→ Kaydet → *Send Test Email*.
+- fdartgallery.com → Brevo API anahtari (Brevo → SMTP & API → API Keys).
+  Eski anahtarin degeri bir daha gosterilmez → **yeni anahtar uretilmeli**.
+- chestnyznak.com.tr → timeweb'deki `info@chestnyznak.com.tr` posta kutusu parolasi.
+
+Anahtarlar sohbete yazilmaz, panelden girilir; sonra `wp_mail` ile dogrulanir.
+
+**Tekrarini onlemek icin — KALAN 4 SITEDE DE OLACAK.** Tasima kontrol listesine
+eklendi (bkz. 5F "Kalan siteler"): yeni `wp-config.php` uretilen her sitede
+salt'a bagli sifrelenmis TUM sirlar bozulur. FluentSMTP'de kalici cozum, taşıma
+oncesi `wp-config.php`'ye sabit bir anahtar koymaktir:
+```
+define( 'FLUENTMAIL_ENCRYPT_KEY',  '<sabit-rastgele-deger>' );
+define( 'FLUENTMAIL_ENCRYPT_SALT', '<sabit-rastgele-deger>' );
+```
+Bunlar tanimliysa eklenti WordPress salt'larini kullanmaz; ileride wp-config
+yenilense de kimlik bilgisi cozulmeye devam eder.
+
+**Etki suresi:** 29.08.2026'dan beri. **Veri kaybi yok** — form talepleri
+Telegram'a dusmeye devam etti ve kayitlar veritabaninda duruyor.
+
+### FluentForm form 9 bildirimleri (fdartgallery)
+
+Soru "sadece Telegram mi?" idi — **hayir, ikisi de tanimli**:
+
+| Bildirim | Hedef | Durum |
+|---|---|---|
+| Telegram feed "Iletisim formu" | chat `-1003786778142`, `enabled:true` | **calisiyor** |
+| E-posta "Admin Notification Email" | `{wp.admin_email}` = `swordbros@gmail.com` | **basarisiz** (yukaridaki sebep) |
+
+Teshis sorgulari:
+```
+# Telegram/entegrasyon kuyrugu
+SELECT id, origin_id, action, status, note FROM <onek>ff_scheduled_actions ORDER BY id DESC LIMIT 10;
+# E-posta bildirimi loglari
+SELECT id, source_id, component, status, title FROM <onek>fluentform_logs ORDER BY id DESC LIMIT 10;
+# Dogrudan test
+wp eval 'add_action("wp_mail_failed",function($e){echo $e->get_error_message();}); var_dump(wp_mail(get_option("admin_email"),"t","t"));'
+```
+
+Not: FluentSMTP ayarinda `log_emails: yes` ama `<onek>fsmtp_email_logs` tablosu
+**yok** — mail calismaya baslayinca eklenti onu kendisi olusturacak.
 
 ---
 

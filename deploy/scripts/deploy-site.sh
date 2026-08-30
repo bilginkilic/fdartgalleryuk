@@ -167,3 +167,20 @@ chown -R "${SITE_USER}:${SITE_USER}" "${ROOT}/wp-content"
 chmod -R 775 "${ROOT}/wp-content/uploads"
 
 echo "==> Bitti. https://${DOMAIN} (sertifika alindiysa)"
+
+# E-posta uyarisi: yeni wp-config.php yeni salt'lar demektir. FluentSMTP (ve
+# salt'a bagli sifreleme yapan diger eklentiler) kayitli API anahtarini/parolasini
+# `LOGGED_IN_KEY` + `LOGGED_IN_SALT` ile sifreler; salt degisince cozulemez ve
+# saglayici 401 doner. fdartgallery + chestnyznak'ta bu yasandi (CLAUDE.md 5i).
+cat <<EOF
+
+UYARI — tasima sonrasi E-POSTA TESTI yapin:
+  sudo -u ${SITE_USER} wp --path=${ROOT} eval \\
+    'add_action("wp_mail_failed",function(\$e){echo \$e->get_error_message()."\\n";});
+     var_dump(wp_mail(get_option("admin_email"),"test","test"));'
+
+FALSE donerse: WP paneli -> FluentSMTP -> baglanti -> API anahtarini/parolayi
+YENIDEN girin. Kalici cozum icin wp-config.php'ye sabit anahtar koyun:
+  define( 'FLUENTMAIL_ENCRYPT_KEY',  '<sabit-rastgele>' );
+  define( 'FLUENTMAIL_ENCRYPT_SALT', '<sabit-rastgele>' );
+EOF
