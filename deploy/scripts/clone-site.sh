@@ -52,6 +52,11 @@ rsync -a --delete \
     --exclude 'wp-content/updraft/' \
     "${SRC_ROOT}/" "${DST_ROOT}/"
 
+# Sahipligi HEMEN duzelt: `rsync -a` root olarak calistigi icin dosyalar KAYNAK
+# sitenin kullanicisinda kaliyor. Bu haliyle hedef kullanici wp-config.php'yi
+# okuyamaz ve asagidaki wp-cli adimlarinin hepsi "Permission denied" ile duser.
+chown -R "${DST_USER}:${DST_USER}" "$DST_ROOT"
+
 # --- 2) Veritabani ------------------------------------------------------------
 echo "==> Veritabani kopyalaniyor"
 # shellcheck disable=SC1090
@@ -81,6 +86,8 @@ if [[ ! -f "${DST_ROOT}/wp-config.php" ]]; then
     # Redis tanimlarini AT: staging canliyla ayni Redis veritabanini kullanirsa
     # iki site birbirinin onbellegini ezer.
     sed -i "/WP_REDIS_/d;/WP_CACHE_KEY_SALT/d" "${DST_ROOT}/wp-config.php"
+    chown "${DST_USER}:${DST_USER}" "${DST_ROOT}/wp-config.php"
+    chmod 640 "${DST_ROOT}/wp-config.php"
 fi
 
 # object-cache.php drop-in'i kaynaktan geliyor ama tanimlari sildik; tanimsiz
