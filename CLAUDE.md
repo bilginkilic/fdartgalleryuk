@@ -646,7 +646,7 @@ ya da APO gibi edge onbellekleme gerekir.
 | Site | Kapatilan | CSS | JS | HTML |
 |---|---|---|---|---|
 | chestnyznak.com.tr | revslider, advanced-popups, wp-super-cache | 52 → **49** | 41 → **40** | 309 → **280 KB** |
-| fdartgallery.com | pro-elements | 34 → 34 | 34 → **33** | 241 → 240 KB |
+| fdartgallery.com | pro-elements, **jetpack** | 34 → **32** | 34 → **29** | 241 → **237 KB** |
 
 Dogrulandi: her iki sitede ana sayfa/magaza/urun/sepet/iletisim **200**,
 PHP hata logu bos. Cloudflare ve nginx onbellekleri temizlendi.
@@ -654,11 +654,13 @@ PHP hata logu bos. Cloudflare ve nginx onbellekleri temizlendi.
 Geri alma: `wp plugin activate <ad>`. Kapatma oncesi aktif eklenti listeleri
 `/root/backups/active-plugins-<domain>-2026-08-30.txt` icinde.
 
-- [ ] **`jetpack` KAPATILMADI** — kullanicidan hangi ozelligini kullandigi
-      (istatistik / guvenlik taramasi / yedek) ogrenilmeli. dev olcumunde
-      jetpack+pro-elements birlikte 34→32 CSS, 34→29 JS veriyordu; yani
-      asil kazanc jetpack'te. Onay gelirse:
-      `wp --path=/var/www/fdartgallery.com/public plugin deactivate jetpack`
+`jetpack` de kullanici onayiyla kapatildi (30.08.2026). Sonuc dev olcumuyle
+birebir ayni cikti: 34→32 CSS, 34→29 JS. Sepet, odeme ve hesabim sayfalari
+dahil hepsi 200, PHP logu temiz.
+
+**Jetpack kapatildi — bunlar ARTIK CALISMIYOR** (kullaniciya hatirlatilmali):
+istatistikler, Jetpack CDN (Photon), ilgili yazilar, sosyal paylasim otomasyonu,
+downtime izleme. Ihtiyac olursa: `wp plugin activate jetpack`.
 - [ ] fdartgallery'de **iki form eklentisi** (`contact-form-7` + `fluentform`)
       ve **iki mailchimp eklentisi** aktif — birlestirilebilir, ama icerik
       degisikligi gerektirir.
