@@ -56,7 +56,9 @@ CNAME brevo2._domainkey       -> b2.fdartgallery-com.dkim.brevo.com
 CNAME _domainconnect         -> _domainconnect.gd.domaincontrol.com
 TXT   _dmarc                  -> v=DMARC1; p=quarantine; ...
 TXT   @                       -> google-site-verification=xj6o_-...
-TXT   @                       -> brevo-code:33cb1e9c...
+TXT   @                       -> brevo-code:33cb1e9c...   (eski kayit, duruyor)
+TXT   @                       -> brevo-code:856ab74d...   (30.08 eklendi, AKTIF dogrulama)
+TXT   @                       -> v=spf1 include:spf.brevo.com ~all   (30.08 eklendi)
 ```
 
 **Onemli:** Mail (Brevo DKIM/DMARC) ve dogrulama kayitlarina dokunulmadi.
@@ -887,7 +889,11 @@ FluentForm'un AJAX yolu bu basligi bekler.
 
 ---
 
-## 5i. E-POSTA GITMIYOR — tasima kaynakli, ACIK SORUN (30.08.2026)
+## 5i. E-POSTA — tasima kaynakli ariza (30.08.2026)
+
+> **DURUM: fdartgallery.com COZULDU** (30.08.2026 20:02, teslim + acilma
+> dogrulandi). **chestnyznak.com.tr HALA ACIK** — timeweb posta kutusu parolasi
+> kullanici tarafindan yeniden girilmeli. Cozum ayrintilari asagida "SONUC".
 
 **Belirti:** her iki sitede de `wp_mail()` **FALSE** donuyor. Yani yalnizca form
 bildirimleri degil; WooCommerce siparis e-postalari, parola sifirlama, stok
@@ -942,6 +948,67 @@ yenilense de kimlik bilgisi cozulmeye devam eder.
 
 **Etki suresi:** 29.08.2026'dan beri. **Veri kaybi yok** — form talepleri
 Telegram'a dusmeye devam etti ve kayitlar veritabaninda duruyor.
+
+---
+
+### SONUC — fdartgallery.com onarildi (30.08.2026 20:02)
+
+Kullanici yeni Brevo API anahtarini `BREVO_API_KEY` ortam degiskenine koydu.
+Yapilanlar sirasiyla:
+
+1. **Anahtar dogrulandi** — `GET /v3/account` → 200, hesap
+   `chemiartclick@gmail.com`, **free plan / 300 kredi**.
+2. **`FLUENTMAIL_ENCRYPT_KEY` + `FLUENTMAIL_ENCRYPT_SALT`** dort sitenin
+   `wp-config.php`'sine eklendi (rastgele 32 bayt, repoda YOK). Artik SMTP
+   sirlari WordPress salt'larindan bagimsiz — bu ariza tekrarlanmaz.
+   Yedekler: `/root/backups/wp-config-*-2026-08-30-*.php`
+3. **Anahtar `fluentMailSetSettings()` ile kaydedildi** (asagidaki tuzaklara bak).
+4. **Brevo'ya alan adi eklendi** (`POST /v3/senders/domains`). DKIM CNAME'leri
+   (`brevo1/2._domainkey`) DNS'te zaten vardi ve **esletti**; eksik olan tek sey
+   dogrulama TXT'iydi.
+5. **Cloudflare'e iki TXT eklendi** (kullanici onayiyla, mevcut kayitlara
+   dokunulmadan):
+   ```
+   TXT @  brevo-code:856ab74daec9babf76368024f39666d0   (Brevo dogrulama)
+   TXT @  v=spf1 include:spf.brevo.com ~all             (eksik olan SPF)
+   ```
+   Eski `brevo-code:33cb1e9c...` kaydi silinmedi (baska bir kayittan kalma,
+   zararsiz).
+6. `PUT /v3/senders/domains/fdartgallery.com/authenticate` →
+   *"Domain has been authenticated successfully."*
+7. **Uctan uca dogrulandi** — Brevo olay kaydi:
+   `20:02:13 requests → 20:02:15 delivered → 20:02:18 opened` (swordbros@gmail.com)
+
+#### Bu is sirasinda ogrenilen UC TUZAK
+
+1. **`wp_mail()` TRUE donmesi teslimat demek DEGIL.** Brevo API istegi kabul
+   edip (HTTP 201) mesaji kuyrukta reddedebiliyor. Ilk testte `wp_mail` TRUE
+   dondu ama olay kaydinda `error: Sending has been rejected because the sender
+   you used info@fdartgallery.com is not valid` yaziyordu. **Her zaman
+   `GET /v3/smtp/statistics/events` ile dogrulayin.**
+2. **`sudo -u <user> -E wp ...` ortam degiskenini TASIMIYOR** (sudoers
+   `env_reset`). `getenv("BKEY")` bos dondu ve anahtar sessizce **bos** kaydedildi
+   — hata da vermedi. Sirri gecici bir PHP dosyasina yazip `wp eval-file` ile
+   calistirin; boylece deger komut satirinda (`ps`) da gorunmez.
+3. **Ham `update_option('fluentmail-settings', ...)` KULLANMAYIN.** Dogru API
+   `fluentMailSetSettings($settings)` — DUZ METIN alir, sifrelemeyi kendi yapar
+   ve `settings['test']` kontrol alanini gunceller. Ham yazinca `test` alani eski
+   kalir, eklenti anahtari bozuk sayip bosaltir.
+   Okuma tarafi: `fluentMailGetSettings()` cozulmus degeri verir.
+
+Dogrulama tek satir:
+```
+sudo -u web_fdartgallery_com wp --path=/var/www/fdartgallery.com/public eval \
+ 'add_action("wp_mail_failed",function($e){echo $e->get_error_message()."\n";});
+  var_dump(wp_mail(get_option("admin_email"),"test","test"));'
+```
+
+#### chestnyznak.com.tr — HALA ACIK
+
+`FLUENTMAIL_ENCRYPT_*` sabitleri eklendi (yani bir daha bozulmayacak), ama
+parola kurtarilamadi. Kullanici yapmali:
+WP paneli → FluentSMTP → `smtp.timeweb.ru` baglantisi → `info@chestnyznak.com.tr`
+posta kutusu **parolasini yeniden gir** → Kaydet → Send Test Email.
 
 ### FluentForm form 9 bildirimleri (fdartgallery)
 
