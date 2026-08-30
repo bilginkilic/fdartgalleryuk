@@ -807,6 +807,47 @@ ilk dakikada 2 gercek SSH brute-force IP'sini banladi.
 
 ---
 
+## 5h. Cloudflare Turnstile — fdartgallery.com (30.08.2026)
+
+Bot korumasi. Once `dev.fdartgallery.com`'da kurulup dogrulandi, sonra canliya alindi.
+
+| Bilesen | Deger |
+|---|---|
+| Widget adi | `fdartgallery` (Cloudflare → Turnstile) |
+| Site anahtari | `0x4AAAAAAEiH-CCM9uHXek80` (herkese acik, gizli degil) |
+| Gizli anahtar | WordPress secenegi `cfturnstile_secret` — **repoda YOK** |
+| Alan adlari | fdartgallery.com, www.fdartgallery.com, dev.fdartgallery.com |
+| Mod | `managed` |
+| Eklenti | `simple-cloudflare-turnstile` 1.42.1 |
+
+**Korunan noktalar** (`cfturnstile_*` secenekleri, hepsi `1`):
+`login`, `register`, `password`, `comment`, `cf7_all`, `fluent`,
+`woo_login`, `woo_register`, `woo_reset`.
+
+**Iki tuzak:**
+
+1. **`cfturnstile_tested` = `no` oldugu surece eklenti widget'i HIC basmaz.**
+   Kurulumda bu deger `no` olarak yaziliyor ve ayarlari wp-cli ile girince
+   eklentinin kendi test akisi calismadigi icin oyle kaliyor. Belirtisi:
+   `has_action('login_form')` **false**, sayfada yalnizca eklentinin JS
+   onyukleyicisi var, `class="cf-turnstile"` yok.
+   Once anahtar gercekten dogrulandi:
+   `curl -X POST https://challenges.cloudflare.com/turnstile/v0/siteverify -d secret=<gizli> -d response=dummy`
+   → `invalid-input-response` (yani gizli anahtar GECERLI; gecersiz olsaydi
+   `invalid-input-secret` donerdi). Ardindan `cfturnstile_tested=yes` yapildi.
+2. **`cfturnstile_appearance`** ilk kurulumda `interaction-only` yapilmisti —
+   bu modda widget **gorunmez**, yalnizca Cloudflare supheli buldugunda cikar.
+   Kullanici "goremedim" dedi, hakliydi. `always` yapildi; gorunur kutu artik
+   giris formunda duruyor. Daha az goze batmasi istenirse tekrar
+   `interaction-only` yapilabilir (koruma her iki modda da calisir).
+
+**Dogrulandi:** `wp-login.php` ve `/my-account/` sayfalarinda `class="cf-turnstile"`
+ve `data-sitekey` mevcut; ana sayfa/magaza/sepet 200, PHP hatasi yok.
+
+Kaldirmak icin: `wp plugin deactivate simple-cloudflare-turnstile`.
+
+---
+
 ## 6. Sunucu duzeni (site basina)
 
 | Bilesen | Ornek: fdartgallery.com |
