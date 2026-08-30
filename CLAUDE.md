@@ -844,6 +844,23 @@ Bot korumasi. Once `dev.fdartgallery.com`'da kurulup dogrulandi, sonra canliya a
 **Dogrulandi:** `wp-login.php` ve `/my-account/` sayfalarinda `class="cf-turnstile"`
 ve `data-sitekey` mevcut; ana sayfa/magaza/sepet 200, PHP hatasi yok.
 
+### Iletisim formu — uctan uca dogrulandi (30.08.2026)
+
+Kullanici `appearance` degisikliginden once dev'de formu gonderdiginde altta
+"WordPress'in destegiyle" yazan bir ekran gormustu. `appearance=always` yapilip
+onbellek temizlendikten sonra **duzeldi** — kullanici dogruladi, veritabaninda
+kayit da var (`fluentform_submissions` id 58, form 9, 30.08.2026 15:54).
+
+Teshis notu (yanlis alarma dusmemek icin): `/contact-us/` HTML'inde
+`name="cf-turnstile-response"` alani **gorunmez** — bu normaldir, alani
+Cloudflare betigi widget cizildikten sonra JS ile ekler. Sayfada 4 adet
+`class="cf-turnstile"` blogu var (FluentForm + WooCommerce giris formu).
+Sayfada ayrica `woocommerce-form-login` ve iki tema arama formu bulunuyor;
+JS yuklenmeden Enter'a basilirsa bunlardan biri gonderilebilir.
+
+**Dev ile canli ayarlari birebir ayni** (`tested=yes`, `appearance=always`,
+`fluent/woo_login/login = 1`, her iki sitede de 4 widget blogu).
+
 Kaldirmak icin: `wp plugin deactivate simple-cloudflare-turnstile`.
 
 ---
