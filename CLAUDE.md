@@ -27,8 +27,9 @@ Sunucu kurulumu, performans, guvenlik, yedekleme ve fdartgallery e-postasi bitti
   Turkiye'deki ziyaretci icin en buyuk tek kazanc) veya Pro plan (~20 $/ay) (5b)
 - **Eklenti sadelestirme**: fdartgallery'de iki form + iki mailchimp eklentisi;
   `elementor-pro` + `pro-elements` cakismasi (5b)
-- **SSH sertlestirme**: `PasswordAuthentication` hala acik. Kapatmadan once
-  kullanicinin kendi anahtari sunucuda olmali, yoksa disarida kalir (5E)
+- **SSH parola girisi**: sertlestirmenin geri kalani yapildi (5k); parolayi
+  kapatmak icin kullanicinin **public key**'i lazim — sunucuda hic kalici
+  anahtar yok, script guvenlik geregi reddediyor
 - **Kalici tunel**: `cloudflared` servisi sunucuda kurulu degil; su anki erisim
   Access service token ile calisiyor (3. bolum)
 
@@ -411,8 +412,12 @@ Cloudflare tuneli ile sunucuya erisim saglandiktan sonra sirasiyla:
       sunucudan DOGRUDAN mail gonderilirse anlamli.
       **Oncelik dusuk:** mail Brevo uzerinden gidiyor (DKIM/DMARC DNS'te), sunucu
       dogrudan mail gondermedigi surece teslimat etkilenmez.
-- [ ] SSH: parola girisi kapali, anahtar zorunlu, root login `prohibit-password`
-      — henuz gozden gecirilmedi.
+- [x] **SSH sertlestirildi (30.08.2026)** — `deploy/scripts/harden-ssh.sh` +
+      `deploy/ssh/00-hardening.conf`. Ayrintilar 5k'da.
+- [ ] **SSH parola girisi HALA ACIK** — kapatmak icin kullanicinin public
+      key'i gerekiyor (bkz. 5k). Anahtar gelince:
+      `sudo bash deploy/scripts/harden-ssh.sh --add-key "<public key>"`
+      → giris dogrulanir → `--disable-password`
 
 ### F. Diger siteler
 
@@ -1238,6 +1243,76 @@ Gmail'den `info@fdartgallery.com` kimligiyle yanit verebilmek icin:
 Gmail → Ayarlar → Hesaplar → "Baska bir adresten posta gonder" →
 SMTP `smtp-relay.brevo.com:587`, kullanici adi Brevo SMTP kullanicisi,
 parola Brevo SMTP anahtari (API anahtari DEGIL — Brevo panelinde ayri uretilir).
+
+---
+
+## 5k. SSH sertlestirme (30.08.2026)
+
+`deploy/scripts/harden-ssh.sh` + `deploy/ssh/00-hardening.conf`.
+
+### Bulunan hata — parola girisi hic kapanmamis
+
+```
+/etc/ssh/sshd_config.d/50-cloud-init.conf        -> PasswordAuthentication yes
+/etc/ssh/sshd_config.d/60-cloudimg-settings.conf -> PasswordAuthentication no
+```
+
+OpenSSH her anahtar icin **ILK okudugu degeri** kullanir ve `sshd_config.d/*.conf`
+alfabetik yuklenir. Yani imajin `no` ayari hicbir zaman devreye girmemis;
+cloud-init'in `yes`'i kazaniyordu. `sshd -T` ile dogrulandi.
+**Bu yuzden bizim dosyamizin adi `00-hardening.conf`** — en basta okunur, hepsini ezer.
+Cloud-init reboot'ta kendi dosyasini yeniden yazsa bile bizimki kazanmaya devam eder.
+
+### Uygulanan (kilitlenme riski YOK)
+
+| Ayar | Once | Sonra |
+|---|---|---|
+| `MaxAuthTries` | 6 | **3** |
+| `LoginGraceTime` | 120 | **30** |
+| `X11Forwarding` | yes | **no** |
+| `AllowAgentForwarding` | yes | **no** |
+| `AllowTcpForwarding` | yes | **no** |
+| `PermitTunnel` / `GatewayPorts` / `PermitUserEnvironment` | — | **no** |
+| Ciphers / MACs / KexAlgorithms | dagitim varsayilani | yalnizca modern (chacha20-poly1305, aes-gcm, sntrup761x25519, curve25519, etm-MAC) |
+| `MaxStartups` | 10:30:100 | 10:30:60 |
+| `ClientAliveInterval` | 0 | 300 |
+
+`reload` kullanildi (`restart` DEGIL) — acik oturumlar kopmadi. Uygulamadan
+sonra **yeni bir baglanti acilarak** girisin calistigi dogrulandi.
+Yedek: `/root/backups/sshd-config-*.tar.gz`
+
+**Not:** `AllowTcpForwarding no` port yonlendirmeyi kapatir (orn.
+`ssh -L 3306:localhost:3306`). Cloudflare tuneli bundan ETKILENMEZ — cloudflared
+sunucuda calisip `localhost:22`'ye baglaniyor, SSH port forwarding kullanmiyor.
+Gerekirse tek satir geri alinir.
+
+### YAPILMADI — parola girisi hala acik, sebebi
+
+| Hesap | Parola | Anahtar | Sudo |
+|---|---|---|---|
+| `root` | **kilitli** (L) | yalnizca Claude'un gecici oturum anahtari | — |
+| `ubuntu` | **var** (P) | `authorized_keys` **0 bayt (BOS)** | `NOPASSWD:ALL` |
+
+Sunucuya tek giris yolu `ubuntu` + parola. Parolayi kapatmak = SSH erisiminin
+tamamen kaybi (geriye yalnizca OVH KVM konsolu kalir).
+fail2ban sshd jail'i baski altinda: **700 basarisiz deneme, 100 ban.**
+
+**Script'te kilitlenme koruması var:** `--disable-password`, sunucuda kalici
+anahtar yoksa REDDEDER. Sayimda `claude-session-*` etiketli gecici anahtarlar
+**haric tutulur** — o anahtar oturum bitince silinir, ona guvenip parolayi
+kapatmak kilitlenme demektir. Sunucuda test edildi: `gercek anahtar = 0` → reddediyor.
+
+**Kullanici yapmali:**
+1. Kendi makinesinde anahtar (varsa atla): `ssh-keygen -t ed25519 -C "bilgin-laptop"`
+2. **Public** kismi (`~/.ssh/id_ed25519.pub`) paylasilir — gizli degildir
+3. `sudo bash deploy/scripts/harden-ssh.sh --add-key "<public key>"`
+4. **Baska bir terminalde** `ssh ubuntu@57.129.128.118` ile giris DOGRULANIR
+5. `sudo bash deploy/scripts/harden-ssh.sh --disable-password`
+
+Acil durum: OVH Manager → VPS → KVM konsolu. Konsolda klavye eslemesi bozuk
+olabilir (`:` → `;`, `|` → `\`); `sudo loadkeys us` duzeltir.
+
+Durum: `sudo bash deploy/scripts/harden-ssh.sh --status`
 
 ---
 
