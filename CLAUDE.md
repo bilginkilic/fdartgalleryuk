@@ -166,6 +166,13 @@ tasidik ve oturum sunucuya tam erisim kazandi:
 3. Is bitince **mutlaka**: `sudo bash /root/claude-access.sh --stop`
    (tuneli kapatir, gecici anahtari siler)
 
+**DURUM (30.08.2026): tunel KAPATILDI, gecici anahtar silindi.** Yeni bir
+oturumun sunucuya erisebilmesi icin 1. adim KVM konsolundan tekrar
+calistirilmali — ve script'teki `KEY_URL` o oturumun kendi public key'ini
+gostermeli (`deploy/claude-session-key.pub` guncellenmeli). Repolar artik ozel
+oldugu icin `curl` ile anahtar cekmek de calismayabilir; o durumda anahtari
+konsoldan elle `/root/.ssh/authorized_keys`'e eklemek gerekir.
+
 Uyari: quick tunnel adresinin onunde Access politikasi yoktur; adresi bilen
 22. porta ulasir (giris yine anahtarla korunur). Kalici cozum icin adlandirilmis
 tunel + Cloudflare Access service token kurulmali.
@@ -259,8 +266,8 @@ Cloudflare tuneli ile sunucuya erisim saglandiktan sonra sirasiyla:
       `sudo git clone https://github.com/bilginkilic/fdartgalleryuk.git /opt/fdartgalleryuk`
       `cd /opt/fdartgalleryuk && git checkout claude/ovhcloud-vps-multisite-0eb3xj`
 - [x] `sudo bash deploy/scripts/setup-server.sh` (nginx, PHP 8.3-FPM, MariaDB, certbot, ufw, wp-cli)
-- [ ] `sudo mysql_secure_installation` — **hala yapilmadi**
-- [ ] Tunel kapatma + gecici anahtari silme: `sudo bash /root/claude-access.sh --stop`
+- [x] MariaDB sertlestirildi — `harden-mysql.sh` (bkz. 5f)
+- [x] Tunel kapatildi + gecici anahtar silindi (30.08.2026)
 - [x] `sudo bash deploy/scripts/add-site.sh fdartgallery.com`
 - [x] `sudo bash deploy/scripts/deploy-site.sh fdartgallery.com --with-db`
       (dosyalar repoda tamamlandi; `database/backup_2026-08-25-2045.sql` ice aktarilir)
@@ -314,14 +321,20 @@ Cloudflare tuneli ile sunucuya erisim saglandiktan sonra sirasiyla:
       uzerinden 200. SSH (22) disariya acik kaldi — kasitli.
 - [x] **fail2ban kuruldu** — 3 jail, WordPress jail'leri Cloudflare edge'inde
       engelliyor (bkz. 5g)
-- [ ] **PTR (reverse DNS) — YAPILAMADI, kullanici mudahalesi gerekiyor.**
-      Mevcut API anahtari yetersiz:
-      - `PUT /vps/{name}/ips/{ip}` → `403 not implemented` (bu VPS urununde yok)
+- [ ] **PTR (reverse DNS) — API ILE YAPILAMIYOR (30.08.2026'da yeniden dogrulandi).**
+      Mevcut consumer key (olusturma 11.08.2026) yalnizca `/vps/*` kapsiyor:
+      - `GET /auth/currentCredential` → kurallar: `GET|POST|PUT|DELETE /vps/*`
       - `GET|POST /ip/{ip}/reverse` → `403 This call has not been granted`
-        (consumer key yalnizca `/vps/*` kapsiyor)
-      Cozum: ya OVH Manager arayuzunden elle ayarlanmali (VPS → IP → reverse),
-      ya da `/ip/*` yetkisi olan yeni bir API anahtari uretilmeli.
-      Onerilen deger: `vps-913eb1fb.vps.ovh.net`
+      - `PUT /vps/{name}/ips/{ip}` → **`403 not implemented`** — uc, API semasinda
+        (`vps.Ip` modelinde `reverse` alani var) tanimli olmasina ragmen arka uc
+        reddediyor. Uc farkli govde denendi (yalniz `reverse`, noktali FQDN,
+        tam model): ucu de ayni hatayi verdi. Bu, VPS 2027 urununun reverse
+        yonetimini `/ip/*` servisine tasidigini gosteriyor.
+      **Cozum (kullanici yapmali):** OVH Manager → VPS → IP → reverse DNS,
+      deger `vps-913eb1fb.vps.ovh.net`; ya da `/ip/*` yetkili YENI consumer key
+      uretip ortam degiskenlerine koymak.
+      **Oncelik dusuk:** mail Brevo uzerinden gidiyor (DKIM/DMARC DNS'te), sunucu
+      dogrudan mail gondermedigi surece teslimat etkilenmez.
 - [ ] SSH: parola girisi kapali, anahtar zorunlu, root login `prohibit-password`
       — henuz gozden gecirilmedi.
 
@@ -344,8 +357,9 @@ Kaynak site **`https://chestnyznak.com.tr`** idi; buraya tasindi.
 | DB | `wp_chestnyznak_chemiartclic`, tablo oneki **`ChestZna_`**, 170 tablo |
 | Tema | `qwery-child` (ust tema `qwery`) |
 | Durum | `https://...` → **200**, sayfa onbellegi HIT (6 ms) |
-| Arama motorlari | **KAPALI** (`blog_public=0`) — chestnyznak.com.tr hala yayinda,
-  ikizlenmis icerik olmasin diye. Yayina alirken: `wp option update blog_public 1` |
+| Arama motorlari | **ACIK** (`blog_public=1`, 30.08.2026 kullanici karariyla).
+  `chestnyznak.com.tr` hala yayindaysa ikizlenmis icerik riski var; asil adres
+  buraya tasinacaksa eski alan adindan 301 yonlendirme kurulmali. |
 
 **proxied=ON zorunlu**: origin guvenlik duvari yalnizca Cloudflare IP'lerini
 kabul ediyor; turuncu bulut kapatilirsa site tamamen erisilemez olur.
