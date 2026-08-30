@@ -5,15 +5,34 @@
 # Kullanim:
 #   sudo bash deploy/scripts/deploy-site.sh fdartgallery.com
 #   sudo bash deploy/scripts/deploy-site.sh fdartgallery.com --with-db
+#
+#   # Baska bir repodan (orn. WordPress koku alt dizinde olan projeler):
+#   sudo bash deploy/scripts/deploy-site.sh chestnyznak.chemiartclick.uk \
+#        --source /opt/chestnyznakuk/files
+#   sudo bash ... --source /opt/x/files --db-file /root/dumps/site.sql
+#   sudo bash ... --table-prefix ChestZna_    # yeni kurulumda tablo oneki
 
 set -euo pipefail
 
 DOMAIN="${1:-}"
-WITH_DB="${2:-}"
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+SOURCE_DIR=""
+DB_FILE=""
+WITH_DB=""
+TABLE_PREFIX="wp_"
+shift || true
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --with-db)  WITH_DB="--with-db"; shift ;;
+        --source)   SOURCE_DIR="${2:-}"; shift 2 ;;
+        --db-file)  DB_FILE="${2:-}"; WITH_DB="--with-db"; shift 2 ;;
+        --table-prefix) TABLE_PREFIX="${2:-wp_}"; shift 2 ;;
+        *) echo "Bilinmeyen parametre: $1" >&2; exit 1 ;;
+    esac
+done
 
 if [[ -z "$DOMAIN" ]]; then
-    echo "Kullanim: sudo bash $0 <domain> [--with-db]" >&2
+    echo "Kullanim: sudo bash $0 <domain> [--with-db] [--source <dizin>] [--db-file <dosya>]" >&2
     exit 1
 fi
 if [[ $EUID -ne 0 ]]; then
@@ -21,8 +40,15 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
+# Kaynak belirtilmediyse bu reponun koku kullanilir (fdartgallery.com boyle kuruldu).
+SOURCE_DIR="${SOURCE_DIR:-$REPO_DIR}"
+[[ -d "$SOURCE_DIR" ]] || { echo "Kaynak dizin yok: ${SOURCE_DIR}" >&2; exit 1; }
+[[ -f "${SOURCE_DIR}/wp-settings.php" ]] || {
+    echo "Kaynak dizin WordPress koku gorunmuyor (wp-settings.php yok): ${SOURCE_DIR}" >&2
+    exit 1
+}
+
 SITE_SLUG="$(echo "$DOMAIN" | tr '.' '_' | tr -cd '[:alnum:]_')"
-SITE_USER="web_${SITE_SLUG:0:26}"
 SITE_HOME="/var/www/${DOMAIN}"
 ROOT="${SITE_HOME}/public"
 CRED_FILE="${SITE_HOME}/db-credentials.txt"
@@ -31,6 +57,12 @@ if [[ ! -d "$ROOT" ]]; then
     echo "Site bulunamadi. Once: sudo bash deploy/scripts/add-site.sh ${DOMAIN}" >&2
     exit 1
 fi
+
+# Sahibi dizinden oku — add-site.sh ile ayni kurali tekrar uretmeye calismak
+# (ve iki yerde farkli sonuc vermesi) riskli.
+SITE_USER="$(stat -c %U "$SITE_HOME")"
+[[ -n "$SITE_USER" && "$SITE_USER" != "root" ]] || {
+    echo "Site dizininin sahibi beklenmedik: ${SITE_USER}" >&2; exit 1; }
 
 echo "==> Dosyalar kopyalaniyor -> ${ROOT}"
 # Basindaki / bu kaliplari repo koku ile sinirlar. Aksi halde rsync ayni isimli
@@ -41,7 +73,7 @@ rsync -a --delete \
     --exclude '/database/' \
     --exclude '/CLAUDE.md' \
     --exclude 'wp-config.php' \
-    "${REPO_DIR}/" "${ROOT}/"
+    "${SOURCE_DIR}/" "${ROOT}/"
 
 # mu-plugins repoda deploy/ altinda durur (rsync disi), her dagitimda kopyalanir.
 if compgen -G "${REPO_DIR}/deploy/wordpress/mu-plugins/*.php" >/dev/null; then
@@ -71,7 +103,7 @@ define( 'DB_COLLATE', '' );
 
 ${SALTS}
 
-\$table_prefix = 'wp_';
+\$table_prefix = '${TABLE_PREFIX}';
 
 define( 'WP_DEBUG', false );
 define( 'DISABLE_WP_CRON', true );
@@ -94,10 +126,15 @@ else
 fi
 
 if [[ "$WITH_DB" == "--with-db" ]]; then
-    DUMP="$(ls -1t "${REPO_DIR}"/database/*.sql 2>/dev/null | head -1 || true)"
-    if [[ -z "$DUMP" ]]; then
-        echo "database/ altinda .sql yedegi bulunamadi." >&2
-        exit 1
+    if [[ -n "$DB_FILE" ]]; then
+        DUMP="$DB_FILE"
+        [[ -f "$DUMP" ]] || { echo "Yedek dosyasi yok: ${DUMP}" >&2; exit 1; }
+    else
+        DUMP="$(ls -1t "${SOURCE_DIR}"/database/*.sql "${REPO_DIR}"/database/*.sql 2>/dev/null | head -1 || true)"
+        if [[ -z "$DUMP" ]]; then
+            echo "database/ altinda .sql yedegi bulunamadi. --db-file ile belirtin." >&2
+            exit 1
+        fi
     fi
     # shellcheck disable=SC1090
     source "$CRED_FILE"
