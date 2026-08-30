@@ -322,8 +322,42 @@ Cloudflare tuneli ile sunucuya erisim saglandiktan sonra sirasiyla:
 
 ### F. Diger siteler
 
-- [ ] `fdsanatmerkezi.com`, `chemiartclick.uk`, `davetevet.com`, `byhio.com`,
-      `wedreply.co.uk` — her biri icin `add-site.sh <domain>`, ardindan dosya + DB tasima
+#### chestnyznak.chemiartclick.uk — **ALTYAPI HAZIR, kod bekleniyor (29.08.2026)**
+
+Repo: `bilginkilic/chestnyznakuk` (su an **bos** — kullanici WordPress kodunu
+push edecek). Alt alan adi olarak `chemiartclick.uk` zone'una eklendi.
+
+| Bilesen | Deger |
+|---|---|
+| DNS | `A chestnyznak.chemiartclick.uk -> 57.129.128.118`, **proxied=ON** |
+| Sertifika | Let's Encrypt, bitis 28.11.2026 (yalnizca bu isim; `www.` yok) |
+| Kok dizin | `/var/www/chestnyznak.chemiartclick.uk/public` |
+| Sistem kullanici | `web_chestnyznak_chemiartclick_` |
+| Socket | `/run/php/php-fpm-chestnyznak_chemiartclick_uk.sock` |
+| DB | `wp_chestnyznak_chemiartclick` |
+| Durum | `https://...` → 403 (dizin bos, kod gelince dolacak) |
+
+**proxied=ON zorunlu**: origin guvenlik duvari yalnizca Cloudflare IP'lerini
+kabul ediyor; turuncu bulut kapatilirsa site tamamen erisilemez olur.
+
+Zone `chemiartclick.uk` SSL modu **`full`** (apex Cloudflare Pages'e bakiyor).
+Sertifika alindi, `full (strict)`'e cekilebilir — ama zone genelinde etkili,
+Pages siteleri de etkilenir, kullaniciya sorulmali.
+
+Kod push edildikten sonra:
+```
+cd /var/www/chestnyznak.chemiartclick.uk && sudo git clone <repo> tmp   # veya deploy-site.sh
+sudo bash deploy/scripts/setup-redis.sh    chestnyznak.chemiartclick.uk
+sudo bash deploy/scripts/convert-webp.sh   chestnyznak.chemiartclick.uk --cron
+sudo bash deploy/scripts/backup-site.sh    chestnyznak.chemiartclick.uk --cron
+```
+
+#### Kalan siteler
+
+- [ ] `fdsanatmerkezi.com`, `chemiartclick.uk` (apex — su an Pages'te),
+      `davetevet.com`, `byhio.com`, `wedreply.co.uk` — her biri icin
+      `add-site.sh <domain>`, ardindan dosya + DB tasima.
+      **Gerekli:** her site icin dosya arsivi + `.sql` yedegi.
 - [ ] Kaynak takibi: 8 GB RAM / 4 vCore tek sunucuda 6+ WordPress. Havuz basina
       `pm.max_children = 12` (ondemand). Site sayisi arttikca `pm.max_children`
       degerlerini dusur veya MariaDB `innodb_buffer_pool_size`'i ayarla.
