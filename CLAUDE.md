@@ -603,6 +603,50 @@ dokunmadan geri donduruyor. 6 sayfa / 406 gorsel taranarak dogrulandi: 0 kirik.
       Statik icerik icin Cache Rule gerekmedi: nginx zaten
       `Cache-Control: public, max-age=2592000, immutable` gonderiyor ve
       CSS/JS edge'de `HIT` doneyor (dogrulandi).
+### Eklenti denetimi — dev'de olculdu (30.08.2026)
+
+**Elementor optimizasyon anahtarlari ARTIK YOK.** Surum 4.2.2; 3.x'teki
+"Improved CSS Loading / Improved Asset Loading / Inline Font Icons" deneysel
+ayarlari 4.x'te varsayilan hale gelip kaldirilmis. `wp elementor experiments`
+yalnizca editor ozellikleri (Editor V4, landing-pages) sunuyor. Cevrilecek
+dugme kalmadi — kazanc yalnizca eklenti sayisindan gelir.
+
+**Olcum yontemi:** `/root/measure.sh <domain>` — sunucu icinden sayfayi ceker,
+CSS/JS etiketlerini ve HTML boyutunu sayar. `/root/audit.sh <dizin> <onek>` —
+bir eklentinin GERCEKTEN kullanilip kullanilmadigini icerik ve postmeta'da
+arayarak dogrular.
+
+| Site | Kapatilanlar | CSS | JS | HTML |
+|---|---|---|---|---|
+| dev.fdartgallery | jetpack, pro-elements | 34 → **32** | 34 → **29** | 241 → 238 KB |
+| chestnyznak-dev | revslider, advanced-popups, wp-super-cache | 52 → **49** | 41 → **40** | 309 → **283 KB** |
+
+Her iki dev sitesinde ana sayfa, magaza, urun ve sepet **200**, PHP hatasi yok.
+
+**Kanit (audit.sh ciktisi):**
+- `revslider` → icerik ve meta'da **0 kullanim** (chestnyznak)
+- `advanced-popups` → **0 kullanim** (chestnyznak)
+- `wp-super-cache` → etkisiz (drop-in yok, `WP_CACHE` tanimsiz), nginx sayfa
+  onbellegiyle kavramsal cakisma
+- `pro-elements` → `elementor-pro` ile ayni eklentinin kopyasi, **ikisi de aktif**;
+  kurulumdaki fatal error da Elementor Pro'daydi
+- `contact-form-7` → fdartgallery'de 12, chestnyznak'ta 10 kullanim var — **KALMALI**
+- `latepoint` (31), `devvn-image-hotspot` (18) → chestnyznak'ta kullaniliyor, kalmali
+
+**Duzeltme:** onceki "eklenti basina varlik sayisi" tahminlerim fazla iyimserdi
+(orn. revslider icin 11) — o sayim URL *gecis sayisiydi*, benzersiz dosya degil.
+Gercek kazanc yukaridaki tabloda: mutevazi ama gercek.
+
+**Kalan agirlik kaldirilamaz:** tema (`xstore` 24, `qwery`+`trx_addons` 44),
+Elementor ve WooCommerce cekirdegi. Asil buyuk kazanc icin ya tema degisikligi
+ya da APO gibi edge onbellekleme gerekir.
+
+- [ ] **Karar bekleyen (canliya uygulanmadi):** yukaridaki 5 eklentinin canlida
+      da kapatilmasi. `jetpack` icin once hangi ozelliginin kullanildigi
+      (istatistik? yedek?) kullaniciya sorulmali.
+- [ ] fdartgallery'de **iki form eklentisi** (`contact-form-7` + `fluentform`)
+      ve **iki mailchimp eklentisi** aktif — birlestirilebilir, ama icerik
+      degisikligi gerektirir.
 - [ ] **Asil kalan darbogaz: istemci tarafi varlik sayisi** (30.08.2026 olcumu)
       - fdartgallery.com : 34 CSS + 34 JS + 240 KB HTML
       - chestnyznak      : 52 CSS + 43 JS + 307 KB HTML
