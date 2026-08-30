@@ -68,6 +68,21 @@ echo "    dokum: $(du -h "$TMP_DUMP" | cut -f1)"
 mysql -e "DROP DATABASE \`${DST_DB}\`; CREATE DATABASE \`${DST_DB}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; GRANT ALL PRIVILEGES ON \`${DST_DB}\`.* TO '${DB_USER}'@'localhost'; FLUSH PRIVILEGES;"
 mysql --default-character-set=utf8mb4 "$DST_DB" < "$TMP_DUMP"
 
+# Hedefte wp-config.php yoksa kaynaginkinden turet: add-site.sh bu dosyayi
+# olusturmaz (onu deploy-site.sh yapar), clone ise rsync'te disliyor.
+if [[ ! -f "${DST_ROOT}/wp-config.php" ]]; then
+    echo "    wp-config.php uretiliyor"
+    cp "${SRC_ROOT}/wp-config.php" "${DST_ROOT}/wp-config.php"
+    # shellcheck disable=SC1090
+    source "$DST_CRED"
+    sed -i "s/define( *'DB_NAME'.*/define( 'DB_NAME', '${DB_NAME}' );/" "${DST_ROOT}/wp-config.php"
+    sed -i "s/define( *'DB_USER'.*/define( 'DB_USER', '${DB_USER}' );/" "${DST_ROOT}/wp-config.php"
+    sed -i "s|define( *'DB_PASSWORD'.*|define( 'DB_PASSWORD', '${DB_PASSWORD}' );|" "${DST_ROOT}/wp-config.php"
+    # Redis tanimlarini AT: staging canliyla ayni Redis veritabanini kullanirsa
+    # iki site birbirinin onbellegini ezer.
+    sed -i "/WP_REDIS_/d;/WP_CACHE_KEY_SALT/d" "${DST_ROOT}/wp-config.php"
+fi
+
 # Tablo onegi kaynaktan gelir; hedefin wp-config'ini ona esitle.
 PREFIX="$(mysql -N -B "$DST_DB" -e 'SHOW TABLES LIKE "%options"' 2>/dev/null \
     | grep -E 'options$' | head -1 | sed 's/options$//' || true)"
