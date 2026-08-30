@@ -6,6 +6,40 @@ Bir adim tamamlandiginda bu dosyadaki kutucugu isaretle ve commit et.
 
 ---
 
+## 0. SU AN NE KALDI (30.08.2026 sonu)
+
+Yayindaki siteler: **fdartgallery.com**, **chestnyznak.com.tr** (+ iki dev ortami).
+Sunucu kurulumu, performans, guvenlik, yedekleme ve fdartgallery e-postasi bitti.
+
+### Kullanicidan bekleyenler (bunlar olmadan ilerlenemez)
+
+| # | Is | Neden bekliyor |
+|---|---|---|
+| 1 | **chestnyznak giden e-posta** — `info@chestnyznak.com.tr` timeweb parolasi | Parola tasimada bozuldu, kurtarilamiyor. `TIMEWEB_MAIL_PASSWORD` env'e konursa kurulum hazir (5i) |
+| 2 | **info@ fazladan kopya** — "MX testi 4" hangi kutulara geldi? | Kopyanin Brevo'dan mi Gmail'den mi geldigini ayirt eden test (5j) |
+| 3 | **Kalan 4 site** icin dosya arsivi + `.sql` + **orijinal `wp-config.php`** | fdsanatmerkezi, chemiartclick.uk apex, davetevet, byhio, wedreply (5F) |
+| 4 | **Arkadasa soylenecek**: chestnyznak.com.tr zone'unda SSL modu **Full (strict)** | Bizim hesabimizda degil, o yapmali (5F) |
+| 5 | **PTR** posta alan adina cevrilsin mi | OVH Manager'dan; API yetkisi yok. **Oncelik dusuk** — mevcut PTR calisiyor (5E) |
+
+### Karar bekleyenler (aciliyeti yok)
+
+- **Ucretli hizlandirma**: Cloudflare APO (~5 $/ay, HTML'i edge'de onbellekler —
+  Turkiye'deki ziyaretci icin en buyuk tek kazanc) veya Pro plan (~20 $/ay) (5b)
+- **Eklenti sadelestirme**: fdartgallery'de iki form + iki mailchimp eklentisi;
+  `elementor-pro` + `pro-elements` cakismasi (5b)
+- **SSH sertlestirme**: `PasswordAuthentication` hala acik. Kapatmadan once
+  kullanicinin kendi anahtari sunucuda olmali, yoksa disarida kalir (5E)
+- **Kalici tunel**: `cloudflared` servisi sunucuda kurulu degil; su anki erisim
+  Access service token ile calisiyor (3. bolum)
+
+### Kozmetik / kucuk
+
+- Dev sitelerinde birkac canli adrese baglanti kaldi → Elementor > Tools >
+  Regenerate CSS & Data
+- Kutuphanede islenmemis buyuk orijinal gorseller disk kapliyor (5b)
+
+---
+
 ## 1. Altyapi ozeti
 
 **Tek VPS var.** (Kullanici teyit etti — daha once "iki VPS" denmisti, gecerli degil.)
@@ -309,34 +343,33 @@ Cloudflare tuneli ile sunucuya erisim saglandiktan sonra sirasiyla:
       (dosyalar repoda tamamlandi; `database/backup_2026-08-25-2045.sql` ice aktarilir)
 - [x] Sertifika alindi (Let's Encrypt, bitis 27.11.2026, otomatik yenileme kurulu)
       (DNS zaten yeni IP'de, HTTP-01 Cloudflare proxy'si uzerinden calisir)
-- [ ] `dev.fdartgallery.com` — **simdilik yok**, eski IP'de birakildi. Ileride
-      istenirse: `add-site.sh dev.fdartgallery.com` + `wp search-replace` + `blog_public 0`.
+- [x] `dev.fdartgallery.com` — **KURULDU (30.08.2026)**, bkz. "Dev / staging
+      ortamlari". Staging guard ile mail kapali, arama motorlarina kapali.
 
 > **PHP surumu: 8.5** — Ubuntu 26.04 depolarinda baska surum yok (8.4/8.3 icin
 > `ondrej/php` PPA gerekir). WordPress 7.1 ve eklentiler su an 8.5'te sorunsuz
 > calisiyor; ileride bir eklenti 8.5 ile bozulursa PPA ekleyip
 > `PHP_VERSION=8.4 sudo -E bash deploy/scripts/add-site.sh ...` ile dusurulebilir.
 
-### B. Cutover oncesi dogrulama (DNS'e dokunmadan)
+### B. Cutover oncesi dogrulama — **KONUSUZ KALDI (site 29.08'de yayina alindi)**
 
-- [ ] Yerel makinede `/etc/hosts` satiri ile siteyi yeni sunucudan test et:
-      `57.129.128.118  fdartgallery.com www.fdartgallery.com`
-- [ ] `wp option get siteurl` / `home` degerlerini kontrol et; gerekirse
-      `wp search-replace 'http://eski' 'https://fdartgallery.com' --all-tables`
-- [ ] Gorseller, tema, eklentiler, wp-admin girisi calisiyor mu?
+- [x] Adres/gorsel/tema/eklenti/wp-admin kontrolleri canlida yapildi.
+      (`/etc/hosts` ile on-test artik gereksiz; cutover tamamlandi.)
 
-### C. Sertifika
+### C. Sertifika — **TAMAMLANDI**
 
-- [ ] Cloudflare **proxy acikken** HTTP-01 sorun cikarirsa DNS-01 kullan:
-      ```
-      printf 'dns_cloudflare_api_token = <token>\n' | sudo tee /root/.secrets/cloudflare.ini
-      sudo chmod 600 /root/.secrets/cloudflare.ini
-      sudo certbot certonly --dns-cloudflare \
-           --dns-cloudflare-credentials /root/.secrets/cloudflare.ini \
-           -d fdartgallery.com -d www.fdartgallery.com
-      ```
-- [ ] Alternatif: Cloudflare Origin CA sertifikasi (15 yil) + SSL modu **Full (strict)**
-- [ ] Cloudflare SSL modu **Flexible olmamali** — yonlendirme dongusu yaratir.
+- [x] Let's Encrypt HTTP-01 ile alindi (Cloudflare proxy aciktı, sorun cikmadi).
+      Bitis 27.11.2026, otomatik yenileme kurulu.
+- [x] Cloudflare SSL modu **Full (strict)** — `Flexible` YAPMAYIN, yonlendirme
+      dongusu yaratir.
+- DNS-01'e gerek kalmadi. Gerekirse yontem:
+  ```
+  printf 'dns_cloudflare_api_token = <token>\n' | sudo tee /root/.secrets/cloudflare.ini
+  sudo chmod 600 /root/.secrets/cloudflare.ini
+  sudo certbot certonly --dns-cloudflare \
+       --dns-cloudflare-credentials /root/.secrets/cloudflare.ini \
+       -d fdartgallery.com -d www.fdartgallery.com
+  ```
 
 ### D. DNS cutover — **YAPILDI (28.08.2026)**
 
@@ -611,7 +644,7 @@ dokunmadan geri donduruyor. 6 sayfa / 406 gorsel taranarak dogrulandi: 0 kirik.
       `.webp` dosyalari atlanir). Kurulum: `convert-webp.sh <domain> --cron`.
 - [ ] Kutuphanedeki 23 MB / 21 MB'lik islenmemis orijinaller hala duruyor;
       WordPress bunlari sayfada servis etmiyor ama disk kapliyor.
-- [ ] **Redis object cache** — dinamik sayfalarda ve panelde PHP suresini kisar.
+- [x] **Redis object cache** — KURULDU (bkz. 5c), site basina izole.
 - [x] **Cloudflare ayarlari (30.08.2026)** — her iki zone'da (fdartgallery.com,
       chemiartclick.uk) acildi: `early_hints`, `0rtt`, `always_use_https`,
       `h2_prioritization`, `tiered_caching`. `brotli` ve `http3` zaten aciktı.
@@ -1005,12 +1038,45 @@ sudo -u web_fdartgallery_com wp --path=/var/www/fdartgallery.com/public eval \
   var_dump(wp_mail(get_option("admin_email"),"test","test"));'
 ```
 
-#### chestnyznak.com.tr — HALA ACIK
+#### chestnyznak.com.tr — HALA ACIK (30.08.2026 test edildi)
 
-`FLUENTMAIL_ENCRYPT_*` sabitleri eklendi (yani bir daha bozulmayacak), ama
-parola kurtarilamadi. Kullanici yapmali:
-WP paneli → FluentSMTP → `smtp.timeweb.ru` baglantisi → `info@chestnyznak.com.tr`
-posta kutusu **parolasini yeniden gir** → Kaydet → Send Test Email.
+**GELEN posta CALISIYOR, GIDEN posta calismiyor.** Olculdu:
+
+| Yon | Test | Sonuc |
+|---|---|---|
+| Giden | `wp_mail()` | **FALSE** — `SMTP hatasi: Kimlik dogrulanamadi` |
+| Gelen | `mx1.timeweb.ru` → `RCPT TO: info@chestnyznak.com.tr` | **250 Accepted** — kutu VAR |
+| Kayitli parola | cozulen uzunluk | **0** (tasimada bozuldu) |
+
+Gelen testinde `DATA` gonderilmedi (`RSET` cekildi) — kutuya deneme maili
+dusmedi, yalnizca adres varligi dogrulandi.
+
+**Altyapi fdartgallery'nin aksine EKSIKSIZ — DNS'e dokunmaya gerek YOK:**
+
+| Kayit | Deger |
+|---|---|
+| MX | `10 mx1.timeweb.ru`, `20 mx2.timeweb.ru` |
+| SPF | `v=spf1 include:_spf.timeweb.ru ~all` |
+| DKIM | `dkim._domainkey.chestnyznak.com.tr` (timeweb imzaliyor) |
+| DMARC | `v=DMARC1; p=none` |
+| Sunucudan SMTP | `smtp.timeweb.ru` 465 **ve** 587 ACIK (`220 ... ESMTP`) |
+
+FluentSMTP ayarlari da dogru (host/port/ssl/username/sender). `FLUENTMAIL_ENCRYPT_KEY`
+tanimli, yani bir daha bozulmayacak. **Eksik olan TEK sey parola.**
+
+**Kayip bilancosu (29.08'den beri):** siparis **0**, yeni uye **0**,
+form gonderimi **1** (veritabaninda duruyor, yalnizca e-posta bildirimi gitmedi).
+Musteri magduriyeti olusmamis.
+
+**Cozum:** `info@chestnyznak.com.tr` posta kutusu parolasi. Iki yol:
+- Ortam degiskeni `TIMEWEB_MAIL_PASSWORD` → kurulum script'i hazir:
+  `scratchpad/set-chestnyznak-smtp.sh` (fluentMailSetSettings + gecici PHP dosyasi
+  yontemi; `sudo -E` tuzagina dusmez)
+- veya WP paneli → FluentSMTP → `smtp.timeweb.ru` → parolayi gir → Send Test Email
+
+**DIKKAT:** `chestnyznak.com.tr` DNS'i **arkadasin Cloudflare hesabinda**.
+Brevo'ya gecirmek DKIM/SPF kaydi eklemesini gerektirir ve calisan timeweb
+kurulumunu bozar — parola alinamazsa bile once sifirlama denenmeli.
 
 ### FluentForm form 9 bildirimleri (fdartgallery)
 
@@ -1136,13 +1202,30 @@ Dogrulandi: genel DNS'te **1 adet** SPF kaydi goruluyor.
 Worker disinda giden baska bir yol yok). `swordbros@gmail.com` hedef listesinden
 silindi.
 
-**ACIK KONU:** kullanici test mailinin `chemiartclick@gmail.com` kutusunda da
-gorundugunu bildirdi. Cloudflare tarafinda buna giden **hicbir yol yok**
-(tek kural Worker'a bagli, catch-all kapali, Worker listesinde bu adres yok).
-Sebep Cloudflare disinda olmali — muhtemelen Gmail tarafinda hesaplar arasi
-yonlendirme ya da "Baska hesaplardan posta al" ayari.
-Teshis: chemiartclick kutusundaki kopyada Gmail → mesaj → ⋮ → **"Orijinali
-goster"** → `Delivered-To:` ve `X-Forwarded-To:` basliklarina bakilacak.
+**ACIK KONU — fazladan kopya.** Test 1-3'un ucu de `chemiartclick@gmail.com`
+kutusunda da gorundu. Cloudflare tarafinda buna giden **hicbir yol yok**;
+ham kural dokumu ile dogrulandi:
+```
+Kural 1 : info@fdartgallery.com -> worker "fdart-info-dagitim"  (etkin, oncelik 0)
+Kural 2 : catch-all -> drop                                      (KAPALI)
+```
+Worker'in `ALICILAR` listesinde de bu adres yok. Test 3, kural degisikliginden
+8 dakika sonra gonderildi — yayilma gecikmesi aciklamasi elendi.
+
+**Test 4 (sonucu BEKLENIYOR):** Brevo'yu tamamen devre disi birakan test.
+Sunucudan dogrudan Cloudflare MX'ine SMTP ile teslim edildi:
+```
+route3.mx.cloudflare.net  ->  RCPT 250 2.1.0 Ok  ->  DATA 250 2.0.0 Ok
+zarf gonderen: test@vps-913eb1fb.vps.ovh.net  (PTR ileri-dogrulamali, SPF/DMARC yok)
+konu: "MX testi 4 - Brevo DEVRE DISI"
+```
+- Yalnizca `blgnklc@` + `fusundogan80@`'a geldiyse → kopyayi **Brevo** uretiyordu
+- `chemiartclick@`'e de geldiyse → kopya **Gmail tarafindaki bir yonlendirmeden**
+
+Ikinci ihtimalde gercek musteri mailleri de uc kutuya birden duser; Gmail →
+Ayarlar → "Yonlendirme ve POP/IMAP" ile "Hesaplar" sekmesi temizlenmeli.
+Kesin teshis: kopyada Gmail → mesaj → ⋮ → **"Orijinali goster"** →
+`Delivered-To:` ve `X-Forwarded-To:` basliklari.
 
 **Not:** yonlendirme etkinlik gunlugunu API'den okumak icin token'da
 `zone.analytics.read` yetkisi YOK (`emailRoutingAdaptive` sorgusu 403 doner).
