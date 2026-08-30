@@ -1131,8 +1131,24 @@ Dogrulandi: genel DNS'te **1 adet** SPF kaydi goruluyor.
 - `POST /zones/{zone}/email/routing/rules` — **hedef adres dogrulanmadan
   CALISMAZ**: `2054 Destination address is not verified`.
 
-**KALAN ADIM (kullanici):** `swordbros@gmail.com` kutusundaki Cloudflare
-dogrulama linkine tiklamak. Sonrasinda `info@` yonlendirme kurali olusturulur.
+**Durum (30.08.2026 20:35):** kurulum tamam, uc test maili gonderildi.
+`blgnklc@` ve `fusundogan80@` **aliyor** — yani Worker calisiyor (bu iki adrese
+Worker disinda giden baska bir yol yok). `swordbros@gmail.com` hedef listesinden
+silindi.
+
+**ACIK KONU:** kullanici test mailinin `chemiartclick@gmail.com` kutusunda da
+gorundugunu bildirdi. Cloudflare tarafinda buna giden **hicbir yol yok**
+(tek kural Worker'a bagli, catch-all kapali, Worker listesinde bu adres yok).
+Sebep Cloudflare disinda olmali — muhtemelen Gmail tarafinda hesaplar arasi
+yonlendirme ya da "Baska hesaplardan posta al" ayari.
+Teshis: chemiartclick kutusundaki kopyada Gmail → mesaj → ⋮ → **"Orijinali
+goster"** → `Delivered-To:` ve `X-Forwarded-To:` basliklarina bakilacak.
+
+**Not:** yonlendirme etkinlik gunlugunu API'den okumak icin token'da
+`zone.analytics.read` yetkisi YOK (`emailRoutingAdaptive` sorgusu 403 doner).
+Panelden bakilabilir: zone → Email → Email Routing → Activity log.
+Ayrica `workersInvocationsAdaptive` e-posta tetikli calismalari gostermiyor
+(0 kayit donuyor) — Worker'in calistigina bu dataset ile karar VERMEYIN.
 
 **Gonderim tarafi degismedi** — `info@` adresinden cikis hala Brevo uzerinden.
 Gmail'den `info@fdartgallery.com` kimligiyle yanit verebilmek icin:
