@@ -476,7 +476,25 @@ dokunmadan geri donduruyor. 6 sayfa / 406 gorsel taranarak dogrulandi: 0 kirik.
 - [ ] Kutuphanedeki 23 MB / 21 MB'lik islenmemis orijinaller hala duruyor;
       WordPress bunlari sayfada servis etmiyor ama disk kapliyor.
 - [ ] **Redis object cache** — dinamik sayfalarda ve panelde PHP suresini kisar.
-- [ ] Cloudflare: Brotli, Tiered Cache, statik icerik icin Cache Rules.
+- [x] **Cloudflare ayarlari (30.08.2026)** — her iki zone'da (fdartgallery.com,
+      chemiartclick.uk) acildi: `early_hints`, `0rtt`, `always_use_https`,
+      `h2_prioritization`, `tiered_caching`. `brotli` ve `http3` zaten aciktı.
+      `rocket_loader` **kapali birakildi** — Elementor sitelerinde JS bozuyor.
+      Statik icerik icin Cache Rule gerekmedi: nginx zaten
+      `Cache-Control: public, max-age=2592000, immutable` gonderiyor ve
+      CSS/JS edge'de `HIT` doneyor (dogrulandi).
+- [ ] **Asil kalan darbogaz: istemci tarafi varlik sayisi** (30.08.2026 olcumu)
+      - fdartgallery.com : 34 CSS + 34 JS + 240 KB HTML
+      - chestnyznak      : 52 CSS + 43 JS + 307 KB HTML
+      Sunucu tarafi bitti (onbellekten 6 ms); bundan sonraki kazanc eklenti
+      sayisini dusurmek, Elementor varlik yuklemesini optimize etmek ve
+      birlestirme/erteleme ile gelir. Sunucu erisimi gerektirir.
+- [ ] **Ucretli secenekler** (kullanici karari):
+      - Cloudflare APO (~5 USD/ay): HTML'i edge'de onbellege alir; su an
+        `cf-cache-status: DYNAMIC`, yani her sayfa istegi Londra'ya gidiyor.
+        Turkiye'deki ziyaretci icin en buyuk tek kazanc bu olur.
+      - Pro plan (~20 USD/ay): Polish + Mirage + "Vary for Images" — WebP'yi
+        Accept pazarligiyla dogru sekilde servis etmeyi mumkun kilar.
 - [ ] **Eklenti cakismasi**: hem `elementor-pro` hem `pro-elements` aktif —
       ikincisi Elementor Pro'nun kopyasi. Kurulumdaki fatal error da Elementor
       Pro'daydi. Incelenmeli (canliyi etkileyecegi icin kullanici karari).
