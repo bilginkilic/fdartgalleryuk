@@ -83,6 +83,12 @@ if [[ ! -f "${DST_ROOT}/wp-config.php" ]]; then
     sed -i "/WP_REDIS_/d;/WP_CACHE_KEY_SALT/d" "${DST_ROOT}/wp-config.php"
 fi
 
+# object-cache.php drop-in'i kaynaktan geliyor ama tanimlari sildik; tanimsiz
+# kalinca varsayilan Redis veritabanina baglanip ESKI degerleri servis ediyor
+# (siteurl guncellemesi sessizce etkisiz kaliyordu). Staging'de gerek yok.
+rm -f "${DST_ROOT}/wp-content/object-cache.php" \
+      "${DST_ROOT}/wp-content/advanced-cache.php"
+
 # Tablo onegi kaynaktan gelir; hedefin wp-config'ini ona esitle.
 PREFIX="$(mysql -N -B "$DST_DB" -e 'SHOW TABLES LIKE "%options"' 2>/dev/null \
     | grep -E 'options$' | head -1 | sed 's/options$//' || true)"
@@ -94,10 +100,21 @@ fi
 # --- 3) Adresler --------------------------------------------------------------
 echo "==> Adresler degistiriliyor"
 WP="sudo -u ${DST_USER} wp --path=${DST_ROOT} --skip-plugins --skip-themes"
-$WP search-replace "https://${SRC}" "https://${DST}" --all-tables --report-changed-only 2>/dev/null | grep -E "^Success" || true
-$WP search-replace "http://${SRC}"  "https://${DST}" --all-tables --report-changed-only 2>/dev/null | grep -E "^Success" || true
-$WP option update siteurl "https://${DST}" >/dev/null 2>&1 || true
-$WP option update home    "https://${DST}" >/dev/null 2>&1 || true
+
+# Kaynagin GERCEK adresini veritabanindan oku — dizin adi ile alan adi
+# ayrisabiliyor (orn. /var/www/chestnyznak.chemiartclick.uk sitesi artik
+# chestnyznak.com.tr adresinde yayinda).
+SRC_URL="$($WP option get siteurl 2>/dev/null | head -1)"
+SRC_HOST="${SRC_URL#https://}"; SRC_HOST="${SRC_HOST#http://}"; SRC_HOST="${SRC_HOST%%/*}"
+[[ -n "$SRC_HOST" ]] || SRC_HOST="$SRC"
+echo "    kaynak adres: ${SRC_HOST}  ->  ${DST}"
+
+# Hatalar GORUNSUN: bunlari bastirmak, adres degisimi sessizce basarisiz
+# oldugunda staging'in canliya yonlenmesine yol aciyordu.
+$WP search-replace "https://${SRC_HOST}" "https://${DST}" --all-tables --report-changed-only | grep -E "^Success"
+$WP search-replace "//${SRC_HOST}"       "//${DST}"       --all-tables --report-changed-only | grep -E "^Success"
+$WP option update siteurl "https://${DST}"
+$WP option update home    "https://${DST}"
 
 # --- 4) Staging korumasi ------------------------------------------------------
 echo "==> Staging koruma eklentisi"
