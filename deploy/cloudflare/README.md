@@ -11,7 +11,7 @@ kisiye dagitmak icin bu Worker kullaniliyor (bkz. CLAUDE.md 5j).
 3. Worker'i yeniden yukleyin:
 
 ```sh
-printf '%s' '{"main_module":"worker.js","compatibility_date":"2024-11-01"}' > /tmp/metadata.json
+printf '%s' '{"main_module":"worker.js","compatibility_date":"2024-11-01","observability":{"enabled":true,"head_sampling_rate":1}}' > /tmp/metadata.json
 curl -X PUT -H "Authorization: Bearer $cloudflare_api_token" \
   "https://api.cloudflare.com/client/v4/accounts/$cloudflare_account_id/workers/scripts/fdart-info-dagitim" \
   -F "metadata=@/tmp/metadata.json;type=application/json" \

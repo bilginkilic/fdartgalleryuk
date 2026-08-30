@@ -6,7 +6,13 @@ const ALICILAR = ["blgnklc@gmail.com", "fusundogan80@gmail.com"];
 export default {
   async email(message) {
     for (const adres of ALICILAR) {
-      await message.forward(adres);
+      try {
+        await message.forward(adres);
+        console.log("iletildi:", adres, "| gonderen:", message.from);
+      } catch (e) {
+        // Bir alici basarisiz olursa digerleri yine de denensin.
+        console.log("HATA:", adres, String(e));
+      }
     }
   },
 };
