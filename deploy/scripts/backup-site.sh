@@ -78,9 +78,13 @@ if [[ "$LOCAL_ONLY" == "0" ]]; then
         echo "    UYARI: rclone yapilandirilmamis, R2'ye kopyalanmadi." >&2
         echo "    Kurulum: sudo bash deploy/scripts/setup-backup.sh" >&2
     else
-        # R2, S3'un bazi ucra ozelliklerini desteklemiyor; checksum dogrulamasini
-        # kapatmak "501 Not Implemented" gurultusunu onler.
-        RC_OPTS=(--transfers 2 --retries 3 --s3-disable-checksum -q)
+        # R2 zaman zaman PutObject cagrilarina `501 Not Implemented` donuyor.
+        # Test edildi: `--s3-disable-checksum` olsun olmasin ayni oranda cikiyor,
+        # yani bayrakla ilgisi yok. rclone 501'i dusuk seviyede yeniden DENEMIYOR,
+        # dosyayi basarisiz sayip ust seviye tur dongusune birakiyor — bu yuzden
+        # tur sayisi yuksek tutuluyor; her turda kalan dosya sayisi hizla azaliyor.
+        RC_OPTS=(--transfers 2 --retries 10 --retries-sleep 5s
+                 --low-level-retries 20 --s3-disable-checksum -q)
 
         echo "==> Veritabani + kod arsivi R2'ye"
         rclone copy "$DEST" "${REMOTE}/snapshots" --include "*-${STAMP}.*" "${RC_OPTS[@]}"
