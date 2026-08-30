@@ -54,9 +54,18 @@ chmod 700 /root/.ssh
 touch /root/.ssh/authorized_keys
 chmod 600 /root/.ssh/authorized_keys
 
-PUBKEY="$(curl -fsSL "$KEY_URL")"
+# Once repodaki YEREL kopya denenir. Repolar ozel oldugu icin `curl` ile
+# raw.githubusercontent'ten cekmek kimlik dogrulamasi ister ve calismaz;
+# yerel dosya varsa ag hic gerekmez.
+LOCAL_KEY="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/claude-session-key.pub"
+if [[ -s "$LOCAL_KEY" ]]; then
+    PUBKEY="$(cat "$LOCAL_KEY")"
+    echo "    anahtar yerel dosyadan okundu: ${LOCAL_KEY}"
+else
+    PUBKEY="$(curl -fsSL "$KEY_URL" || true)"
+fi
 if [[ "$PUBKEY" != ssh-ed25519* ]]; then
-    echo "Anahtar indirilemedi." >&2
+    echo "Anahtar bulunamadi. Beklenen dosya: ${LOCAL_KEY}" >&2
     exit 1
 fi
 sed -i "/${KEY_TAG}/d" /root/.ssh/authorized_keys
