@@ -461,43 +461,56 @@ olsaydi bu bile calismazdi.
 
 Eski origin `5.42.123.26` (timeweb) geri donus yolu olarak durmali.
 
-#### Dev / staging ortamlari — **DNS HAZIR, siteler kurulmadi (30.08.2026)**
+#### Dev / staging ortamlari — **KURULDU (30.08.2026)**
 
-Amac: Elementor optimizasyonlari ve eklenti denetimi once burada denenecek,
-dogrulandiktan sonra canliya uygulanacak.
+| Dev adresi | Kaynak | Dizin | Durum |
+|---|---|---|---|
+| `dev.fdartgallery.com` | fdartgallery.com | `/var/www/dev.fdartgallery.com` | 200 |
+| `chestnyznak-dev.chemiartclick.uk` | chestnyznak.com.tr | `/var/www/dev.chestnyznak.chemiartclick.uk` | 200 |
 
-| Dev adresi | Kaynak | DNS |
-|---|---|---|
-| `dev.fdartgallery.com` | fdartgallery.com | A → 57.129.128.118, **proxied=ON** |
-| `dev.chestnyznak.chemiartclick.uk` | chestnyznak.chemiartclick.uk | A → 57.129.128.118, **proxied=ON** |
+**DIKKAT — ikinci sitenin dizin adi ile alan adi FARKLI.** Dizin hala
+`dev.chestnyznak...`, yayin adresi ise `chestnyznak-dev...`. Sebep asagida.
 
-`dev.fdartgallery.com` eskiden `147.45.254.181`'e bakiyordu; o sunucu **olu**
-(HTTP 503, HTTPS cevapsiz) — dogrulanip uzerine alindi.
-**Dikkat:** `cloudflare-dns.sh` proxy durumunu KORUDUGU icin `dev` kaydi
-proxied=OFF olarak tasindi ve elle ON'a cekildi. Origin yalnizca Cloudflare
-IP'lerini kabul ettigi icin proxy kapaliyken site erisilemez olur.
+Kurulum: `add-site.sh` → `certbot` → `clone-site.sh <kaynak-dizin> <hedef>`.
+`clone-site.sh` kaynagi yalnizca OKUR; canliya hicbir yazma yapmaz.
 
-Sunucu erisimi gelince yapilacaklar (her iki dev icin):
-```
-sudo bash deploy/scripts/add-site.sh   dev.fdartgallery.com
-sudo certbot --nginx -d dev.fdartgallery.com
-sudo bash deploy/scripts/clone-site.sh fdartgallery.com dev.fdartgallery.com
-```
+**Staging korumasi** (`fd-staging-guard.php`, otomatik kurulur):
+giden e-posta PHPMailer seviyesinde kesilir, `blog_public` 0'a zorlanir,
+panelde ve sayfa altinda "DENEME ORTAMI" bandi cikar. Dogrulandi.
 
-`clone-site.sh` canliyi staging'e kopyalar (dosya + veritabani, sunucu icinde,
-agdan veri gitmez), adresleri degistirir ve **canliya hic yazmaz**.
+##### Bu kurulumda cikan tuzaklar (hepsi cozuldu)
 
-**Staging korumasi** — `deploy/wordpress/staging-mu-plugins/fd-staging-guard.php`
-otomatik kurulur. Staging canli veritabaninin kopyasidir; icinde gercek musteri
-adresleri, siparisler ve WooCommerce zamanlanmis gorevleri vardir. Eklenti:
-- giden e-postayi **PHPMailer seviyesinde** keser (eklentiler "gonderildi" sanir,
-  hicbir mesaj disari cikmaz) — aksi halde staging gercek musterilere
-  "siparisiniz kargolandi" maili gonderebilir
-- `blog_public` degerini veritabanindan ne gelirse gelsin **0'a zorlar**
-- panelde ve sayfa altinda "DENEME ORTAMI" bandi gosterir
+1. **Cloudflare Universal SSL yalnizca TEK seviye alt alan adi kapsar.**
+   Sertifika `chemiartclick.uk` + `*.chemiartclick.uk` iceriyor;
+   `dev.chestnyznak.chemiartclick.uk` **iki seviye** oldugu icin Cloudflare
+   sertifika sunamadi → disaridan `TLS handshake failure` (sunucuda 200 idi).
+   Cozum: ad `chestnyznak-dev.chemiartclick.uk` olarak tek seviyeye indirildi.
+   Ucretli `Advanced Certificate Manager` alternatifti, gerek kalmadi.
+   → **Kural: yeni alt alan adlari tek seviye olsun.**
+2. `rsync -a` root olarak calisinca dosyalar KAYNAK kullanicida kaliyordu;
+   hedef kullanici `wp-config.php`'yi okuyamadigi icin tum wp-cli adimlari
+   "Permission denied" ile dusuyordu. `chown` artik rsync'in hemen ardinda.
+3. Kaynagin `object-cache.php` drop-in'i kopyalaniyor ama Redis tanimlari
+   siliniyordu; tanimsiz drop-in varsayilan veritabanina baglanip **eski**
+   `siteurl` degerini servis ediyordu — guncelleme sessizce etkisiz kaliyordu.
+   Clone artik bu drop-in'i (ve `advanced-cache.php`'yi) siliyor.
+4. Hata ciktilari `/dev/null`'a gidiyordu; adres degisimi basarisiz olunca
+   staging canliya yonleniyordu. Bastirma kaldirildi, artik hata script'i durdurur.
+5. Kaynak adres dizin adindan turetiliyordu; chestnyznak'ta dizin ile alan adi
+   ayrisinca yanlis adres arandi. Artik `siteurl` veritabanindan okunuyor.
+6. Vhost'ta `sed` ile ad degistirirken **sertifika yollari ve kok dizin de**
+   degisti → `nginx -t` coktu (nginx eski yapilandirmayla calismaya devam etti,
+   site etkilenmedi) ve sonra `404`. Yollar elle geri alindi.
+   → **Kural: vhost'ta ad degistirirken yalnizca `server_name` satirini degistir.**
 
-Bu eklenti `deploy/wordpress/mu-plugins/` icinde **degildir** — `deploy-site.sh`
-oradakileri her siteye kopyalar; staging korumasi canliya asla bulasmamali.
+##### Kalan kusur (kozmetik)
+
+Dev sayfalarinda hala az sayida canli adrese baglanti var
+(dev.fdartgallery ~13, chestnyznak-dev ~7). Elementor'un yeniden urettigi
+onbellekten ve tema ayarlarindan geliyor. Kacisli bicim (`https:\/\/...`)
+`/root/fixurl.sh` ile duzeltildi (611 + 422 degisiklik), gerisi icin
+Elementor > Tools > Regenerate CSS & Data calistirilmali.
+Gorsel ve icerik dogru; tikladiginda canliya giden birkac menu baglantisi var.
 
 #### Kalan siteler
 
