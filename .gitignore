@@ -1,0 +1,25 @@
+# Sirlar — bunlar ASLA commit edilmez.
+# (Repo ozel olsa bile: klonlar, yedekler ve CI loglari sizdirabilir.)
+wp-config.php
+*.token
+*token*.txt
+*secret*.txt
+*credentials*.txt
+.env
+.env.*
+/root/.my.cnf
+
+# Calisma zamani ciktilari
+wp-content/cache/
+wp-content/upgrade/
+wp-content/upgrade-temp-backup/
+wp-content/uploads/*/**.webp
+wp-content/advanced-cache.php
+wp-content/object-cache.php
+wp-content/wp-cache-config.php
+*.log
+
+# Yerel/gecici
+.DS_Store
+*.swp
+*.bak
