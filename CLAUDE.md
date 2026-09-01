@@ -21,7 +21,6 @@ Sunucu kurulumu, performans, guvenlik ve yedekleme bitti.
 | 2 | **Kalan 4 site** icin dosya arsivi + `.sql` + **orijinal `wp-config.php`** | fdsanatmerkezi, chemiartclick.uk apex, davetevet, byhio, wedreply |
 | 3 | **Kalici SSH anahtari** — public kismi bize, private kismi `VPS_SSH_PRIVATE_KEY` env'ine | Iki isi acar: haftalik blog Routine'inin kendi basina yayinlamasi **ve** SSH parola girisinin kapatilmasi (6c) |
 | 4 | **chestnyznak Rusya'dan acilmiyor** — gri buluta cekildi, yine acilmiyor. Geriye tek degisken **alan adi** | `chestnyznak-test.chemiartclick.uk` testinin sonucu bekleniyor (6d) |
-| 5 | **`webmail.chestnyznak.com.tr` bozuk** | Bizim IP'ye bakiyor, sunucuda vhost yok → magazaya 301. Timeweb'e yonlendirilmeli |
 
 ### Karar bekleyenler
 
@@ -406,6 +405,17 @@ Telegram grubuna dusmez. Ayri bir dev grubu acilirsa tek satir degisir.
   icin Email Worker gerekti (`deploy/cloudflare/email-worker.js`).
 - **`wp-super-cache` aktif ama etkisiz** (drop-in yok, `WP_CACHE` tanimsiz).
   Etkinlestirilirse nginx sayfa onbellegiyle cakisir — **aktif etmeyin**.
+- **`webmail.chestnyznak.com.tr` duzeltildi (01.09.2026).** Bizim IP'ye bakiyordu
+  ama vhost yoktu; istek ilk 443 bloguna dusup WordPress kanonik yonlendirmesiyle
+  **magazaya** gidiyordu. Simdi kendi Let's Encrypt sertifikasiyla
+  `https://mail.timeweb.com/` adresine 301. Kayit **griye** cekildi (Rusya).
+  **CNAME yapilmadi**, cunku timeweb `*.timeweb.com` sertifikasi sunuyor ve
+  tarayici uyari verirdi. Vhost: `deploy/nginx/sites-available/webmail.chestnyznak.com.tr.conf`
+  — icine `cloudflare-only.conf` EKLENMEZ.
+  > `mail.chestnyznak.com.tr` (CNAME → `mail.timeweb.com`) **bilerek
+  > DOKUNULMADI**: ayni sertifika uyusmazligi orada da var, ama bu ad bir posta
+  > istemcisinde (IMAP/SMTP sunucusu olarak) kullaniliyor olabilir; degistirmek
+  > calisan bir kurulumu kirar. Webmail icin dogru adres artik `webmail.` olani.
 - **`elementor_canvas` sablonu bos tuvaldir** (menu/logo/footer basilmaz).
   `kod-sorgulama` bu yuzden siteden kopuk aciliyordu → `elementor_header_footer`
   yapildi. Reklam acilis sayfalari (`urun-talep-formu`, `lp-iletisim-formu`,
