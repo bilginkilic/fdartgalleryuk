@@ -383,7 +383,7 @@ Adres degistiren her islemden sonra onbellek temizlenip **GET** ile test edilir.
 
 ### 6i. Cok dillilik — Polylang (dev, 01.09.2026)
 
-**YALNIZCA DEV.** Canliya alinmadi; canlida Polylang kurulu degil.
+**CANLIDA VE DEV'DE AKTIF (01.09.2026).**
 
 **Neden Polylang:** ucretsiz surumu **sinirsiz dil** destekliyor. TranslatePress'in
 ucretsiz surumu yalnizca **1** ek dil verir — bize 2 lazimdi (EN + RU). WPML ucretli.
@@ -477,11 +477,47 @@ Canli ve fdartgallery etkilenmedi.
 > blogu zaten `document.documentElement.lang` degerine bakip TR/RU arasinda
 > geciyor — Rusca sayfada kendiliginden Rusca calisiyor.
 
+#### Altbilgi ve widget — tema duzenini dile gore secmek
+
+Altbilgi bir `cpt_layouts` duzenidir ve tema onu `footer_style` ayarindan
+secer; ayar TEK degerdir, dil bilmez. Duzenin cevirisi olsa bile tema hep
+Turkce olani basardi.
+
+**Iki yol denendi ve OLMADI — tekrar denenmesin:**
+1. `theme_mod_footer_style` filtresi → tema `get_theme_mod()` **kullanmiyor**,
+   kendi deposundan (`qwery_storage`) okuyor.
+2. `get_footer` kancasinda depoyu degistirmek → depo dize degil, ayarin **tum
+   tanim dizisini** tutuyor (gercek deger `['val']` icinde) ve deger zaten
+   `static` degiskende onbelleklenmis oluyor.
+
+**Calisan yol:** temanin `qwery_get_custom_footer_id()` fonksiyonu
+`function_exists()` ile korunuyor. mu-plugin'ler temadan **once** yuklendigi
+icin ayni adla tanimlayinca tema kendi surumunu tanimlamiyor.
+→ `deploy/wordpress/lead-mu-plugins/fd-i18n-layouts.php`
+
+Ayni dosya, tema widget alanindaki 4 `extra_item` baglantisini de
+`widget_custom_html_content` filtresiyle **sunucu tarafinda** ceviriyor.
+Widget'i dile bolmek icindeki cz-* scriptlerini kirardi; JS enjeksiyonu da
+kural geregi kullanilmadi.
+
+#### Olculen sonuc (01.09.2026, canli)
+
+```
+/     kalan Turkce metin: 63 (dogru — Turkce sayfa)
+/en/  kalan Turkce metin:  2 → ikisi de kendi Ingilizce cevirimizde gecen
+                              "Türkiye" ulke adi; dogru kullanim
+/ru/  kalan Turkce metin:  0
+```
+Uc sayfa da tarayicida GORUNUR: body 1280x8386/7118, `#cz-lead` 1280x1066.
+Form ucu canlida: `{"stored":true,"relay":"gonderildi (302)"}`.
+Tum sayfalar 200; fdartgallery ve dev etkilenmedi.
+
 #### Kalan is (kullanici karari)
 
-Ceviri **yalnizca ana sayfada**. 177 sayfa, blog, magaza ve WooCommerce
-urunleri hala tek dilde. WooCommerce urunlerinin cevirisi Polylang'in
-ucretli eklentisini gerektirir. Hangi sayfalarin cevrilecegi icerik karari.
+Ceviri **ana sayfa + menu + altbilgi** ile sinirli. 177 ic sayfa, blog
+yazilari, magaza ve WooCommerce urunleri hala tek dilde. WooCommerce
+urunlerinin cevirisi Polylang'in **ucretli** eklentisini gerektirir.
+Hangi sayfalarin cevrilecegi icerik karari.
 
 ### 6g. Basvuru formu (chestnyznak ana sayfa)
 
