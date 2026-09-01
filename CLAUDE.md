@@ -1989,11 +1989,68 @@ Dogrulandi: ana sayfa 200, bes template de yerinde, "Hemen Basvurun" karti
 duruyor, ham `[rev_slider]` kalintisi 0, diger sayfalar 200, Elementor
 editoru 200 ve fatal yok.
 
-### Sirada ne var (kullanici onayi bekliyor)
+### ADIM 2 (B) YAPILDI — sol kolon yerel Elementor widget'lari (dev, 01.09.2026)
 
-- **B adimi:** blok icindeki baslik / alt metin / butonlar yerel Elementor
-  widget'larina cevrilsin mi? O zaman gorsel olarak duzenlenebilir olur.
-  Lead formu karti HTML olarak kalmali.
+Ust blok artik gercek bir Elementor **section**'dir (`_element_id = cz-lead`,
+iki kolon 52/48):
+
+| Kolon | Icerik |
+|---|---|
+| Sol (`cz-lead-copy`) | gizli **assets** HTML widget'i (style + 4 template + scriptler) + **6 ayri text-editor widget'i**: eyebrow, H1, alt metin, rozetler, guven satiri, dipnot |
+| Sag | tek **HTML widget** — `cz-lead-formwrap` karti, AJAX akisi ve kupon ekrani **aynen** korundu |
+
+Her metin parcasi Elementor'un gorsel editorunde ayri ayri tiklanip
+duzenlenebilir. Ozgun `.cz-lead-*` sinif adlari markup'in **icinde** durdugu
+icin mevcut CSS aynen calisiyor; Elementor sarmalayicilarini uyumlu kilmak
+icin kucuk bir **koprü CSS**'i eklendi (`/*cz-elementor-bridge*/`):
+
+```css
+#cz-lead > .elementor-container{max-width:1180px;margin:0 auto;padding:0 22px;align-items:center}
+#cz-lead .elementor-widget:not(:last-child){margin-bottom:0}
+.cz-lead-assets{display:none!important}
+```
+
+Script: `deploy/scripts/migrate-czlead-to-elementor.php` (`dry` argumaniyla
+kuru calisir). Yedek: `/root/backups/dev-before-B-*.sql`
+
+#### ONEMLI TUZAK — wp-cli ile kaydederken `<style>`/`<script>` SILINIYOR
+
+Ilk denemede blok bozuldu: CSS sayfaya `<style>` etiketi olmadan **ciplak
+metin** olarak basildi. Sebep: wp-cli'de oturum acmis kullanici yoktur,
+`current_user_can('unfiltered_html')` **false** doner ve WordPress
+`_elementor_data` icindeki `<style>`, `<script>`, `<template>` etiketlerini
+temizler. Sessizce olur, hata vermez.
+
+**Cozum:** komutu yonetici baglaminda calistirin —
+`wp --user=<admin> eval-file ...` (`unfiltered_html` = true dogrulandi).
+Script ayrica **kayittan sonra kendini dogruluyor**: `<style>`, `<script>` ve
+`<template` kayitta yoksa degisikligi otomatik **geri aliyor**.
+
+> Kural: Elementor verisine HTML yazan her script `--user=<admin>` ile
+> calistirilmali ve kayit sonrasi dogrulama yapmali.
+
+#### Ikinci tuzak — onbellege yazilmis 301
+
+Adres degisiminden sonra ana sayfa bir sure `301 -> kendisi` doneyordu.
+Uygulama hatasi degildi: nginx sayfa onbellegine, rename sirasinda uretilmis
+bir WordPress kanonik yonlendirmesi yazilmisti (`X-FastCGI-Cache: HIT`,
+`X-Redirect-By: WordPress`). `HEAD` istegi 200, `GET` 301 veriyordu — ayirt
+edici isaret budur. Onbellek temizlenince gecti.
+**Adres degistiren her islemden SONRA onbellek temizlenmeli ve GET ile
+yeniden test edilmeli.**
+
+#### Dogrulandi (01.09.2026)
+
+```
+ana sayfa 200 / 292 KB      ozgun CSS <style> icinde: EVET
+kopru CSS <style> icinde    kalan template: 4 (vals/stats/cases/marquee)
+icerik tekrari YOK          form: 3 alan + gonder butonu yerinde
+section id=cz-lead: 1       Elementor editoru: 200, fatal yok
+/ /hakkimizda/ /iletisim/ /kod-sorgulama/ /blog-standard/ /shop/ /cart/ -> hepsi 200
+diger sayfalarda blok sizintisi: 0
+```
+
+### Sirada ne var (kullanici onayi bekliyor)
 - **Canliya alma:** ayni tasima `chestnyznak.com.tr` icin de yapilmali.
   Kullanici dev'i onayladiktan sonra.
 - **Kalan enjeksiyonlar:** widget'ta hala 35.847 bayt ve su bloklar duruyor —
