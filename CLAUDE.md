@@ -416,9 +416,43 @@ ile basliyordu; CSS'te de 7 adet `body.page-id-5002` kurali vardi. Dil kopyalari
 enjekte edilen bolumler gelmezdi. Duzeltildi:
 
 - script kilavuzu → `if(!document.getElementById('cz-lead'))return;`
-- CSS `body.page-id-5002` → `body.frontpage, body.home`
+- CSS `body.page-id-5002` → **`body.frontpage`**
 
-> Bu tema on sayfaya `home` DEGIL `frontpage` sinifi basiyor; ikisi birden yazildi.
+> Bu tema on sayfaya `home` DEGIL `frontpage` sinifi basiyor.
+
+##### TUM SAYFAYI BEYAZ YAPAN HATA — dikkat
+
+Ilk denemede CSS'i `body.frontpage, body.home` ile degistirdim. Bu **YANLIS**:
+o kurallar zaten **virgullu secici listesiydi** —
+
+```css
+body.page-id-5002 .elementor-element-85f2abf,body.page-id-5002 .elementor-element-3c0b548{display:none!important}
+```
+
+duz metin degisimi sonucu
+
+```css
+body.frontpage, body.home .elementor-element-85f2abf,body.frontpage, ...{display:none!important}
+```
+
+oldu. Listede artik **ciplak `body.frontpage`** var → `body{display:none}` →
+**butun sayfa beyaz**. Dev'de uc sayfada 14'er secici bozuldu.
+
+**Ders 1 — bir secici icinde virgullu liste ile degisim yapmayin.** Cok
+bilesenli seciciyi tek bilesikle degistirin (`body.frontpage`).
+
+**Ders 2 — VARLIK kontrolu GORUNURLUK kontrolu DEGILDIR.** HTTP 200 doneyordu,
+HTML 303 KB'di, `getElementById` her seyi buluyordu; sunucu testlerinin hepsi
+yesildi. Sayfa yine de bomboştu. Bundan sonra tarayici testinde
+`getComputedStyle(body).display` ve `getBoundingClientRect()` olculur:
+
+```js
+const bb = e => { const r = e.getBoundingClientRect(); return {w:r.width, h:r.height}; };
+// body yuksekligi > 200 ve #cz-lead yuksekligi > 100 olmali
+```
+
+Duzeltme sonrasi olculen: body 1280x8386, `#cz-lead` 1280x1066, H1 614x146.
+**Canli ETKILENMEDI** — bu degisiklik yalnizca dev'e uygulanmisti.
 
 #### Menu ve dil degistirici
 
