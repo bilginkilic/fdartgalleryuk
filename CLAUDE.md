@@ -6,10 +6,11 @@ Bir adim tamamlandiginda bu dosyadaki kutucugu isaretle ve commit et.
 
 ---
 
-## 0. SU AN NE KALDI (30.08.2026 sonu)
+## 0. SU AN NE KALDI (01.09.2026 sonu)
 
 Yayindaki siteler: **fdartgallery.com**, **chestnyznak.com.tr** (+ iki dev ortami).
 Sunucu kurulumu, performans, guvenlik, yedekleme ve fdartgallery e-postasi bitti.
+Blog uretimi icin haftalik Routine kuruldu (5m).
 
 ### Kullanicidan bekleyenler (bunlar olmadan ilerlenemez)
 
@@ -19,7 +20,8 @@ Sunucu kurulumu, performans, guvenlik, yedekleme ve fdartgallery e-postasi bitti
 | 2 | **info@ fazladan kopya** — "MX testi 4" hangi kutulara geldi? | Kopyanin Brevo'dan mi Gmail'den mi geldigini ayirt eden test (5j) |
 | 3 | **Kalan 4 site** icin dosya arsivi + `.sql` + **orijinal `wp-config.php`** | fdsanatmerkezi, chemiartclick.uk apex, davetevet, byhio, wedreply (5F) |
 | 4 | **chestnyznak gri, ama Rusya'dan HALA acilmiyor.** Ayni IP'deki `origin.chemiartclick.uk` aciliyor → geriye tek degisken ALAN ADI. SNI engellemesi test ediliyor | `chestnyznak-test.chemiartclick.uk` sonucu bekleniyor. Isim engelliyse barindirma degisikligi cozmez (5l) |
-| 5 | **PTR** posta alan adina cevrilsin mi | OVH Manager'dan; API yetkisi yok. **Oncelik dusuk** — mevcut PTR calisiyor (5E) |
+| 5 | **Kalici SSH anahtari** — public kismi bize, private kismi `VPS_SSH_PRIVATE_KEY` env'ine | Iki isi birden acar: haftalik blog Routine'inin kendi basina yayinlamasi (5m) **ve** SSH parola girisinin kapatilmasi (5k) |
+| 6 | **PTR** posta alan adina cevrilsin mi | OVH Manager'dan; API yetkisi yok. **Oncelik dusuk** — mevcut PTR calisiyor (5E) |
 
 ### Karar bekleyenler (aciliyeti yok)
 
@@ -29,15 +31,18 @@ Sunucu kurulumu, performans, guvenlik, yedekleme ve fdartgallery e-postasi bitti
   `elementor-pro` + `pro-elements` cakismasi (5b)
 - **SSH parola girisi**: sertlestirmenin geri kalani yapildi (5k); parolayi
   kapatmak icin kullanicinin **public key**'i lazim — sunucuda hic kalici
-  anahtar yok, script guvenlik geregi reddediyor
-- **Kalici tunel**: `cloudflared` servisi sunucuda kurulu degil; su anki erisim
-  Access service token ile calisiyor (3. bolum)
+  anahtar yok, script guvenlik geregi reddediyor (yukaridaki 5. madde)
+- **Blogun en eski 4 yazisi**: slug'lari hala temanin Ingilizce demo slug'i.
+  Duzeltmek adresi kirar → 301 gerekir. Ayrinti `deploy/blog/BACKLOG.md` (5m)
 
 ### Kozmetik / kucuk
 
 - Dev sitelerinde birkac canli adrese baglanti kaldi → Elementor > Tools >
   Regenerate CSS & Data
 - Kutuphanede islenmemis buyuk orijinal gorseller disk kapliyor (5b)
+- **Duzeltme (01.09.2026):** 3. bolumdeki "cloudflared servisi kurulu degil"
+  notu artik gecerli degil — servis sunucuda **active**, adlandirilmis tunel
+  (`ssh.fdartgallery.com`) Access service token ile calisiyor.
 
 ---
 
@@ -1706,6 +1711,110 @@ CF_SWORDBROS_R2_ENDPOINT             # simdilik GEREKMIYOR
 gorunmuyordu, bir sure sonra GORUNDU. Yani ortam degisikligi calisan konteynere
 gecikmeli yansiyor — hemen gorunmezse birkac dakika sonra tekrar bakin,
 yeni oturum acmaya gerek yok.
+
+---
+
+## 5m. Blog / icerik uretimi — chestnyznak.com.tr (01.09.2026)
+
+Amac: arama motorlarinda bulunabilirlik ve ziyaretcinin iletisim formuna /
+WhatsApp'a ulasmasi. Site trafigi zaten hizli (onbellekten 6 ms); buyume artik
+icerikten gelecek.
+
+### Kurulan araclar (`deploy/blog/`)
+
+| Dosya | Ne ise yarar |
+|---|---|
+| `README.md` | Yazi kurallari, yayinlama komutlari, yayin sonrasi dogrulama |
+| `BACKLOG.md` | Konu kuyrugu (19 konu) + yayinlanmis yazilarin listesi — **tek dogruluk kaynagi** |
+| `cover.php` | 1200x630 kapak gorseli uretir (PHP GD + temanin Montserrat fontlari) |
+| `queue/` | Yayinlanan yazilarin HTML kaynagi |
+
+`cover.php` mevcut kapaklarin gorsel dilini birebir taklit eder: koyu lacivert
+degrade, sol ustte sari rozet, beyaz baslik + sari alt baslik, sari cizgi, marka
+blogu ve sagda DataMatrix'i andiran **dekoratif** kare. Desen `--seed` (slug)
+degerinden turetilir → ayni yazi her zaman ayni gorseli uretir.
+Sunucudaki kopya: `/opt/fdartgalleryuk/deploy/blog/cover.php`
+
+### Haftalik Routine
+
+| Alan | Deger |
+|---|---|
+| Ad | `chestnyznak blog — haftalik yazi` |
+| Trigger ID | `trig_01Q2abbcd19d1CQem3fs5Z7M` |
+| Zamanlama | `0 6 * * 2` — her **Sali 06:00 UTC** (Istanbul 09:00) |
+| Mod | her tetiklemede **yeni oturum** (`create_new_session_on_fire`) |
+| Bildirim | push + e-posta |
+
+Rutin sirayla: `BACKLOG.md`'den en ustteki isaretlenmemis konuyu alir, yaziyi
+yazar, kapagi uretir, yayinlar, dogrular, kutucugu isaretler ve dala push eder.
+
+### RUTIN SU AN TAM OTOMATIK DEGIL — sebebi
+
+Yeni oturum sunucuya **giremez**. Tunel tarafi hazir (`CLOUDFLARE_CF_Access_Client_Id`
+ve `CLOUDFLARE_CF_Access_Client_Secret` ortam degiskenlerinde kalici duruyor), ama
+`/root/.ssh/authorized_keys` yalnizca **oturuma ozel gecici** anahtar tutuyor
+(`claude-session-*`) ve ozel anahtar oturumun konteynerinde kalir — konteyner
+geri alininca kaybolur. Yeni oturumun anahtari sunucuda olmaz.
+
+Bu yuzden rutin **kademeli calisir**: sunucuya baglanabiliyorsa yayinlar;
+baglanamiyorsa yaziyi + kapagi `deploy/blog/queue/` altina yazip dala push eder
+ve kullaniciyi uyarir. Yani hicbir emek kaybolmaz, yalnizca yayinlama elle kalir.
+
+**Tek seferlik cozum (kullanici yapmali)** — 5k'daki adimla ayni is:
+1. Kendi makinesinde `ssh-keygen -t ed25519 -C "bilgin-laptop"`
+2. **Public** kismi paylasilir → `sudo bash deploy/scripts/harden-ssh.sh --add-key "<public key>"`
+3. **Private** kismi ortam degiskenine konur: `VPS_SSH_PRIVATE_KEY`
+   (rutin prompt'u bu degiskeni ariyor ve varsa kuruyor)
+
+Bu yapilinca hem rutin tam otomatiklesir hem de 5k'daki `--disable-password`
+adimi acilir. Ozel anahtar sohbete yazilmaz; ortam degiskenine kullanici koyar.
+
+### 01.09.2026'da yayinlanan yazi
+
+`Rusya’da EDO (Elektronik Belge Akisi) Nedir? Chestny Znak Devir Bildiriminin Sarti`
+ID **37684**, slug `rusya-edo-elektronik-belge-akisi-chestny-znak`.
+Dogrulandi: sayfa 200, `/blog-standard/` listesinde var, `post-sitemap.xml`
+iceriyor, `og:image` one cikan gorseli gosteriyor.
+
+### Yan bulgu — `robots.txt` iki sitede de 404 DONUYORDU (duzeltildi)
+
+`snippets/wordpress.conf` icindeki
+
+```nginx
+location = /robots.txt { access_log off; log_not_found off; allow all; }
+```
+
+blogunda **`try_files` yoktu**. Diskte fiziksel `robots.txt` olmadigi icin nginx
+dogrudan 404 donuyor, istek WordPress'e hic ulasmiyordu. Sonuc: Yoast'in
+urettigi sanal `robots.txt` ve icindeki `Sitemap:` satiri **kanonik adresinde
+yoktu** — arama motoru site haritasini oradan bulamiyordu.
+
+`try_files $uri /index.php?$args;` eklendi. Dogrulandi: her iki sitede de
+`robots.txt` 200 doneyor ve `Sitemap: https://<domain>/sitemap_index.xml`
+satirini iceriyor. Yedek: `/root/backups/wordpress.conf-*.bak`
+
+### Yan bulgu — `kod-sorgulama` sayfasi siteden kopuktu (duzeltildi)
+
+Sayfa `_wp_page_template = elementor_canvas` ile kayitliydi. Elementor Canvas
+**bos tuval**dir: ust menu, logo ve altbilgi hic basilmaz. Menuden tiklayan
+ziyaretci siteden cikmis gibi bir sayfaya dusuyordu (kullanici bunu "yeni sayfada
+aciliyor" diye tarif etti). Menu ogesinin `_menu_item_target` degeri bostu, yani
+sorun `target="_blank"` DEGILDI.
+
+`elementor_header_footer` yapildi (Elementor Full Width: tema basligi + altbilgi
+var, kenar cubugu yok). Sayfa 95 KB → 241 KB; logo, menu ve footer geldi, arac
+calismaya devam ediyor. Yedek: `/root/backups/kod-sorgulama-template-*.txt`
+
+> **Dikkat:** `urun-talep-formu`, `site-iletisim-formu`, `lp-iletisim-formu`,
+> `datamatrix-kod-etiket` gibi sayfalar **bilerek** `elementor_canvas` — onlar
+> reklam acilis sayfasi (LP), site navigasyonu istenmiyor. Onlara dokunmayin.
+
+### Kullanici karari bekleyen (blog tarafi)
+
+En eski 4 yazinin slug'i hala temanin **Ingilizce demo slug'i**
+(`why-do-we-love-our-gadgets-so-much` gibi) — icerikleri gercek ve Turkce ama
+adreste anahtar kelime yok. Slug degistirmek adresi kirar; yapilirsa **301
+yonlendirme** kurulmali. Ayrinti ve tablo: `deploy/blog/BACKLOG.md`
 
 ---
 
