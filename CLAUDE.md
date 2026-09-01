@@ -1955,18 +1955,56 @@ duruyor ve JS ile sayfaya enjekte ediliyor. Bu yuzden:
 Ayrica ana sayfadaki `trx_widget_slider`, temanin **demo** slider'ini
 (`schem1.png`) cagiriyor — gorunmeyen bir artik.
 
-### Yapilmasi gereken (kullanici onayi bekliyor)
+### ADIM 1 YAPILDI — ana sayfa blogu Elementor'a tasindi (dev, 01.09.2026)
 
-Kurala uymak icin bu bloklarin Elementor icerigine tasinmasi gerekir. Iki yol:
+Kullanici **A yolunu** secti: blok oldugu gibi Elementor HTML widget'ina
+tasinsin, ic yapisi korunsun.
 
-| | Yontem | Kazanc | Risk |
-|---|---|---|---|
-| A | Bloklari oldugu gibi Elementor **HTML widget**'ina tasi, JS enjeksiyonunu kaldir | Editorde gorunur, tasinabilir, sayfaya baglanir; capraz sayfa sizintisi biter | Dusuk. Ic icerik hala HTML kutusunda duzenlenir |
-| B | Metin/baslik/butonlari **yerel Elementor widget'lariyla** yeniden kur, formu HTML olarak birak | Baslik, metin ve butonlar gorsel olarak duzenlenebilir | Orta. Stil birebir tutturulmali |
+`CZLEAD-START` / `CZLEAD-END` isaretleri arasindaki **21.266 baytlik** bolge
+(bir `<style>`, **5 template** — `cz-lead-tpl`, `cz-vals-tpl`, `cz-stats-tpl`,
+`cz-cases-tpl`, `cz-mar-tpl` — ve enjeksiyon/form JS'i) widget'tan cikarilip
+ana sayfanin (`post 5002`) Elementor verisine **HTML widget** olarak konuldu.
+
+Yerlestirme yeri bilerek secildi: oradaki **olu `trx_widget_slider`** widget'i
+ile YER DEGISTIRDI. O widget temanin demo Revolution Slider'ini
+(`schem1.png`) cagiriyordu — kullanicinin editorde gordugu bos beyaz alan
+buydu.
+
+Script: `/tmp/migrate.php` (tek seferlik). `dry` argumaniyla kuru calistirilir.
+Yedek: `/root/backups/dev-before-czlead-2026-09-01-1343.sql` (44 MB)
+
+**Olculen sonuc:**
+
+| | Once | Sonra |
+|---|---|---|
+| `_elementor_data` (ana sayfa) | 20.830 bayt | **42.967 bayt** |
+| `trx_widget_slider` | 1 | **0** |
+| `html` widget | 0 | **1** |
+| Blok **diger** sayfalarda | /hakkimizda/, /iletisim/, /blog-standard/ hepsinde vardi | **0** — hepsinden kalkti |
+
+Yan kazanc: blok her sayfanin kaynaginda 21 KB olu isaretleme olarak
+tasiniyordu, artik yalnizca ana sayfada.
+
+Dogrulandi: ana sayfa 200, bes template de yerinde, "Hemen Basvurun" karti
+duruyor, ham `[rev_slider]` kalintisi 0, diger sayfalar 200, Elementor
+editoru 200 ve fatal yok.
+
+### Sirada ne var (kullanici onayi bekliyor)
+
+- **B adimi:** blok icindeki baslik / alt metin / butonlar yerel Elementor
+  widget'larina cevrilsin mi? O zaman gorsel olarak duzenlenebilir olur.
+  Lead formu karti HTML olarak kalmali.
+- **Canliya alma:** ayni tasima `chestnyznak.com.tr` icin de yapilmali.
+  Kullanici dev'i onayladiktan sonra.
+- **Kalan enjeksiyonlar:** widget'ta hala 35.847 bayt ve su bloklar duruyor —
+  `cz-hero-block`, `cz-home`, `cz-header`, `cz-banner`, `cz-news`, `cz-wa`,
+  `cz-contact`, `cz-shop`, `cz-cookie`, `cz-audit`, `cz-relabel`,
+  `cz-fixlinks`, `cz-btn-brand`, `cz-urun-talep`. Bunlar da sirayla
+  tasinmali; her biri ayri dogrulama ister.
 
 **Dokunulmamasi gereken:** `cz-lead` formunun AJAX akisi, kupon ekrani ve
-donusum izleme etiketi. Bunlar sitenin ana lead toplama yolu; yeniden yazilirsa
-izleme kirilabilir. Her iki yolda da form kartinin JS'i oldugu gibi tasinmali.
+donusum izleme etiketi. Sitenin ana lead toplama yolu bu; yeniden yazilirsa
+izleme kirilabilir. Tasimalarda form JS'i oldugu gibi korunmali.
 
 ---
 
