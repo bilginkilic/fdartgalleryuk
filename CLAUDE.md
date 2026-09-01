@@ -753,21 +753,45 @@ Kisisel adresler (`swordali@gmail.com`, `blgnklc@gmail.com`) alicilardan
 cikarildi. Arac: `deploy/scripts/eposta-alicilari.php` (`dry` destegi var,
 yeniden calistirilabilir).
 
-Dokunulan yerler:
-- **CF7 "Contact form (main)"** (canli #5; dev'de ayrica EN #37757, RU #37759)
-- **FluentForm** 2, 6, 9, 10, 11 — ekip bildirimleri
-- **`fd-lead-capture.php`** — `FD_LEAD_NOTIFY_EMAIL` + yeni `FD_LEAD_NOTIFY_CC`
-  (wp-config'de tanimli, repoya yazilmaz)
+**Politika** (`deploy/scripts/eposta-alicilari.php`, `dry` destegi var,
+yeniden calistirilabilir; iki sitede de uygulandi):
+
+| Alan | Kural |
+|---|---|
+| Alici | `admin_email` disindaki her alici → To `info@`, Cc `oguzk@` |
+| Gonderen | Alan adi `chestnyznak.com.tr` DISINDA olan her gonderen → `info@` |
+| Bcc | `chestnyznak.com.tr` disindaki bcc adresleri kaldirilir |
+
+`wordpress@chestnyznak.com.tr` **dokunulmaz** — dogru alan adinda ve SPF/DKIM
+zaten bu alana kurulu.
+
+Kapsanan yerler: **9 CF7 formu** (8'i temanin demo formuydu, hepsi
+`test@fwe.com`'a gidiyordu), **FluentForm 2/3/4/6/8/9/10/11**, **WooCommerce**
+(siparis + stok bildirimi alicilari, `from_address`, `from_name`),
+`booked_email_force_sender_from`, tema iletisim widget'i ve
+**`fd-lead-capture.php`** (`FD_LEAD_NOTIFY_EMAIL` + `FD_LEAD_NOTIFY_CC`,
+wp-config'de tanimli, repoya yazilmaz).
+
+#### Iki yerde bilerek FARKLI davranildi
 
 > **Otomatik yanitlara `sendTo` olarak ekip adresi YAZILMAZ.** FluentForm 3, 4
 > ve 8'in bildirimi `sendTo.type = field` — alicisi BASVURANIN kendisidir.
 > Oraya ekip adresi yazmak musteriye giden yaniti kirar. Ekip kopyasi
-> yalnizca `cc` alanina eklendi; `bcc` alanlarina dokunulmadi.
+> yalnizca `cc` alanina eklendi.
 
-**Dokunulmayanlar (ayri karar):** temanin demo CF7 formlari (`test@fwe.com`),
-WooCommerce siparis e-postalari. WooCommerce `from_address` **hala
-`test@fwe.com`** — demo kalintisi; magazada fiyat/siparis akisi olmadigi icin
-bugun zararsiz, ama siparis acilirsa gonderen adres gecersiz olur.
+> **"E-postayla paylas" dugmesi bir alici ayari DEGILDIR.**
+> `trx_addons_options[share][*][url]` icinde `mailto:test@fwe.com?...`
+> duruyordu. O baglanti ZIYARETCININ posta istemcisini acar; oraya ekip
+> adresi yazmak "yaziyi paylas" dugmesini "bize e-posta gonder"e cevirirdi.
+> Dogrusu alici kismini bos birakmaktir: `mailto:?subject=...`.
+
+**Kaldirilan bcc'ler:** FluentForm 3/4'te `ali.kilic@swordbros.com`, 8'de
+`ali.kilic@swordbros.ru`. Ikili zaten `cc`'de oldugu icin kopya kaybolmuyor;
+ayri bir ic dagitim istenirse geri eklenir.
+
+**Hala demo verisi:** tema iletisim widget'inin adres ve telefon alanlari
+(Berlin adresi, +1 telefon). Widget `wp_inactive_widgets` icinde, yani
+kullanilmiyor; kullanilacaksa elle duzeltilmeli.
 
 ### 6h. Diger
 
