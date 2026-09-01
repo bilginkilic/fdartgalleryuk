@@ -1454,7 +1454,53 @@ Ek veri noktalari: Wi-Fi/sabit hattan da denesin (Rus mobil operatorleri daha
 agresif kisitliyor); `chestnyznak.chemiartclick.uk` de denesin (o da CF arkasinda
 — ikisi de timeout ise engel alan adina degil Cloudflare'e).
 
-#### Griye cekme plani (test OLUMLU cikarsa) — SIRA KRITIK
+#### UYGULANDI — adim 1 ve 2 (01.09.2026)
+
+Kullanici karari: *"Rusya'daki herkesin ya da dunyadaki herkesin bu siteye
+girebilmesini istiyorum."* Buna gore ufw + nginx tarafi yapildi. **DNS henuz
+degismedi** — chestnyznak hala Cloudflare uzerinden de calisiyor.
+
+| Bilesen | Durum |
+|---|---|
+| `conf.d/01-cf-peer.conf` | `geo $realip_remote_addr $cf_peer` — 23 aralik + loopback |
+| `snippets/cloudflare-only.conf` | `if ($cf_peer = 0) { return 444; }` |
+| Eklendigi vhost'lar | fdartgallery.com, dev.fdartgallery.com, dev.chestnyznak.chemiartclick.uk |
+| chestnyznak vhost | **kosul YOK** — dogrudan erisime acik (kasitli) |
+| ufw | `80,443/tcp ALLOW Anywhere` eklendi; CF aralik kurallari duruyor (zararsiz yedek) |
+
+**Neden `$realip_remote_addr`, `$remote_addr` DEGIL:** real_ip modulu
+`$remote_addr`'i CF-Connecting-IP ile degistiriyor. Gercek TCP eslenigini
+yalnizca `$realip_remote_addr` tutar; ayrimi yapabilen tek degisken bu.
+
+**Dogrulandi** (sunucunun kendi genel IP'sinden, ne loopback ne Cloudflare):
+```
+fdartgallery.com      -> 444 (log: 57.129.128.118 ... "GET /" 444 0)
+dev.fdartgallery.com  -> 444
+chestnyznak.com.tr    -> 200
+```
+Cloudflare uzerinden hepsi 200 (ana sayfa/magaza/sepet/hesabim/dev'ler).
+
+**TEST TUZAGI — bu oturumdan yapilan "baypas" testi GECERSIZDIR.** Konteynerde
+`HTTPS_PROXY` tanimli; curl proxy'ye `CONNECT <host>:443` diyor ve `--resolve`
+YOK SAYILIYOR (adi proxy cozuyor), yani istek yine Cloudflare'den gidiyor ve
+yaniltici 200 doner. Dogru test sunucunun kendi genel IP'sinden:
+`curl --interface 57.129.128.118 --resolve <host>:443:57.129.128.118 ...`
+
+**`update-cloudflare-ips.sh` guncellendi:** artik `01-cf-peer.conf`'u da AYNI
+listeden uretiyor. Onceden yalnizca realip snippet'ini guncelliyordu — aylik
+cron'da Cloudflare yeni bir aralik eklerse o aralikdan gelen **mesru
+ziyaretciler 444 yerdi**. Iki dosya artik asla ayrisamaz.
+
+#### Gecici test adresi: `origin.chemiartclick.uk`
+
+Rusya'dan "origin dogrudan erisilebiliyor mu" testini telefondan yapilabilir
+kilmak icin kuruldu:
+- DNS: `A origin.chemiartclick.uk -> 57.129.128.118`, **proxied=false (GRI)**
+- Kendi Let's Encrypt sertifikasi var, vhost `/var/www/origin-test`
+- `cloudflare-only.conf` bilerek **eklenmedi**
+- **Is bitince silinecek:** DNS kaydi, vhost, `/var/www/origin-test`, sertifika
+
+#### Kalan adim 3 (DNS) — SIRA KRITIK
 
 Mevcut durum:
 ```
