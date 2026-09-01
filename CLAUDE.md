@@ -17,7 +17,7 @@ Sunucu kurulumu, performans, guvenlik ve yedekleme bitti.
 
 | # | Is | Neden bekliyor |
 |---|---|---|
-| 1 | **chestnyznak giden e-posta** — `info@chestnyznak.com.tr` timeweb posta kutusu parolasi | Tasimada bozuldu, kurtarilamiyor. `TIMEWEB_MAIL_PASSWORD` env'e konursa kurulum hazir: `scratchpad/set-chestnyznak-smtp.sh` (bkz. 6a) |
+| 1 | **chestnyznak giden e-posta** — `info@chestnyznak.com.tr` timeweb posta kutusu parolasi | Tasimada bozuldu, kurtarilamiyor. `TIMEWEB_MAIL_PASSWORD` env'e konursa kurulum hazir: `scratchpad/set-chestnyznak-smtp.sh` (bkz. 6a). **Alici adresleri artik dogru (6m) ama bu parola girilene kadar hicbir bildirim TESLIM EDILMEZ.** |
 | 2 | **Kalan 4 site** icin dosya arsivi + `.sql` + **orijinal `wp-config.php`** | fdsanatmerkezi, chemiartclick.uk apex, davetevet, byhio, wedreply |
 | 3 | **Kalici SSH anahtari** — public kismi bize, private kismi `VPS_SSH_PRIVATE_KEY` env'ine | Iki isi acar: haftalik blog Routine'inin kendi basina yayinlamasi **ve** SSH parola girisinin kapatilmasi (6c) |
 | 4 | **chestnyznak Rusya'dan acilmiyor** — gri buluta cekildi, yine acilmiyor. Geriye tek degisken **alan adi** | `chestnyznak-test.chemiartclick.uk` testinin sonucu bekleniyor (6d) |
@@ -139,6 +139,18 @@ Sunucuda ayrica bu oturumun public key'i `authorized_keys`'te olmali.
   dosyalar tunel uzerinden `rsync` / `cat >` ile aktarilir.
 - Sunucunun 443'u de bu oturuma kapali; egress gateway 403 doner.
 - KVM konsolunda klavye eslemesi bozuk (`:`→`;`, `|`→`\`); `sudo loadkeys us` duzeltir.
+
+> **SSH KOMUT DIZESININ ICINE GOMULU HEREDOC YAZMAYIN.** Tirnak icinde tirnak
+> katmanlari sessizce bozulur. 01.09.2026'da bir Python heredoc'u
+> `ssh "... <<PY ... '\"'\"' ... PY"` seklinde gomuldu; tirnaklar mahvoldu ve
+> **canli + dev `wp-config.php` ayni anda bozuldu** (yaklasik 30 sn iki site
+> de PHP parse hatasi verdi). Yedekten geri alindi.
+>
+> **Dogru yol:** script yerelde dosyaya yazilir, `base64 -w0` ile aktarilir,
+> sunucuda `base64 -d` ile acilip calistirilir. wp-config gibi kritik
+> dosyalarda ayrica: once kopyasini al, degistir, `php -l` ile dogrula,
+> bozuksa **kopyadan geri yaz**. Bu oruntu artik butun script aktarimlarinda
+> kullaniliyor.
 
 ---
 
@@ -728,6 +740,34 @@ saglayicisi, WooCommerce `sourcebuster` (satin alma akisi disinda).
 
 **Olculen (dev ana sayfa):** 89 → **75 istek**, 85 → 71 benzersiz dosya.
 `/shop/` ve `/cart/` bilerek etkilenmedi (Woo varliklari orada gerekli).
+
+### 6m. Form bildirimleri kime gidiyor (01.09.2026, CANLI + dev)
+
+**Kullanici karari:** ekip bildirimleri **To: `info@chestnyznak.com.tr`,
+Cc: `oguzk@chestnyznak.com.tr`**. WordPress yonetici adresi
+(`admin_email = swordbros@gmail.com`) **DEGISMEZ**; panelde bekleyen
+"yonetici e-postasini info@ yap" degisikligi **iptal edildi**
+(`new_admin_email` + `adminhash` silindi).
+
+Kisisel adresler (`swordali@gmail.com`, `blgnklc@gmail.com`) alicilardan
+cikarildi. Arac: `deploy/scripts/eposta-alicilari.php` (`dry` destegi var,
+yeniden calistirilabilir).
+
+Dokunulan yerler:
+- **CF7 "Contact form (main)"** (canli #5; dev'de ayrica EN #37757, RU #37759)
+- **FluentForm** 2, 6, 9, 10, 11 — ekip bildirimleri
+- **`fd-lead-capture.php`** — `FD_LEAD_NOTIFY_EMAIL` + yeni `FD_LEAD_NOTIFY_CC`
+  (wp-config'de tanimli, repoya yazilmaz)
+
+> **Otomatik yanitlara `sendTo` olarak ekip adresi YAZILMAZ.** FluentForm 3, 4
+> ve 8'in bildirimi `sendTo.type = field` — alicisi BASVURANIN kendisidir.
+> Oraya ekip adresi yazmak musteriye giden yaniti kirar. Ekip kopyasi
+> yalnizca `cc` alanina eklendi; `bcc` alanlarina dokunulmadi.
+
+**Dokunulmayanlar (ayri karar):** temanin demo CF7 formlari (`test@fwe.com`),
+WooCommerce siparis e-postalari. WooCommerce `from_address` **hala
+`test@fwe.com`** — demo kalintisi; magazada fiyat/siparis akisi olmadigi icin
+bugun zararsiz, ama siparis acilirsa gonderen adres gecersiz olur.
 
 ### 6h. Diger
 

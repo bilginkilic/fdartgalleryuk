@@ -24,6 +24,7 @@
  *   define( 'FD_LEAD_RELAY_URL', 'https://script.google.com/macros/s/.../exec' );
  *   define( 'FD_LEAD_CHAT_ID',   '-100...' );   // BOS BIRAKILIRSA aktarim yapilmaz
  *   define( 'FD_LEAD_NOTIFY_EMAIL', 'info@ornek.com' ); // yoksa admin_email
+ *   define( 'FD_LEAD_NOTIFY_CC',    'ikinci@ornek.com' ); // istege bagli kopya
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -172,17 +173,21 @@ function fd_lead_handle_submit( WP_REST_Request $req ) {
 		admin_url( 'post.php?post=' . $post_id . '&action=edit' )
 	);
 
-	/* --- 2. ADIM: e-posta bildirimi --- */
+	/* --- 2. ADIM: e-posta bildirimi ---
+	 * Alici ve kopya wp-config'den gelir. `FD_LEAD_NOTIFY_EMAIL` tanimsizsa
+	 * `admin_email`'e duser — ama admin adresi ekip kutusu DEGIL (kullanici
+	 * karari: yonetici adresi kisisel kalir), bu yuzden ikisi de tanimlanmali.
+	 */
 	$alici = defined( 'FD_LEAD_NOTIFY_EMAIL' ) && FD_LEAD_NOTIFY_EMAIL
 		? FD_LEAD_NOTIFY_EMAIL
 		: get_option( 'admin_email' );
 
-	$mail_ok = (bool) wp_mail(
-		$alici,
-		'Yeni başvuru: ' . $ad,
-		$metin,
-		[ 'Content-Type: text/plain; charset=UTF-8', 'Reply-To: ' . $posta ]
-	);
+	$basliklar = [ 'Content-Type: text/plain; charset=UTF-8', 'Reply-To: ' . $posta ];
+	if ( defined( 'FD_LEAD_NOTIFY_CC' ) && FD_LEAD_NOTIFY_CC ) {
+		$basliklar[] = 'Cc: ' . FD_LEAD_NOTIFY_CC;
+	}
+
+	$mail_ok = (bool) wp_mail( $alici, 'Yeni başvuru: ' . $ad, $metin, $basliklar );
 	update_post_meta( $post_id, '_fd_mail', $mail_ok ? 'gonderildi' : 'BASARISIZ' );
 
 	/* --- 3. ADIM: Telegram aktarimi (sunucu tarafinda) --- */
