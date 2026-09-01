@@ -32,6 +32,11 @@ Sunucu kurulumu, performans, guvenlik ve yedekleme bitti.
   adresi kirar → 301 gerekir. Ayrinti `deploy/blog/BACKLOG.md`.
 - **chestnyznak kalan 14 JS enjeksiyonu** Elementor'a tasinsin mi (6f).
 - **PTR** posta alan adina cevrilsin mi — oncelik dusuk, mevcut PTR calisiyor.
+- **Haberler ve Magaza dilde kalmiyor** (6k). Cozumu icerik/butce karari:
+  470 Turkce blog yazisi ve WooCommerce urunleri. Urun cevirisi Polylang'in
+  **ucretli** WooCommerce eklentisini gerektirir.
+- **Dev'deki eklenti sadelestirmesi canliya alinsin mi** (6l) — dev'de 24 → 20
+  aktif eklenti, ana sayfa 89 → 75 istek. Canli henuz DOKUNULMADI.
 
 ---
 
@@ -574,13 +579,81 @@ cogullar. Dogrulandi: `HTTP/2 200`, dort site de saglam.
 > yapmayin, yaniti olcun.**
 
 **Sirada (kullanici karari):**
-- **Varlik sayisini dusurmek** — 60 ayri CSS/JS dosyasi var, 28 aktif eklenti.
-  En buyuk kalan kazanc burada; eklenti sadelestirme isi.
 - **Edge onbellegi YOK** — chestnyznak Rusya icin gri bulutta, yani Cloudflare
   APO kullanilamiyor. Turkiye'den gelen her istek Londra'ya gidiyor.
   fdartgallery turuncu oldugu icin onda APO bir secenek.
 - **Brotli** kurulu degil, Ubuntu deposunda `libnginx-mod-brotli` bulunamadi.
   Metin varliklarinda gzip'e gore ~%15-20 daha iyi olurdu.
+
+### 6k. Dil kalicligi — Polylang dili URL'den okur
+
+**Sikayet:** "dil degistirip gezerken tekrar Turkceye donuyor."
+
+**Sebep basit ve kacinilmaz:** Polylang gecerli dili **URL onekinden** belirler
+(`force_lang=1`). `/en/` menusundeki bir oge `/iletisim/` derse — cunku o
+sayfanin cevirisi yoktur — onek duser ve site Turkceye doner. Menuyu
+kandirmanin yolu yok; **cozum sayfayi gercekten cevirmektir.**
+
+Cevrilenler (01.09.2026, dev): Hakkimizda → `/en/about-us/`, `/ru/o-nas/`;
+Iletisim → `/en/contact/`, `/ru/kontakty/`; Kod Sorgulama → `/en/code-lookup/`,
+`/ru/proverka-koda/`. Araclar: `deploy/wordpress/i18n/08..10*.php` +
+`menu-sayfalari.json`, `anasayfa-bloklari.json`.
+
+**Hala Turkceye dusen iki menu ogesi:** *Haberler* (`/blog-standard/`) ve
+*Cozumlerimiz* (`/shop/`). Ikisi de arsiv: 470 Turkce yazi ve WooCommerce
+urunleri. Urun cevirisi Polylang'in **ucretli** eklentisini ister.
+
+#### Uc ayri yerde adres duzeltmek gerekti
+
+1. **Menu ogeleri** (`_menu_item_url`) — 08 numarali script menuleri de baglar.
+2. **Sayfa/duzen icerigi** — ana sayfa ve altbilgi duzenlerindeki dugmeler
+   (`09-ic-baglantilari-dile-bagla.php`). Ayni script temanin DEMO sayfasina
+   giden bir hatayi da duzeltti: "Hakkimizda devamini oku" dugmesi
+   `/about-creative/` ("About - Creative") adresine gidiyordu.
+3. **Tema widget'i** (`widget_custom_html`) — icindeki cz-* scriptleri her
+   dilde ayni basildigi icin adresler `fd-i18n-layouts.php` filtresinde
+   sunucu tarafinda cevrilir.
+
+#### TUZAK: `_elementor_data` uzerinde ham strtr CALISMAZ
+
+`_elementor_data` JSON'unda Turkce harfler `ı` bicimindedir. Ham dize
+uzerinde `strtr` yalnizca ASCII anahtarlari yakalar — **56 anahtardan 6'si
+esletti ve "kalan 0" yaziyordu**, cunku kalanlari da ayni ham dizede ariyordu.
+Dogru yol: JSON'u **coz**, dizeleri PHP tarafinda (gercek UTF-8) cevir,
+`wp_json_encode` ile yeniden kodla. `10-anasayfa-bloklarini-cevir.php` boyle.
+
+Dogrulama olcutu HTTP kodu degil: sayfanin **gorunur metninde** Turkce'ye ozgu
+harf (`çğışÇĞİŞ`) iceren kelime sayilir. Olculen sonuc: `/en/` ve `/ru/` icin
+**3** (ucu de dil secicideki "Türkçe" adi — dogru), `/` icin 163.
+
+### 6l. Eklenti sadelestirme (dev, 01.09.2026)
+
+Kapatilanlar — dordunun de icerikte KARSILIGI YOK, yalnizca kendi secenek
+satirlarinda ve temanin kullanilmayan demo duzenlerinde geciyordu:
+`latepoint` (22 MB, **hic randevu kaydi yok**), `devvn-image-hotspot`,
+`fluent-affiliate-connector`, `fluentforms-pdf`. **24 → 20 aktif eklenti.**
+
+**Kapatilmayanlar ve sebebi** (arama once yapildi, CLAUDE.md 6e):
+- `revslider` — 103 `trx_widget_slider` meta satiri. 30.08'de "kullanilmiyor"
+  sanilip kapatilmisti, **canli ana sayfa 2 gun bozuk kaldi**.
+- `fluentform` — altbilgideki bulten formu (`[fluentform id='2']`) uc dilin
+  altbilgi duzeninde de var; ayrica 8-13 kayitli canli formlar mevcut.
+- `contact-form-7` — Iletisim sayfasinin formu.
+- `easy-code-manager` — icinde **iki calisan hiz snippet'i** var
+  (`wp-content/fluent-snippet-storage/`): ana sayfada revslider varliklarini
+  ve magaza disinda WooCommerce varliklarini kuyruktan cikariyorlar.
+
+**Varlik diyeti** — `deploy/wordpress/lead-mu-plugins/fd-asset-diyet.php`
+mu-plugin'i, sayfada KARSILIGI OLMAYAN dosyalari kuyruktan cikarir:
+mediaelement (5 dosya, sayfada oynatici yoksa), Site Kit'in CF7 olay
+saglayicisi, WooCommerce `sourcebuster` (satin alma akisi disinda).
+
+> `akismet-frontend.js` DENENDI, VAZGECILDI: ana sayfada yorum formu yok ama
+> Akismet altbilgideki FluentForm bultene bal kupu alani basiyor ve o alani
+> **bu JS dolduruyor**. Cikarilsa mesru abonelikler spam sayilirdi.
+
+**Olculen (dev ana sayfa):** 89 → **75 istek**, 85 → 71 benzersiz dosya.
+`/shop/` ve `/cart/` bilerek etkilenmedi (Woo varliklari orada gerekli).
 
 ### 6h. Diger
 

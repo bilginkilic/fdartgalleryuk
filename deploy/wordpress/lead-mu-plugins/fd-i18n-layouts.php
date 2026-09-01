@@ -77,9 +77,34 @@ if ( ! function_exists( 'qwery_get_custom_footer_id' ) ) {
  * Tema widget alanindaki "extra_item" baglantilari (mobil menu paneli).
  * Bunlar tek bir Custom HTML widget'inin icinde ve o widget TUM dillerde
  * basiliyor (icindeki cz-* scriptleri her dilde calismali). Widget'i dile
- * bolmek scriptleri kirardi; bu yuzden yalnizca GORUNEN METINLERI
- * SUNUCU TARAFINDA cevriyoruz. JS enjeksiyonu kullanilmaz (CLAUDE.md 6f).
+ * bolmek scriptleri kirardi; bu yuzden yalnizca GORUNEN METINLERI ve
+ * IC BAGLANTILARI SUNUCU TARAFINDA cevriyoruz. JS enjeksiyonu kullanilmaz
+ * (CLAUDE.md 6f).
+ *
+ * BAGLANTILAR NEDEN ONEMLI: Polylang dili URL onekinden okur. `/en/` icindeki
+ * bir baglanti `/iletisim/` derse ziyaretci Turkceye duser — kullanicinin
+ * "dil degistirince gezerken Turkceye donuyor" sikayetinin kaynaklarindan
+ * biri buydu. Widget hem duz `<a href>` hem de icindeki cz-* scriptlerinde
+ * adres tasidigi icin ikisi de ayni strtr ile cevrilir.
  * ---------------------------------------------------------------------- */
+
+/** Dile gore Turkce yol -> cevrilmis yol eslemesi. */
+function fd_i18n_yol_esleme( $dil ) {
+	$harita = [
+		'en' => [
+			'/hakkimizda/'    => '/en/about-us/',
+			'/iletisim/'      => '/en/contact/',
+			'/kod-sorgulama/' => '/en/code-lookup/',
+		],
+		'ru' => [
+			'/hakkimizda/'    => '/ru/o-nas/',
+			'/iletisim/'      => '/ru/kontakty/',
+			'/kod-sorgulama/' => '/ru/proverka-koda/',
+		],
+	];
+	return $harita[ $dil ] ?? [];
+}
+
 add_filter(
 	'widget_custom_html_content',
 	function ( $icerik ) {
@@ -97,6 +122,14 @@ add_filter(
 				'Bize Ulaşın'                      => 'Contact Us',
 				'Çözümlerimizi inceleyin'          => 'Explore our solutions',
 				'Mağazaya Git'                     => 'Go to Shop',
+				// cz-audit scriptinin urettigi aria-label metinleri
+				"'İletişim'"                       => "'Contact'",
+				"'Çözümlerimiz'"                   => "'Solutions'",
+				"'Hakkımızda'"                     => "'About Us'",
+				"'Haberler'"                       => "'News'",
+				"'Ana sayfa'"                      => "'Home'",
+				"'Sonraki'"                        => "'Next'",
+				"'Bize yazın'"                     => "'Write to us'",
 			],
 			'ru' => [
 				'Projeniz mi var?'                 => 'Есть проект?',
@@ -104,11 +137,26 @@ add_filter(
 				'Bize Ulaşın'                      => 'Связаться с нами',
 				'Çözümlerimizi inceleyin'          => 'Наши решения',
 				'Mağazaya Git'                     => 'Перейти в магазин',
+				"'İletişim'"                       => "'Контакты'",
+				"'Çözümlerimiz'"                   => "'Услуги'",
+				"'Hakkımızda'"                     => "'О нас'",
+				"'Haberler'"                       => "'Новости'",
+				"'Ana sayfa'"                      => "'Главная'",
+				"'Sonraki'"                        => "'Далее'",
+				"'Bize yazın'"                     => "'Напишите нам'",
 			],
 		];
 		if ( empty( $sozluk[ $dil ] ) ) {
 			return $icerik;
 		}
+
+		/* Ic baglantilar: hem mutlak (https://host/yol/) hem koke gore (/yol/). */
+		$kok = untrailingslashit( home_url() );
+		foreach ( fd_i18n_yol_esleme( $dil ) as $eski => $yeni ) {
+			$sozluk[ $dil ][ $kok . $eski ] = $kok . $yeni;
+			$sozluk[ $dil ][ "'" . $eski . "'" ] = "'" . $yeni . "'";
+		}
+
 		return strtr( $icerik, $sozluk[ $dil ] );
 	},
 	20
