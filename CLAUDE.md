@@ -18,7 +18,7 @@ Sunucu kurulumu, performans, guvenlik, yedekleme ve fdartgallery e-postasi bitti
 | 1 | **chestnyznak giden e-posta** — `info@chestnyznak.com.tr` timeweb parolasi | Parola tasimada bozuldu, kurtarilamiyor. `TIMEWEB_MAIL_PASSWORD` env'e konursa kurulum hazir (5i) |
 | 2 | **info@ fazladan kopya** — "MX testi 4" hangi kutulara geldi? | Kopyanin Brevo'dan mi Gmail'den mi geldigini ayirt eden test (5j) |
 | 3 | **Kalan 4 site** icin dosya arsivi + `.sql` + **orijinal `wp-config.php`** | fdsanatmerkezi, chemiartclick.uk apex, davetevet, byhio, wedreply (5F) |
-| 4 | **chestnyznak Rusya'dan ACILMIYOR** (`ERR_TIMED_OUT` — dogrulandi). Once **arkadasin IPv4'u** ile "origin dogrudan erisiliyor mu" testi | Test olumluysa griye cekilir. Sira kritik: once ufw+nginx, SONRA DNS — tersi site tamamen kapatir (5l) |
+| 4 | **chestnyznak GRIYE CEKILDI** (01.09) — Rusya'dan acilip acilmadigi teyit edilecek | Acilmazsa geri alinir: `chestnyznak-A-before.json`, ttl 120 (5l) |
 | 5 | **PTR** posta alan adina cevrilsin mi | OVH Manager'dan; API yetkisi yok. **Oncelik dusuk** — mevcut PTR calisiyor (5E) |
 
 ### Karar bekleyenler (aciliyeti yok)
@@ -1522,7 +1522,41 @@ nftables bani is gorur. Uygun olmayan taraf zararsiz sekilde bos calisir.
 `setup-fail2ban.sh` de guncellendi. Dogrulandi: `fail2ban-client -t` OK,
 jail'ler aktif (xmlrpc 4 ban).
 
-#### Kalan adim 3 (DNS) — SIRA KRITIK
+#### ADIM 3 TAMAMLANDI — chestnyznak GRIYE CEKILDI (01.09.2026)
+
+Token'a `Edit` yetkisi eklendikten sonra API ile yapildi:
+
+```
+chestnyznak.com.tr      -> 57.129.128.118 | proxy KAPALI | ttl 120
+www.chestnyznak.com.tr  -> 57.129.128.118 | proxy KAPALI | ttl 120
+```
+
+TTL bilerek **120 sn** — geri donus gerekirse dakikalar icinde yayilir.
+Geri alma yedegi: `scratchpad/chestnyznak-A-before.json`
+Geri almak icin ayni kayitlara `{"proxied":true}` PATCH'lemek yeterli.
+
+**Dogrulandi:**
+```
+genel DNS      : ikisi de 57.129.128.118 (gri)
+site           : 200 | Server: nginx | cf-ray YOK | X-FastCGI-Cache: HIT
+dogrudan erisim: 200 / 18 ms
+sertifika      : CN=chestnyznak.com.tr, Let's Encrypt YE2, 28.11.2026,
+                 SAN uc adi da kapsiyor, Verify return code: 0 (ok)
+sayfalar       : ana sayfa / magaza / sepet -> 200
+fdartgallery   : etkilenmedi (200, hala Cloudflare arkasinda ve korumali)
+```
+
+**TEST TUZAGI (ikincisi):** bu oturumdan `openssl s_client` ile sertifika
+bakmak da GECERSIZDIR — egress proxy TLS'i araya girip kendi sertifikasini
+sunuyor (`issuer=O=Anthropic, CN=Egress Gateway SDS Issuing CA`). Gercek
+sertifika icin sunucudan bakin:
+`openssl s_client -connect 57.129.128.118:443 -servername <ad>`
+
+**Gecici test adresi hala duruyor:** `origin.chemiartclick.uk` bilerek
+silinmedi — Rusya'dan erisim onaylanana kadar teshis icin lazim olabilir.
+Onay gelince silinecek (DNS kaydi, vhost, `/var/www/origin-test`, sertifika).
+
+#### (Referans) Adim 3 oncesi durum — SIRA NEDEN KRITIKTI
 
 Mevcut durum:
 ```
