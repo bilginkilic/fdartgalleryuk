@@ -18,7 +18,7 @@ Sunucu kurulumu, performans, guvenlik, yedekleme ve fdartgallery e-postasi bitti
 | 1 | **chestnyznak giden e-posta** — `info@chestnyznak.com.tr` timeweb parolasi | Parola tasimada bozuldu, kurtarilamiyor. `TIMEWEB_MAIL_PASSWORD` env'e konursa kurulum hazir (5i) |
 | 2 | **info@ fazladan kopya** — "MX testi 4" hangi kutulara geldi? | Kopyanin Brevo'dan mi Gmail'den mi geldigini ayirt eden test (5j) |
 | 3 | **Kalan 4 site** icin dosya arsivi + `.sql` + **orijinal `wp-config.php`** | fdsanatmerkezi, chemiartclick.uk apex, davetevet, byhio, wedreply (5F) |
-| 4 | **chestnyznak GRIYE CEKILDI ve sebep KANITLANDI** (01.09). Kalan: `chestnyznak.com.tr`'nin kendisi Rusya'dan (VPN'siz) aciliyor mu | Teyit gelince `origin.chemiartclick.uk` test adresi silinecek (5l) |
+| 4 | **chestnyznak gri, ama Rusya'dan HALA acilmiyor.** Ayni IP'deki `origin.chemiartclick.uk` aciliyor → geriye tek degisken ALAN ADI. SNI engellemesi test ediliyor | `chestnyznak-test.chemiartclick.uk` sonucu bekleniyor. Isim engelliyse barindirma degisikligi cozmez (5l) |
 | 5 | **PTR** posta alan adina cevrilsin mi | OVH Manager'dan; API yetkisi yok. **Oncelik dusuk** — mevcut PTR calisiyor (5E) |
 
 ### Karar bekleyenler (aciliyeti yok)
@@ -1570,10 +1570,51 @@ degistigi icin o kare kanit sayilmadi, VPN'siz tekrar istendi. Ekran
 goruntusuyle gelen kanitlarda **durum cubugunu da okuyun** (VPN, roaming "R",
 Wi-Fi/mobil).
 
-**Gecici test adresi:** `origin.chemiartclick.uk` — kanit alindi, artik
-gereksiz. Silinecekler: Cloudflare A kaydi, `/etc/nginx/sites-*/origin-test.conf`,
-`/var/www/origin-test`, `certbot delete --cert-name origin.chemiartclick.uk`.
-Musteri teyidi gelene kadar bekletiliyor (sorun cikarsa kontrol noktasi).
+#### AMA `chestnyznak.com.tr` HALA ACILMIYOR — SONUC BEKLENIYOR (01.09.2026)
+
+Gri buluta cekildikten, DNS dunya genelinde yayildiktan (Yandex dahil tum
+cozumleyiciler `57.129.128.118`) ve VPN kapaliyken test edildikten sonra bile
+`chestnyznak.com.tr` Rusya'dan **acilmiyor**. Buna karsilik `origin.chemiartclick.uk`
+**ayni IP'de, ayni sunucuda, ayni nginx'te** ve VPN'siz **aciliyor**.
+
+Geriye tek degisken kaliyor: **alan adi.**
+
+**Hipotez (KANITLANMADI):** Rusya'nin DPI sistemi TLS ClientHello icindeki
+**SNI** alanina bakip alan adina gore kesiyor olabilir. "Chestny Znak"
+(Честный знак) Rusya'nin resmi urun etiketleme sistemi; bu adi tasiyan bir
+`.com.tr` alan adinin RKN listesinde olmasi makul — ama olculmedi.
+
+**Bunu ayirt eden test kuruldu** (sonuc bekleniyor):
+
+| # | Adres | Ne olcuyor |
+|---|---|---|
+| 1 | `https://origin.chemiartclick.uk` | kontrol noktasi — daha once acildi |
+| 2 | `https://chestnyznak-test.chemiartclick.uk` | **kritik** — ayni IP/sunucu/sayfa, ama isimde "chestnyznak" var |
+| 3 | `http://chestnyznak.com.tr` (HTTP, HTTPS degil) | engel SNI'ye mi ozel, Host basligini da mi goruyor |
+
+Okumasi:
+- **2 acilmaz, 1 acilirsa** → engel ISIMDE. Hicbir barindirma degisikligi
+  kurtarmaz (sunucu Moskova'da olsa da ayni olurdu). Cozum farkli alan adi.
+- **2 acilirsa** → engel yalnizca `chestnyznak.com.tr`'ye ozel. Yeni bir alan
+  adi (orn. `.ru`) sorunu cozer.
+- **3 acilir ama HTTPS acilmazsa** → engel SNI'ye ozel, duz HTTP'yi gormuyorlar.
+
+Ayrica sorulacak: su anki hata **`ERR_TIMED_OUT`** mu **`ERR_CONNECTION_RESET`**
+mi? Timeout = paketler sessizce dusuruluyor; reset = baglanti kurulup sonra
+kesiliyor (SNI engellemesinin klasik imzasi).
+
+#### Test icin olusturulan GECICI kaynaklar — is bitince SILINECEK
+
+| Kaynak | Yer |
+|---|---|
+| `A origin.chemiartclick.uk` | Cloudflare zone `chemiartclick.uk`, proxied=false, ttl 120 |
+| `A chestnyznak-test.chemiartclick.uk` | ayni zone, proxied=false, ttl 120 |
+| vhost | `/etc/nginx/sites-available/origin-test.conf` (iki isim de `server_name`'de) |
+| icerik | `/var/www/origin-test/index.html` |
+| sertifika | `certbot delete --cert-name origin.chemiartclick.uk` (iki ismi de kapsiyor) |
+
+Bu vhost'a `snippets/cloudflare-only.conf` **bilerek eklenmedi** — amaci zaten
+Cloudflare'i baypas etmek.
 
 #### (Referans) Adim 3 oncesi durum — SIRA NEDEN KRITIKTI
 
