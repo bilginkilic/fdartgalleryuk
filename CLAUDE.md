@@ -18,7 +18,7 @@ Sunucu kurulumu, performans, guvenlik, yedekleme ve fdartgallery e-postasi bitti
 | 1 | **chestnyznak giden e-posta** — `info@chestnyznak.com.tr` timeweb parolasi | Parola tasimada bozuldu, kurtarilamiyor. `TIMEWEB_MAIL_PASSWORD` env'e konursa kurulum hazir (5i) |
 | 2 | **info@ fazladan kopya** — "MX testi 4" hangi kutulara geldi? | Kopyanin Brevo'dan mi Gmail'den mi geldigini ayirt eden test (5j) |
 | 3 | **Kalan 4 site** icin dosya arsivi + `.sql` + **orijinal `wp-config.php`** | fdsanatmerkezi, chemiartclick.uk apex, davetevet, byhio, wedreply (5F) |
-| 4 | **chestnyznak.com.tr zone'unda SSL modu → Full (strict)** | Kullanici o hesapta ADMIN, ama mevcut API token o zone'u gormuyor. Panelden 2 tik, ya da yeni token (5l) |
+| 4 | **chestnyznak turuncu bulut → GRI** (Rusya erisimi). Once ufw+nginx degisikligi, SONRA DNS — sira kritik | Kullanici onayi bekliyor; yanlis sirada yapilirsa site tamamen erisilemez olur (5l) |
 | 5 | **PTR** posta alan adina cevrilsin mi | OVH Manager'dan; API yetkisi yok. **Oncelik dusuk** — mevcut PTR calisiyor (5E) |
 
 ### Karar bekleyenler (aciliyeti yok)
@@ -1355,11 +1355,84 @@ Yani `Full (strict)` yapinca yonlendirme dongusu veya 526 hatasi OLMAZ.
    `Zone.DNS:Edit`, `Zone.Cache Purge:Purge`; kapsam o hesap + chestnyznak.com.tr.
    Token ortam degiskenine konursa bu zone da buradan yonetilebilir.
 
-### O zone'da ayrica dogrulanmasi gerekenler (erisim gelirse)
+### Token OLMADAN disaridan dogrulananlar (30.08.2026)
 
-- `@` ve `www` A kayitlari `57.129.128.118`, **turuncu bulut ACIK**
-  (gri olursa site tamamen erisilemez — origin yalnizca Cloudflare IP'lerini kabul eder)
+**Turuncu bulut ACIK** — apex ve `www` Cloudflare edge IP'lerine cozuluyor;
+adresler Cloudflare'in kendi `GET /ips` listesiyle karsilastirilarak dogrulandi:
+
+```
+chestnyznak.com.tr      104.21.70.221, 172.67.139.246  -> CLOUDFLARE
+www.chestnyznak.com.tr  104.21.70.221, 172.67.139.246  -> CLOUDFLARE
+site: HTTP 200, 0.81 sn
+```
+
+**SSL modu `Flexible` DEGIL** (cikarim): Flexible olsaydi Cloudflare origin'e
+80'den baglanir, nginx HTTPS'e yonlendirir ve dongu olusurdu. Site 200
+dondugune gore mod `Full` ya da `Full (strict)`.
+
+→ SSL tarafinda ariza YOK. `Full (strict)` bir duzeltme degil, iyilestirme:
+Cloudflare↔origin arasindaki sertifikayi da dogrular. **Aciliyeti dusuk.**
+
+### AMA — kullanici turuncu bulutu ISTEMIYOR (30.08.2026)
+
+Kullanici: *"turuncu yapinca Rusya'da acilmadigini biliyorum, turuncu yapmayalim."*
+chestnyznak Rus pazarina calisan bir site, yani bu ciddi bir kisit.
+
+**Celiski:** site **su anda zaten turuncu** (yukaridaki olcum). Yani Rusya'dan
+erisim sorunu yasaniyorsa sebebi buyuk ihtimalle bu ve **canli bir sorun**.
+
+**Griye cekmek MUMKUN ama SIRA KRITIK.** Mevcut durum:
+```
+ufw: 80,443/tcp ALLOW  <22 Cloudflare araligi>
+     "Anywhere" kurali: YOK
+```
+Bulut simdi griye cekilirse site **aninda tamamen erisilemez** olur.
+
+Duz "herkese ac" da yeterli degil: 443 dunyaya acilinca birisi
+`https://57.129.128.118` adresine `Host: fdartgallery.com` basligiyla vurup
+**fdartgallery icin Cloudflare'i baypas edebilir** (WAF, DDoS, edge ban devre disi).
+
+**Planlanan sira (kullanici onayi bekliyor):**
+1. nginx'te kaynak ayrimi — Cloudflare'de KALACAK siteler yalnizca CF IP'lerinden
+   yanit versin:
+   ```nginx
+   geo $realip_remote_addr $cf_peer { default 0; <CF araliklari> 1; }
+   # fdartgallery + dev vhost'larinda:
+   if ($cf_peer = 0) { return 444; }
+   ```
+   chestnyznak vhost'una bu kosul KONMAZ.
+2. ufw'de 80/443 dunyaya acilir (ayrimi artik nginx yapiyor).
+3. **Sonra** DNS'te chestnyznak griye cekilir (`@`, `www` → 57.129.128.118,
+   turuncu bulut KAPALI).
+4. fail2ban: o site icin edge ban ise yaramaz, yerel guvenlik duvarina cevrilmeli.
+
+**Griye cekince chestnyznak'in kaybettikleri:** edge onbellegi, DDoS korumasi,
+WAF, edge ban. **Kaybetmedikleri:** HTTPS (origin'de gecerli LE sertifikasi var,
+dogrudan calisir) ve nginx sayfa onbellegi (6 ms — asil hiz zaten buradan).
+Origin IP'si aciga cikar; fdartgallery'yi 1. adimdaki nginx kurali korur.
+
+**Acik soru:** Rusya'dan erisilemedigi nasil dogrulandi? Cloudflare'in tamami mi
+engelli, yoksa belirli bir hata mi? Sorun ECH veya belirli bir edge datacenter'i
+ise turuncuyu kapatmadan cozulebilir — ama dogrulanmadan varsayilmamali.
+
+### Hala gorulmeyen / kontrol edilemeyen
+
+- SSL modunun `Full` mu `Full (strict)` mi oldugu (ayar okunamiyor)
 - MX / SPF / DKIM / DMARC **degismemeli** — posta timeweb'de (bkz. 5i)
+
+### Ortam degiskeni adlandirmasi (kullanici ekleyecek)
+
+```
+CF_SWORDBROS_ACCOUNT_ID
+CF_SWORDBROS_API_TOKEN
+CF_SWORDBROS_R2_ACCESS_KEY_ID        # yalnizca o hesapta R2 yedegi kurulursa
+CF_SWORDBROS_R2_SECRET_ACCESS_KEY    # simdilik GEREKMIYOR
+CF_SWORDBROS_R2_ENDPOINT             # simdilik GEREKMIYOR
+```
+
+**Not (30.08.2026):** kullanici ekledigini soyledi ama degiskenler bu oturumun
+ortaminda GORUNMEDI (tum degisken adlari tarandi). Ortam degisikligi calisan
+konteynere gecmiyor olabilir — yeni oturumda tekrar bakilmali.
 
 ---
 
