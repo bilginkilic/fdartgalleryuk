@@ -18,7 +18,7 @@ Sunucu kurulumu, performans, guvenlik, yedekleme ve fdartgallery e-postasi bitti
 | 1 | **chestnyznak giden e-posta** — `info@chestnyznak.com.tr` timeweb parolasi | Parola tasimada bozuldu, kurtarilamiyor. `TIMEWEB_MAIL_PASSWORD` env'e konursa kurulum hazir (5i) |
 | 2 | **info@ fazladan kopya** — "MX testi 4" hangi kutulara geldi? | Kopyanin Brevo'dan mi Gmail'den mi geldigini ayirt eden test (5j) |
 | 3 | **Kalan 4 site** icin dosya arsivi + `.sql` + **orijinal `wp-config.php`** | fdsanatmerkezi, chemiartclick.uk apex, davetevet, byhio, wedreply (5F) |
-| 4 | **chestnyznak GRIYE CEKILDI** (01.09) — Rusya'dan acilip acilmadigi teyit edilecek | Acilmazsa geri alinir: `chestnyznak-A-before.json`, ttl 120 (5l) |
+| 4 | **chestnyznak GRIYE CEKILDI ve sebep KANITLANDI** (01.09). Kalan: `chestnyznak.com.tr`'nin kendisi Rusya'dan (VPN'siz) aciliyor mu | Teyit gelince `origin.chemiartclick.uk` test adresi silinecek (5l) |
 | 5 | **PTR** posta alan adina cevrilsin mi | OVH Manager'dan; API yetkisi yok. **Oncelik dusuk** — mevcut PTR calisiyor (5E) |
 
 ### Karar bekleyenler (aciliyeti yok)
@@ -1552,9 +1552,28 @@ sunuyor (`issuer=O=Anthropic, CN=Egress Gateway SDS Issuing CA`). Gercek
 sertifika icin sunucudan bakin:
 `openssl s_client -connect 57.129.128.118:443 -servername <ad>`
 
-**Gecici test adresi hala duruyor:** `origin.chemiartclick.uk` bilerek
-silinmedi — Rusya'dan erisim onaylanana kadar teshis icin lazim olabilir.
-Onay gelince silinecek (DNS kaydi, vhost, `/var/www/origin-test`, sertifika).
+#### KANITLANDI — sebep Cloudflare'di (01.09.2026)
+
+Rusya'dan, **VPN KAPALI**, ayni telefon ve sebeke:
+
+| Adres | Cloudflare yolda mi | Sonuc |
+|---|---|---|
+| `chestnyznak.com.tr` (o an turuncuydu) | EVET | **ERR_TIMED_OUT** |
+| `origin.chemiartclick.uk` (gri, ayni sunucu) | HAYIR | **acildi** |
+
+Temiz A/B: tek degisken Cloudflare'in yolda olup olmamasi. Engel **Cloudflare
+IP araliklarina**, bizim sunucumuza degil. Gri bulut dogru cozum.
+
+**Teshis notu — VPN tuzagi:** ilk "basarili" ekran goruntusunde durum
+cubugunda VPN simgesi vardi ve basarisiz testte yoktu; iki degisken birden
+degistigi icin o kare kanit sayilmadi, VPN'siz tekrar istendi. Ekran
+goruntusuyle gelen kanitlarda **durum cubugunu da okuyun** (VPN, roaming "R",
+Wi-Fi/mobil).
+
+**Gecici test adresi:** `origin.chemiartclick.uk` — kanit alindi, artik
+gereksiz. Silinecekler: Cloudflare A kaydi, `/etc/nginx/sites-*/origin-test.conf`,
+`/var/www/origin-test`, `certbot delete --cert-name origin.chemiartclick.uk`.
+Musteri teyidi gelene kadar bekletiliyor (sorun cikarsa kontrol noktasi).
 
 #### (Referans) Adim 3 oncesi durum — SIRA NEDEN KRITIKTI
 
