@@ -96,6 +96,10 @@ maxretry = 5
 findtime = 10m
 bantime  = 1h
 
+# IKI EYLEM birden: site Cloudflare arkasindaysa edge'de, dogrudan
+# erisiliyorsa (gri bulut) yerel guvenlik duvarinda engellenir. Uygun
+# olmayan taraf zararsiz sekilde bos calisir. Yalnizca cloudflare-token
+# birakilirsa gri buluttaki siteler KORUMASIZ kalir.
 [wordpress-login]
 enabled  = true
 filter   = wordpress-login
@@ -104,6 +108,7 @@ maxretry = 5
 findtime = 10m
 bantime  = 1h
 action   = cloudflare-token[cfzone=<CFZONE>, name=wp-login]
+           nftables[name=wp-login, port="http,https", protocol=tcp]
 
 [wordpress-xmlrpc]
 enabled  = true
@@ -113,6 +118,7 @@ maxretry = 3
 findtime = 10m
 bantime  = 24h
 action   = cloudflare-token[cfzone=<CFZONE>, name=xmlrpc]
+           nftables[name=xmlrpc, port="http,https", protocol=tcp]
 EOF
 
 # Zone kimligini domainden bul

@@ -1500,6 +1500,28 @@ kilmak icin kuruldu:
 - `cloudflare-only.conf` bilerek **eklenmedi**
 - **Is bitince silinecek:** DNS kaydi, vhost, `/var/www/origin-test`, sertifika
 
+#### fail2ban — gri bulut oncesi kapatilan acik (01.09.2026)
+
+Zaten var olan bir bosluktu, gri bulutla daha da kritiklesecekti:
+
+```
+[wordpress-login]  logpath = /var/log/nginx/*.access.log   <- TUM siteler
+                   action  = cloudflare-token[cfzone=fa3f...]  <- fdartgallery zone'u
+```
+
+Yani chestnyznak'a saldiran bir IP, **fdartgallery'nin** Cloudflare zone'unda
+banlaniyordu — chestnyznak icin hicbir koruma saglamiyordu.
+
+**Duzeltme:** her iki jail'e ikinci bir eylem eklendi:
+```
+action   = cloudflare-token[cfzone=<zone>, name=<ad>]
+           nftables[name=<ad>, port="http,https", protocol=tcp]
+```
+Site Cloudflare arkasindaysa edge bani is gorur; dogrudan erisiliyorsa yerel
+nftables bani is gorur. Uygun olmayan taraf zararsiz sekilde bos calisir.
+`setup-fail2ban.sh` de guncellendi. Dogrulandi: `fail2ban-client -t` OK,
+jail'ler aktif (xmlrpc 4 ban).
+
 #### Kalan adim 3 (DNS) — SIRA KRITIK
 
 Mevcut durum:
