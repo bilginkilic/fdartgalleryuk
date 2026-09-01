@@ -1867,6 +1867,109 @@ yonlendirme** kurulmali. Ayrinti ve tablo: `deploy/blog/BACKLOG.md`
 
 ---
 
+## 5n. Elementor ile duzenlenebilirlik — KURAL ve mevcut durum (01.09.2026)
+
+> **KURAL (kullanici karari, 01.09.2026):** chestnyznak.com.tr'ye eklenen her
+> icerik **Elementor ile duzenlenebilir** olmak zorundadir. Yeni bir blok
+> eklerken JS enjeksiyonu, Custom HTML widget'i veya tema widget alani
+> KULLANILMAZ; icerik sayfanin Elementor verisine konur.
+> Once **dev**'de yapilir, kullanici onaylayinca canliya alinir.
+
+### Duzeltilen: Elementor editoru 500 veriyordu
+
+`post.php?...&action=elementor` **HTTP 500** donuyordu. Log'daki asil satir:
+
+```
+PHP Fatal error: Allowed memory size of 268435456 bytes exhausted
+  wp-includes/functions.php(4444): json_encode()
+  elementor/includes/utils.php(591): wp_json_encode()
+  elementor/core/editor/loader/v2/editor-v2-loader.php(174): print_js_config()
+```
+
+Editorun JS yapilandirmasi tek seferde JSON'a cevriliyor; bu sitede ciktinin
+kendisi **5.4 MB**. 256M tavani asiyor.
+
+**Yapilan (dort sitede birden):**
+
+| Katman | Once | Sonra |
+|---|---|---|
+| FPM havuzu `php_admin_value[memory_limit]` | 256M | **512M** |
+| `wp-config.php` `WP_MAX_MEMORY_LIMIT` | tanimsiz (WP varsayilani 256M) | **512M** |
+| `wp-config.php` `WP_MEMORY_LIMIT` | tanimsiz | 256M |
+
+**Ikisi de gerekli:** `php_admin_value` HARD tavandir, PHP'den `ini_set` ile
+yukseltilemez — havuz dusukse wp-config'deki deger etkisizdir. Tersi de dogru:
+WordPress yonetim panelinde bellegi kendi `WP_MAX_MEMORY_LIMIT` degerine ceker
+(varsayilan 256M), yani havuzu tek basina yukseltmek de yetmez.
+
+Repoya islendi: `deploy/php-fpm/pool.conf.template`, `deploy/scripts/deploy-site.sh`.
+
+**Dogrulandi:** dev'de 10 farkli icerik (cpt_layouts, page, post) + canlida
+2 sayfa editorde acildi, hepsi **200**, fatal yok.
+
+> Bellek notu: 512M bir TAVANDIR, rezervasyon degil; tipik istek 64-128M
+> kullanir. Sunucu takas alanina duserse `pm.max_children` (havuz basina 12)
+> dusurulmelidir.
+
+### Duzeltilen: ana sayfanin ust blogu bozuktu — BENIM HATAM
+
+30.08.2026'da `revslider` eklentisini "kullanilmiyor" gerekcesiyle kapatmistim.
+**Denetim yontemi hataliydi:** `post_content` ve `postmeta` icinde shortcode
+araniyordu; oysa slider `_elementor_data` icindeki tema widget'i
+(`trx_widget_slider`, engine=revo) uzerinden cagriliyor. Sonuc: **canli ana
+sayfa 30.08'den 01.09'a kadar ustte ham `[rev_slider alias="main-slider"]`
+metnini gosterdi.**
+
+`revslider` canli + dev'de yeniden etkinlestirildi, dogrulandi
+(ham shortcode 0, gercek slider markup var, sayfa 200).
+
+> **Ders:** bir eklentinin kullanilip kullanilmadigina bakarken
+> `_elementor_data`, tema widget alanlari ve `cpt_layouts` icerikleri de
+> taranmalidir. Yalnizca `post_content` + `postmeta` aramak YANILTIR.
+> Ayrica "sayfa 200 donuyor" gorsel dogrulama DEGILDIR.
+
+### ASIL SORUN — sitenin buyuk bolumu Elementor'da DEGIL
+
+Kullanici "tepedeki blok neden duzenlenemiyor?" diye sordu. Sebep bulundu ve
+tek bir blokla sinirli degil.
+
+**Tek bir "Custom HTML" widget'i (`widget_custom_html-2`, 57 KB), temanin
+`custom_widgets_1` alaninda duruyor** (tema ayari:
+`widgets_additional_menu_mobile_fullscreen`). Icinde **16 ayri JavaScript
+enjeksiyonu** var ve bunlar sayfanin gorunur bolumlerini calisma aninda
+uretiyor:
+
+```
+cz-lead      cz-hero-block  cz-home     cz-banner    cz-header   cz-marquee
+cz-news      cz-contact     cz-wa       cz-shop      cz-cookie   cz-audit
+cz-relabel   cz-fixlinks    cz-btn-brand  cz-urun-talep
+```
+
+Ust bloktaki lead formu (`cz-lead`) bir `<template id="cz-lead-tpl">` icinde
+duruyor ve JS ile sayfaya enjekte ediliyor. Bu yuzden:
+
+- **Elementor onu goremez** — sayfanin icerigi degil, sonradan eklenen DOM.
+- Editorde o alan **bos** gorunur (kullanicinin gordugu beyazlik budur).
+- Blok her sayfanin kaynaginda vardir; nereye cizilecegine JS karar verir.
+
+Ayrica ana sayfadaki `trx_widget_slider`, temanin **demo** slider'ini
+(`schem1.png`) cagiriyor — gorunmeyen bir artik.
+
+### Yapilmasi gereken (kullanici onayi bekliyor)
+
+Kurala uymak icin bu bloklarin Elementor icerigine tasinmasi gerekir. Iki yol:
+
+| | Yontem | Kazanc | Risk |
+|---|---|---|---|
+| A | Bloklari oldugu gibi Elementor **HTML widget**'ina tasi, JS enjeksiyonunu kaldir | Editorde gorunur, tasinabilir, sayfaya baglanir; capraz sayfa sizintisi biter | Dusuk. Ic icerik hala HTML kutusunda duzenlenir |
+| B | Metin/baslik/butonlari **yerel Elementor widget'lariyla** yeniden kur, formu HTML olarak birak | Baslik, metin ve butonlar gorsel olarak duzenlenebilir | Orta. Stil birebir tutturulmali |
+
+**Dokunulmamasi gereken:** `cz-lead` formunun AJAX akisi, kupon ekrani ve
+donusum izleme etiketi. Bunlar sitenin ana lead toplama yolu; yeniden yazilirsa
+izleme kirilabilir. Her iki yolda da form kartinin JS'i oldugu gibi tasinmali.
+
+---
+
 ## 6. Sunucu duzeni (site basina)
 
 | Bilesen | Ornek: fdartgallery.com |

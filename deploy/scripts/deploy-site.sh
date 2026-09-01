@@ -111,6 +111,14 @@ define( 'WP_AUTO_UPDATE_CORE', 'minor' );
 define( 'DISALLOW_FILE_EDIT', true );
 define( 'FS_METHOD', 'direct' );
 
+// Elementor icin sart. WordPress yonetim panelinde bellegi kendi
+// WP_MAX_MEMORY_LIMIT degerine ceker; varsayilani 256M'dir ve Elementor
+// editorunun JSON yapilandirmasi buyuk sitelerde bunu asar (500 hatasi).
+// FPM havuzundaki php_admin_value[memory_limit] ile BIRLIKTE calisir —
+// havuz tavani dusukse buradaki deger etkisizdir. Bkz. CLAUDE.md 5n.
+define( 'WP_MEMORY_LIMIT', '256M' );
+define( 'WP_MAX_MEMORY_LIMIT', '512M' );
+
 if ( ! empty( \$_SERVER['HTTP_X_FORWARDED_PROTO'] ) && \$_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https' ) {
     \$_SERVER['HTTPS'] = 'on';
 }

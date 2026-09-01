@@ -17,7 +17,13 @@ pm.max_requests = 500
 
 php_admin_value[upload_max_filesize] = 128M
 php_admin_value[post_max_size] = 128M
-php_admin_value[memory_limit] = 256M
+; 512M — Elementor sartidir, keyfi degil. Editor acilirken tum widget/ayar
+; semasini tek bir JSON'a cevirir (Elementor\Utils::print_js_config ->
+; wp_json_encode); buyuk sitelerde bu tek cagri 256M'yi asip 500 verir.
+; DIKKAT: `php_admin_value` HARD tavandir — PHP'den ini_set ile YUKSELTILEMEZ.
+; Bu yuzden wp-config.php'deki WP_MAX_MEMORY_LIMIT tek basina yetmez, ikisi
+; birden gerekir (bkz. CLAUDE.md 5n).
+php_admin_value[memory_limit] = 512M
 php_admin_value[max_execution_time] = 300
 php_admin_value[open_basedir] = {{ROOT}}:/tmp:/usr/share/php
 php_admin_value[error_log] = /var/log/php/{{SITE_SLUG}}.error.log
