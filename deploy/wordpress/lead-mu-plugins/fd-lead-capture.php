@@ -186,20 +186,30 @@ function fd_lead_handle_submit( WP_REST_Request $req ) {
 	update_post_meta( $post_id, '_fd_mail', $mail_ok ? 'gonderildi' : 'BASARISIZ' );
 
 	/* --- 3. ADIM: Telegram aktarimi (sunucu tarafinda) --- */
+	// DIKKAT: Google Apps Script basarili POST'a 302 doner ve yaniti
+	// script.googleusercontent.com'a yonlendirir. O adres yalnizca GET kabul
+	// ettigi icin yonlendirme TAKIP EDILIRSE 405/400 gorunur ve mesaj
+	// gitmis olmasina ragmen "basarisiz" saniliriz. Bu yuzden
+	// redirection = 0 ve 302 BASARI sayilir.
 	$relay = 'atlandi';
 	if ( defined( 'FD_LEAD_RELAY_URL' ) && FD_LEAD_RELAY_URL
 		&& defined( 'FD_LEAD_CHAT_ID' ) && FD_LEAD_CHAT_ID ) {
 		$yanit = wp_remote_post(
 			FD_LEAD_RELAY_URL,
 			[
-				'timeout'     => 8,
-				'redirection' => 5,
+				'timeout'     => 10,
+				'redirection' => 0,
 				'body'        => [ 'chat_id' => FD_LEAD_CHAT_ID, 'text' => $metin ],
 			]
 		);
-		$relay = is_wp_error( $yanit )
-			? 'basarisiz: ' . $yanit->get_error_message()
-			: 'kod ' . wp_remote_retrieve_response_code( $yanit );
+		if ( is_wp_error( $yanit ) ) {
+			$relay = 'basarisiz: ' . $yanit->get_error_message();
+		} else {
+			$kod   = (int) wp_remote_retrieve_response_code( $yanit );
+			$relay = in_array( $kod, [ 200, 201, 302 ], true )
+				? 'gonderildi (' . $kod . ')'
+				: 'BASARISIZ (kod ' . $kod . ')';
+		}
 	}
 	update_post_meta( $post_id, '_fd_relay', $relay );
 
