@@ -520,10 +520,12 @@ Eski origin `5.42.123.26` (timeweb) geri donus yolu olarak durmali.
 | Dev adresi | Kaynak | Dizin | Durum |
 |---|---|---|---|
 | `dev.fdartgallery.com` | fdartgallery.com | `/var/www/dev.fdartgallery.com` | 200 |
-| `chestnyznak-dev.chemiartclick.uk` | chestnyznak.com.tr | `/var/www/dev.chestnyznak.chemiartclick.uk` | 200 |
+| **`dev.chestnyznak.com.tr`** | chestnyznak.com.tr | `/var/www/dev.chestnyznak.chemiartclick.uk` | 200 |
 
-**DIKKAT — ikinci sitenin dizin adi ile alan adi FARKLI.** Dizin hala
-`dev.chestnyznak...`, yayin adresi ise `chestnyznak-dev...`. Sebep asagida.
+**DIKKAT — ikinci sitenin dizin adi ile alan adi FARKLI.** Yayin adresi
+`dev.chestnyznak.com.tr`, dizin ve tum sistem adlari ise hala
+`dev.chestnyznak.chemiartclick.uk`. Sebep asagida (once `chestnyznak-dev...`
+adiyla kurulmusdu), ayrintisi "Adres degisikligi" basliginda.
 
 Kurulum: `add-site.sh` → `certbot` → `clone-site.sh <kaynak-dizin> <hedef>`.
 `clone-site.sh` kaynagi yalnizca OKUR; canliya hicbir yazma yapmaz.
@@ -531,6 +533,48 @@ Kurulum: `add-site.sh` → `certbot` → `clone-site.sh <kaynak-dizin> <hedef>`.
 **Staging korumasi** (`fd-staging-guard.php`, otomatik kurulur):
 giden e-posta PHPMailer seviyesinde kesilir, `blog_public` 0'a zorlanir,
 panelde ve sayfa altinda "DENEME ORTAMI" bandi cikar. Dogrulandi.
+
+> Not: veritabanindaki `blog_public` degeri **1 gorunur**, bu normaldir —
+> guard degeri calisma aninda filtreyle 0'a cekiyor. Olcut DB degeri degil,
+> sayfada `noindex, nofollow` etiketinin cikmasidir.
+
+##### Adres degisikligi: `chestnyznak-dev.chemiartclick.uk` → `dev.chestnyznak.com.tr` (01.09.2026)
+
+Kullanici istegiyle chestnyznak dev ortami asil alan adi altina tasindi.
+**Yeni kopya cikarilmadi** — ayni kurulum (1.6 GB dosya + 56 MB DB) yeni adla
+yayinlaniyor; ikinci bir klon disk ve bakim yuku demek olurdu.
+
+| | |
+|---|---|
+| DNS | `A dev.chestnyznak.com.tr -> 57.129.128.118`, **gri (proxied=false)**, ttl 120 |
+| Zone | `chestnyznak.com.tr` = `858396f27bcc338ad737fc52cf2d8a9f` (SWORD BROS hesabi) |
+| Sertifika | `chestnyznak-dev.chemiartclick.uk` cert'i **genisletildi**; SAN iki adi da kapsiyor, bitis 30.11.2026 |
+| vhost | `/etc/nginx/sites-available/dev.chestnyznak.com.tr.conf` (eski dosya silindi) |
+| Eski ad | `chestnyznak-dev.chemiartclick.uk` → **301** yeni adrese |
+| DB degisimi | `search-replace` 14.776 degisiklik; yedek `/root/backups/dev-chestnyznak-before-rename-*.sql` |
+
+**`CF_SWORDBROS_API_TOKEN` artik YAZABILIYOR** — 5l'deki "salt-okunur" notu
+gecersiz. DNS kaydi bu tokenla API'den olusturuldu.
+
+Kurulumda dikkat edilen iki nokta:
+
+1. **`cloudflare-only.conf` bu vhost'tan CIKARILDI.** Dev vhost'u Cloudflare
+   disindan gelen istegi `444` ile kesiyordu; yeni ad gri oldugu icin trafik
+   dogrudan geliyor ve site tamamen erisilemez olurdu.
+2. **80 portundaki blokta server seviyesinde `return` YOK.** `return` rewrite
+   asamasinda calisip location eslesmesini kisa devre yapar; ACME dogrulamasi
+   `.well-known` location'ina hic ulasamaz ve HTTP-01 404 alir. Yonlendirme
+   `location / { return 301 ... }` icine konuldu.
+
+Sertifika `certbot certonly --webroot` ile alindi (`--nginx` DEGIL): nginx
+eklentisi vhost'u kendi yeniden yaziyor ve daha once sertifika yollarini
+bozmustu (bkz. asagidaki 6. tuzak).
+
+Dogrulandi (sunucunun kendi genel IP'sinden, proxy'siz):
+`/` → 200 / 31 ms, `wp-login.php` → 200, sunulan sertifika
+`CN=dev.chestnyznak.com.tr` (Let's Encrypt YE1), sayfada `noindex, nofollow`
+var, canliya sizan adres kalmadi (0), eski ad 301 doneyor.
+`chestnyznak.com.tr` ve `fdartgallery.com` etkilenmedi (ikisi de 200).
 
 ##### Bu kurulumda cikan tuzaklar (hepsi cozuldu)
 
@@ -1658,7 +1702,12 @@ Origin IP'si aciga cikar; fdartgallery'yi 1. adimdaki nginx kurali korur.
 - SSL modunun `Full` mu `Full (strict)` mi oldugu (ayar okunamiyor)
 - MX / SPF / DKIM / DMARC **degismemeli** — posta timeweb'de (bkz. 5i)
 
-### Token GELDI ama SALT-OKUNUR (01.09.2026)
+### Token GELDI — once salt-okunurdu, ARTIK YAZIYOR (01.09.2026)
+
+> **GUNCEL DURUM:** kullanici token'a `Edit` yetkisini ekledi. Bu tokenla
+> `chestnyznak.com.tr` zone'unda DNS kaydi **olusturuldu ve degistirildi**
+> (gri buluta cekme + `dev.chestnyznak.com.tr` kaydi). Asagidaki "salt-okunur"
+> olcumu **yetki eklenmeden onceki** duruma aittir, kayit olarak birakildi.
 
 `CF_SWORDBROS_API_TOKEN` ortam degiskenine eklendi ve calisiyor. Kapsam:
 **SWORD BROS.** hesabindaki 13 zone (abcdeterjan.ru, brosmarket.ru,
