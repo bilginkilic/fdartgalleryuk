@@ -18,7 +18,7 @@ Sunucu kurulumu, performans, guvenlik, yedekleme ve fdartgallery e-postasi bitti
 | 1 | **chestnyznak giden e-posta** — `info@chestnyznak.com.tr` timeweb parolasi | Parola tasimada bozuldu, kurtarilamiyor. `TIMEWEB_MAIL_PASSWORD` env'e konursa kurulum hazir (5i) |
 | 2 | **info@ fazladan kopya** — "MX testi 4" hangi kutulara geldi? | Kopyanin Brevo'dan mi Gmail'den mi geldigini ayirt eden test (5j) |
 | 3 | **Kalan 4 site** icin dosya arsivi + `.sql` + **orijinal `wp-config.php`** | fdsanatmerkezi, chemiartclick.uk apex, davetevet, byhio, wedreply (5F) |
-| 4 | **chestnyznak turuncu bulut → GRI** (Rusya erisimi). Once ufw+nginx degisikligi, SONRA DNS — sira kritik | Kullanici onayi bekliyor; yanlis sirada yapilirsa site tamamen erisilemez olur (5l) |
+| 4 | **chestnyznak Rusya'dan ACILMIYOR** (`ERR_TIMED_OUT` — dogrulandi). Once **arkadasin IPv4'u** ile "origin dogrudan erisiliyor mu" testi | Test olumluysa griye cekilir. Sira kritik: once ufw+nginx, SONRA DNS — tersi site tamamen kapatir (5l) |
 | 5 | **PTR** posta alan adina cevrilsin mi | OVH Manager'dan; API yetkisi yok. **Oncelik dusuk** — mevcut PTR calisiyor (5E) |
 
 ### Karar bekleyenler (aciliyeti yok)
@@ -1414,6 +1414,77 @@ Origin IP'si aciga cikar; fdartgallery'yi 1. adimdaki nginx kurali korur.
 **Acik soru:** Rusya'dan erisilemedigi nasil dogrulandi? Cloudflare'in tamami mi
 engelli, yoksa belirli bir hata mi? Sorun ECH veya belirli bir edge datacenter'i
 ise turuncuyu kapatmadan cozulebilir — ama dogrulanmadan varsayilmamali.
+
+### AMA — kullanici turuncu bulutu ISTEMIYOR (30.08.2026)
+
+Kullanici: *"turuncu yapinca Rusya'da acilmadigini biliyorum, turuncu yapmayalim."*
+chestnyznak Rus pazarina calisan bir site, yani bu ciddi bir kisit.
+
+**Celiski:** site **su anda zaten turuncu** (yukaridaki olcum). Yani Rusya'dan
+erisim sorunu yasaniyorsa sebebi buyuk ihtimalle bu ve **canli bir sorun**.
+
+#### Kanit (30.08.2026, Rusya'dan cep telefonu, 4G+)
+
+Ekran goruntusu: Chrome → `chestnyznak.com.tr` → **`ERR_TIMED_OUT`**
+("took too long to respond").
+
+| Katman | Durum |
+|---|---|
+| DNS | **temiz** — Yandex 77.88.8.8 ve 77.88.8.88 dogru CF IP'lerini donuyor |
+| TCP | **olu** — baglanti hic kurulmuyor |
+| TLS | oraya kadar gelmiyor |
+
+Yani engelleme **paket seviyesinde, Cloudflare IP araliklarina** karsi —
+TLS/SNI kisitlamasi degil. Rusya'nin Cloudflare'e uyguladigi bilinen yontemle
+tutarli.
+
+**Kanitlanmayan:** origin'in (57.129.128.118, OVH Londra) oradan erisilebilir
+oldugu. Cloudflare engelli diye OVH'nin acik oldugu VARSAYILAMAZ.
+
+#### Once KANITLA, sonra yik (planlanan test)
+
+1. Arkadasin IPv4'u alinir (`https://yandex.ru/internet/` — Rusya'da calisiyor)
+2. ufw'de yalnizca o IP'ye gecici izin
+3. `curl -sI --resolve chestnyznak.com.tr:443:57.129.128.118 https://chestnyznak.com.tr/`
+4. `200` → gri bulut cozumdur. Timeout → gri bulut ISE YARAMAZ, korumayi
+   bosuna kaldirmis olurduk.
+5. Izin kaldirilir
+
+Ek veri noktalari: Wi-Fi/sabit hattan da denesin (Rus mobil operatorleri daha
+agresif kisitliyor); `chestnyznak.chemiartclick.uk` de denesin (o da CF arkasinda
+— ikisi de timeout ise engel alan adina degil Cloudflare'e).
+
+#### Griye cekme plani (test OLUMLU cikarsa) — SIRA KRITIK
+
+Mevcut durum:
+```
+ufw: 80,443/tcp ALLOW  <22 Cloudflare araligi>
+     "Anywhere" kurali: YOK
+```
+Bulut once griye cekilirse site **aninda tamamen erisilemez** olur.
+
+Duz "herkese ac" da yetmez: 443 dunyaya acilinca birisi
+`https://57.129.128.118` adresine `Host: fdartgallery.com` basligiyla vurup
+**fdartgallery icin Cloudflare'i baypas edebilir** (WAF, DDoS, edge ban devre disi).
+
+Sira:
+1. nginx'te kaynak ayrimi — Cloudflare'de KALACAK siteler yalnizca CF
+   IP'lerinden yanit versin:
+   ```nginx
+   geo $realip_remote_addr $cf_peer { default 0; <CF araliklari> 1; }
+   # fdartgallery + dev vhost'larinda:
+   if ($cf_peer = 0) { return 444; }
+   ```
+   chestnyznak vhost'una bu kosul KONMAZ.
+2. ufw'de 80/443 dunyaya acilir (ayrimi artik nginx yapiyor).
+3. **Sonra** DNS'te chestnyznak griye cekilir (`@`, `www` → 57.129.128.118,
+   turuncu bulut KAPALI).
+4. fail2ban: o site icin edge ban ise yaramaz, yerel guvenlik duvarina cevrilmeli.
+
+**Griye cekince chestnyznak'in kaybettikleri:** edge onbellegi, DDoS korumasi,
+WAF, edge ban. **Kaybetmedikleri:** HTTPS (origin'de gecerli LE sertifikasi var,
+dogrudan calisir) ve nginx sayfa onbellegi (6 ms — asil hiz zaten buradan).
+Origin IP'si aciga cikar; fdartgallery'yi 1. adimdaki nginx kurali korur.
 
 ### Hala gorulmeyen / kontrol edilemeyen
 
