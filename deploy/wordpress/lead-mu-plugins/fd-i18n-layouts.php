@@ -97,6 +97,8 @@ function fd_i18n_yol_esleme( $dil ) {
 			'/kod-sorgulama/' => '/en/code-lookup/',
 			'/blog-standard/' => '/en/news/',
 			'/shop/'          => '/en/solutions/',
+			// Sag alt kosedeki sohbet dugmesinin IFRAME kaynagi.
+			'/site-iletisim-formu/' => '/en/contact-form/',
 		],
 		'ru' => [
 			'/hakkimizda/'    => '/ru/o-nas/',
@@ -104,6 +106,7 @@ function fd_i18n_yol_esleme( $dil ) {
 			'/kod-sorgulama/' => '/ru/proverka-koda/',
 			'/blog-standard/' => '/ru/novosti/',
 			'/shop/'          => '/ru/uslugi/',
+			'/site-iletisim-formu/' => '/ru/forma-obratnoy-svyazi/',
 		],
 	];
 	return $harita[ $dil ] ?? [];

@@ -1,0 +1,40 @@
+{
+ "_not": "16-sohbet-formu-cevirisi.php bunu okur. ID YAZILMAZ: kaynak sayfa slug'dan, form da sayfadaki [fluentform id=..] kisa kodundan cozulur. Bildirim ALICILARI burada yok — kaynak formdan aynen kopyalanir (CLAUDE.md 6m).",
+ "kaynak_sayfa_slug": "site-iletisim-formu",
+ "diller": {
+  "en": {
+   "form_basligi": "Site Contact (chat) — EN",
+   "sayfa_basligi": "Site Contact Form (Chatbox) — EN",
+   "sayfa_slug": "contact-form",
+   "buton": "Send message",
+   "bildirim_konusu": "New message from the site chat form",
+   "alanlar": {
+    "Ad Soyad / Firma": "Full name / Company",
+    "E-posta": "E-mail",
+    "Telefon": "Phone",
+    "Mesaj": "Message",
+    "ornek@firma.com": "name@company.com",
+    "05xx xxx xx xx": "+90 5xx xxx xx xx",
+    "Kısaca ihtiyacınızı yazın (isteğe bağlı)": "Tell us briefly what you need (optional)"
+   },
+   "tesekkur": "<p style=\"font-size:17px;margin:0 0 6px\"><strong>Your message has arrived! 🎉</strong></p>\n<p style=\"margin:0 0 16px\">Our specialists will be in touch shortly. In the meantime:</p>\n<p style=\"margin:0\">\n<a href=\"https://wa.me/74951881919\" target=\"_blank\" rel=\"noopener\" style=\"display:inline-block;background:#25d366;color:#fff;font-weight:700;padding:12px 22px;border-radius:10px;text-decoration:none;margin:6px\">Message us on WhatsApp</a>\n<a href=\"/en/solutions/\" target=\"_blank\" rel=\"noopener\" style=\"display:inline-block;background:#f5c518;color:#0f1420;font-weight:700;padding:12px 22px;border-radius:10px;text-decoration:none;margin:6px\">Explore our solutions</a>\n<a href=\"/en/news/\" target=\"_blank\" rel=\"noopener\" style=\"display:inline-block;background:#0f1420;color:#f5c518;font-weight:700;padding:12px 22px;border-radius:10px;text-decoration:none;border:1px solid #f5c518;margin:6px\">Read the guides</a>\n</p>"
+  },
+  "ru": {
+   "form_basligi": "Site Contact (chat) — RU",
+   "sayfa_basligi": "Форма обратной связи (чат)",
+   "sayfa_slug": "forma-obratnoy-svyazi",
+   "buton": "Отправить сообщение",
+   "bildirim_konusu": "Новое сообщение из чат-формы на сайте",
+   "alanlar": {
+    "Ad Soyad / Firma": "Имя и фамилия / компания",
+    "E-posta": "E-mail",
+    "Telefon": "Телефон",
+    "Mesaj": "Сообщение",
+    "ornek@firma.com": "name@company.com",
+    "05xx xxx xx xx": "+7 9xx xxx xx xx",
+    "Kısaca ihtiyacınızı yazın (isteğe bağlı)": "Коротко опишите, что вам нужно (необязательно)"
+   },
+   "tesekkur": "<p style=\"font-size:17px;margin:0 0 6px\"><strong>Ваше сообщение получено! 🎉</strong></p>\n<p style=\"margin:0 0 16px\">Наши специалисты свяжутся с вами в ближайшее время. А пока:</p>\n<p style=\"margin:0\">\n<a href=\"https://wa.me/74951881919\" target=\"_blank\" rel=\"noopener\" style=\"display:inline-block;background:#25d366;color:#fff;font-weight:700;padding:12px 22px;border-radius:10px;text-decoration:none;margin:6px\">Написать в WhatsApp</a>\n<a href=\"/ru/uslugi/\" target=\"_blank\" rel=\"noopener\" style=\"display:inline-block;background:#f5c518;color:#0f1420;font-weight:700;padding:12px 22px;border-radius:10px;text-decoration:none;margin:6px\">Наши решения</a>\n<a href=\"/ru/novosti/\" target=\"_blank\" rel=\"noopener\" style=\"display:inline-block;background:#0f1420;color:#f5c518;font-weight:700;padding:12px 22px;border-radius:10px;text-decoration:none;border:1px solid #f5c518;margin:6px\">Читать руководства</a>\n</p>"
+  }
+ }
+}

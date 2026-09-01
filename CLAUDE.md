@@ -654,6 +654,27 @@ gercek magaza (`/shop/`) oldugu gibi durur.
 > ucretsiz surumu WooCommerce entegrasyonu icermez, sepet/kasa/vergi
 > akislarini kirma riski var. Calisan bir magazayi kirmayin.
 
+#### Sag alt kosedeki iki yuzen dugme
+
+WhatsApp ve sohbet dugmeleri widget'taki `cz-wa` / `cz-contact` bloklarindan
+gelir. Gorunur metinleri sozlukten cevrilir, ama iki sey ayrica gerekti:
+
+- **WhatsApp hazir mesaji** — `wa.me/...?text=` icindeki Turkce cumle; sozluge
+  eklendi, artik dile gore aciliyor.
+- **Sohbet formu bir IFRAME** — kaynagi `/site-iletisim-formu/` (canvas sayfa +
+  FluentForm #10). Sayfanin ve formun EN/RU kopyalari uretildi
+  (`16-sohbet-formu-cevirisi.php`), adres cevirisi `fd_i18n_yol_esleme()`
+  haritasinda yapiliyor. Kopya sayfa `elementor_canvas` sablonunda KALMALI —
+  degilse iframe icinde menu ve altbilgi de basilir.
+
+> **FluentForm kopyalarken sutunlari elle saymayin.** `fluentform_forms`
+> tablosunda surume gore olmayan bir sutun (`form_meta`) yazilmaya calisildi ve
+> `wpdb->insert()` sessizce basarisiz oldu. Dogrusu kaynak satiri `SELECT *`
+> ile okuyup `id`'yi atmak, yalnizca degisen alanlari ezmek.
+>
+> Bildirim ALICILARI kopyalanan meta satirlarindan aynen gelir — ceviri
+> sirasinda adres degistirmek gelen basvurulari kaybettirir (6m).
+
 #### Uc ayri yerde adres duzeltmek gerekti
 
 1. **Menu ogeleri** (`_menu_item_url`) — 08 numarali script menuleri de baglar.

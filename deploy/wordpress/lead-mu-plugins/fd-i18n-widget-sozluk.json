@@ -47,7 +47,11 @@
   "'Yukarı'": "'Top'",
   "'Bize yazın, sizi arayalım'": "'Write to us and we will call you'",
   "Son Yazılar": "Recent Posts",
-  "Ara": "Search"
+  "Ara": "Search",
+  "Merhaba, Chestny Znak markalama süreci hakkında bilgi almak istiyorum.": "Hello, I would like information about the Chestny Znak labelling process.",
+  "'Kapat'": "'Close'",
+  "'İletişim Formu'": "'Contact form'",
+  "\"Hızlı Talep Formu\"": "\"Quick request form\""
  },
  "ru": {
   "ЧЕСТНЫЙ ЗНАК · RUSYA ZORUNLU ÜRÜN MARKALAMA": "ЧЕСТНЫЙ ЗНАК · ОБЯЗАТЕЛЬНАЯ МАРКИРОВКА ТОВАРОВ В РОССИИ",
@@ -96,6 +100,10 @@
   "'Yukarı'": "'Наверх'",
   "'Bize yazın, sizi arayalım'": "'Напишите нам — мы перезвоним'",
   "Son Yazılar": "Последние записи",
-  "Ara": "Поиск"
+  "Ara": "Поиск",
+  "Merhaba, Chestny Znak markalama süreci hakkında bilgi almak istiyorum.": "Здравствуйте! Хочу получить информацию о маркировке «Честный ЗНАК».",
+  "'Kapat'": "'Закрыть'",
+  "'İletişim Formu'": "'Форма обратной связи'",
+  "\"Hızlı Talep Formu\"": "\"Форма быстрой заявки\""
  }
 }
