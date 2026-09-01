@@ -513,6 +513,39 @@ Telegram grubuna dusmez. Ayri bir dev grubu acilirsa tek satir degisir.
 > yonlendirme takip edilirse 405/400 gorunur ve mesaj gitmis olmasina ragmen
 > "basarisiz" sanilir. Bu yuzden `redirection => 0` ve **302 basari sayilir**.
 
+### 6j. Hiz — olculen durum ve yapilanlar (01.09.2026)
+
+Kullanici "basar basmaz acilsin" istedi. **Once olculdu, sonra dokunuldu.**
+
+| Olcum | Deger |
+|---|---|
+| TTFB (onbellek isabetli, sunucudan) | **26 ms** — sunucu darbogaz DEGIL |
+| HTML boyutu | **294 KB** (gzip'li gonderiliyor) |
+| Harici varlik | **40 script + 49 stylesheet = 89 istek**, 60 benzersiz dosya |
+| Protokol | **HTTP/1.1** ← asil sorun buydu |
+
+**Yapilan: HTTP/2 acildi** (`conf.d/03-http2.conf`, `http2 on;`).
+nginx 1.28.3'te `listen ... http2` **kullanimdan kalkti**; dogru yol bu direktif.
+
+Neden en buyuk kazanc: HTTP/1.1'de tarayici ayni sunucuya ~6 paralel baglanti
+acar. 89 varlik ≈ **15 tur gidis-donus**. Turkiye-Londra RTT ~60 ms oldugundan
+bu tek basina 1 saniyeden fazla bekleme demekti. HTTP/2 hepsini tek baglantida
+cogullar. Dogrulandi: `HTTP/2 200`, dort site de saglam.
+
+> **Yanlis teshis, olcumle duzeltildi:** `nginx.conf`'ta `gzip_types` satiri
+> yorumda oldugu icin "CSS/JS sikistirilmiyor" sandim. Olcunce ikisinin de
+> `content-encoding: gzip` dondugu gorildu. **Yorum satirina bakip cikarim
+> yapmayin, yaniti olcun.**
+
+**Sirada (kullanici karari):**
+- **Varlik sayisini dusurmek** — 60 ayri CSS/JS dosyasi var, 28 aktif eklenti.
+  En buyuk kalan kazanc burada; eklenti sadelestirme isi.
+- **Edge onbellegi YOK** — chestnyznak Rusya icin gri bulutta, yani Cloudflare
+  APO kullanilamiyor. Turkiye'den gelen her istek Londra'ya gidiyor.
+  fdartgallery turuncu oldugu icin onda APO bir secenek.
+- **Brotli** kurulu degil, Ubuntu deposunda `libnginx-mod-brotli` bulunamadi.
+  Metin varliklarinda gzip'e gore ~%15-20 daha iyi olurdu.
+
 ### 6h. Diger
 
 - **`rsync --exclude 'database/'` her seviyedeki `database` dizinini atlar.**
@@ -565,6 +598,17 @@ Telegram grubuna dusmez. Ayri bir dev grubu acilirsa tek satir degisir.
   degisikligi) **once yedek**, mumkunse `--dry-run`, sonra kullanici onayi.
 - `deploy-site.sh` `rsync --delete` kullanir → repo eksikken calistirmayin.
   Mevcut `wp-config.php`'yi ezmez.
+- **UC DIL KURALI (chestnyznak).** Siteye eklenen her yeni icerik — blog yazisi,
+  sayfa, menu ogesi, hero blogu, buton metni — **Turkce + English + Русский**
+  olarak eklenir. Tek dilde birakilan icerik eksik istir.
+  - Yeni yazi/sayfa: Turkcesi yayinlanir, sonra `pll_set_post_language()` ile
+    dili isaretlenir, EN ve RU kopyalari acilir, `pll_save_post_translations()`
+    ile uc kayit birbirine baglanir.
+  - Menuye oge eklenirken **her uc menuye** eklenir (tr=171, en=372, ru=373).
+  - Elementor blogu eklenirken metinler uc sayfada ayri ayri cevrilir; ortak
+    olan CSS/JS `cz-lead-assets` widget'inda tutulur, **sayfa kimligine bagli
+    kilavuz yazilmaz** (bkz. 6i).
+  - Ceviri sozlugu: `deploy/wordpress/i18n/sayfa-cevirileri.json`
 - Degisiklikten sonra **dogrula**: HTTP kodu yetmez, icerigi kontrol edin.
 - Bu dosyayi guncel tut: yeni tuzagi 6. bolume, biten isi 5'e, bekleyeni 0'a
   yaz. Uzun anlatiyi commit mesajina birak.
