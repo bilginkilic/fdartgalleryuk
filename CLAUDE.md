@@ -18,7 +18,7 @@ Sunucu kurulumu, performans, guvenlik, yedekleme ve fdartgallery e-postasi bitti
 | 1 | **chestnyznak giden e-posta** — `info@chestnyznak.com.tr` timeweb parolasi | Parola tasimada bozuldu, kurtarilamiyor. `TIMEWEB_MAIL_PASSWORD` env'e konursa kurulum hazir (5i) |
 | 2 | **info@ fazladan kopya** — "MX testi 4" hangi kutulara geldi? | Kopyanin Brevo'dan mi Gmail'den mi geldigini ayirt eden test (5j) |
 | 3 | **Kalan 4 site** icin dosya arsivi + `.sql` + **orijinal `wp-config.php`** | fdsanatmerkezi, chemiartclick.uk apex, davetevet, byhio, wedreply (5F) |
-| 4 | **Arkadasa soylenecek**: chestnyznak.com.tr zone'unda SSL modu **Full (strict)** | Bizim hesabimizda degil, o yapmali (5F) |
+| 4 | **chestnyznak.com.tr zone'unda SSL modu → Full (strict)** | Kullanici o hesapta ADMIN, ama mevcut API token o zone'u gormuyor. Panelden 2 tik, ya da yeni token (5l) |
 | 5 | **PTR** posta alan adina cevrilsin mi | OVH Manager'dan; API yetkisi yok. **Oncelik dusuk** — mevcut PTR calisiyor (5E) |
 
 ### Karar bekleyenler (aciliyeti yok)
@@ -1079,7 +1079,8 @@ Musteri magduriyeti olusmamis.
   yontemi; `sudo -E` tuzagina dusmez)
 - veya WP paneli → FluentSMTP → `smtp.timeweb.ru` → parolayi gir → Send Test Email
 
-**DIKKAT:** `chestnyznak.com.tr` DNS'i **arkadasin Cloudflare hesabinda**.
+**DIKKAT:** `chestnyznak.com.tr` DNS'i ayri bir Cloudflare hesabinda
+(kullanici orada admin, ama mevcut API token o zone'u gormuyor — bkz. 5l).
 Brevo'ya gecirmek DKIM/SPF kaydi eklemesini gerektirir ve calisan timeweb
 kurulumunu bozar — parola alinamazsa bile once sifirlama denenmeli.
 
@@ -1313,6 +1314,52 @@ Acil durum: OVH Manager → VPS → KVM konsolu. Konsolda klavye eslemesi bozuk
 olabilir (`:` → `;`, `|` → `\`); `sudo loadkeys us` duzeltir.
 
 Durum: `sudo bash deploy/scripts/harden-ssh.sh --status`
+
+---
+
+## 5l. chestnyznak.com.tr zone erisimi (30.08.2026)
+
+**Duzeltme:** onceki notlarda "alan adi arkadasin hesabinda, biz dokunamayiz"
+yaziyordu. Kullanici o Cloudflare hesabinda **admin**. Ama bu, mevcut API
+token'in oraya erisebildigi anlamina GELMIYOR — Cloudflare token'lari
+olusturulurken belirli hesap/zone'lara sabitlenir, uyelik sonradan token'i
+genisletmez. Olculdu:
+
+```
+GET /accounts  -> tek hesap: "Chemiartclick@gmail.com's Account"
+GET /zones     -> byhio, chemiartclick.uk, davetevet, fdartgallery,
+                  fdsanatmerkezi, wedreply     (6 zone)
+GET /zones?name=chestnyznak.com.tr -> BOS
+```
+
+### SSL modu Full (strict) — GUVENLI, dogrulandi
+
+Origin sertifikasi o alan adini kapsiyor ve zincir gecerli:
+
+```
+Certificate Name: chestnyznak.chemiartclick.uk
+  Domains: chestnyznak.com.tr chestnyznak.chemiartclick.uk www.chestnyznak.com.tr
+  Expiry : 2026-11-28  (Let's Encrypt, oto-yenileme kurulu)
+openssl -servername chestnyznak.com.tr -> CN=chestnyznak.com.tr
+                                          Verify return code: 0 (ok)
+```
+
+Yani `Full (strict)` yapinca yonlendirme dongusu veya 526 hatasi OLMAZ.
+`Flexible` ise **asla** kullanilmamali.
+
+### Iki yol
+
+1. **Panelden (hizli):** o hesapta zone → SSL/TLS → Overview → **Full (strict)**.
+2. **API token (kalici):** Cloudflare → My Profile → API Tokens → Create Token,
+   sablon "Edit zone DNS" yerine ozel: `Zone.Zone Settings:Edit`,
+   `Zone.DNS:Edit`, `Zone.Cache Purge:Purge`; kapsam o hesap + chestnyznak.com.tr.
+   Token ortam degiskenine konursa bu zone da buradan yonetilebilir.
+
+### O zone'da ayrica dogrulanmasi gerekenler (erisim gelirse)
+
+- `@` ve `www` A kayitlari `57.129.128.118`, **turuncu bulut ACIK**
+  (gri olursa site tamamen erisilemez — origin yalnizca Cloudflare IP'lerini kabul eder)
+- MX / SPF / DKIM / DMARC **degismemeli** — posta timeweb'de (bkz. 5i)
 
 ---
 
