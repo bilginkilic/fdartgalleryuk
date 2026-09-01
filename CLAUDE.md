@@ -357,12 +357,29 @@ Yazan her script **kayittan sonra kendini dogrulamali** ve etiketler yoksa
 degisikligi geri almali. Ayrica `wp_json_encode` `/` karakterini `\/` yapar —
 kontrol dizesinde egik cizgi kullanmayin.
 
-#### Adres degisikliginden sonra onbellek
+#### Onbellege yazilan yonlendirme — KOK SEBEP BULUNDU ve duzeltildi
 
-Ana sayfa bir sure `301 → kendisi` donuyordu. Uygulama hatasi degildi: nginx
-sayfa onbellegine, rename sirasinda uretilmis bir WordPress kanonik yonlendirmesi
-yazilmisti. **Ayirt edici isaret: `HEAD` 200, `GET` 301.** Adres degistiren her
-islemden sonra onbellek temizlenip GET ile tekrar test edilir.
+Ana sayfa bir sure `301 → kendisi` donuyordu; sonra kullanici "dev acilmiyor"
+dedi ama sunucu disaridan **200** veriyordu. Ikisinin de sebebi ayni:
+
+```nginx
+fastcgi_cache_valid 200 301 302 10m;   # <-- 301/302 de onbellege giriyordu
+```
+
+WordPress yonlendirmeleri **duruma baglidir** (kanonik, giris, dil). Onbellege
+yazilan tek bir 301, on dakika boyunca **herkese** servis edilir; dahasi tarayici
+301'i **KALICI** sayip saklar. Sonuc: site sunucuda calisirken kullanicida
+acilmaz hale gelir ve sunucuyu ne kadar test etseniz sorunu goremezsiniz.
+
+**Duzeltildi (01.09.2026):** dort sitede de `fastcgi_cache_valid 200 10m;`.
+Artik yalnizca 200 ve 404 onbellege girer. Repo: `deploy/nginx/templates/fastcgi-php.conf.template`
+
+> **Ayirt edici isaret: `HEAD` 200 ama `GET` 301** → onbellekte yonlendirme var.
+> **Kullanicida acilmiyor ama sunucuda 200** → tarayiciya yazilmis 301.
+> Cozum kullanici tarafinda: gizli sekmede dene, ya da site verisini temizle
+> (Chrome: adres cubugundaki kilit → "Cerezler ve site verileri" → temizle).
+
+Adres degistiren her islemden sonra onbellek temizlenip **GET** ile test edilir.
 
 ### 6i. Cok dillilik — Polylang (dev, 01.09.2026)
 

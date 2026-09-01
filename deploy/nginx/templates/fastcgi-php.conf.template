@@ -29,7 +29,11 @@ fastcgi_intercept_errors off;
 fastcgi_ignore_headers Set-Cookie;
 
 fastcgi_cache WPCACHE;
-fastcgi_cache_valid 200 301 302 10m;
+# 301/302 ONBELLEGE ALINMAZ. WordPress yonlendirmeleri duruma baglidir (kanonik,
+# giris, dil); onbellege yazilirsa herkese servis edilir ve tarayici 301'i KALICI
+# sayip saklar — site sunucuda calisirken kullanicida acilmaz hale gelir.
+# 01.09.2026'da tam olarak bu yasandi (bkz. CLAUDE.md 6f).
+fastcgi_cache_valid 200 10m;
 fastcgi_cache_valid 404 1m;
 fastcgi_cache_bypass $skip_cache;
 fastcgi_no_cache    $skip_cache $wpc_bypass_respcookie;
