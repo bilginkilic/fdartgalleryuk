@@ -1,0 +1,14 @@
+{
+  "_not": "12-blog-altyapisi.php bunu okur. Etiketler BILEREK yok: sitedeki 14 etiketin tamami temanin demo etiketleri (Business, Course, Style 1, With Sidebar ...) — konu etiketi degiller, cevrilmeleri anlamsiz olur. Cevrilmis yazilara etiket atanmaz; Turkce yazilardaki demo etiketlerin temizligi ayri bir is.",
+  "arsiv": {
+    "en": { "baslik": "News", "slug": "news" },
+    "ru": { "baslik": "Новости", "slug": "novosti" }
+  },
+  "category": {
+    "modern": {
+      "en": { "ad": "Russia Labelling Guide", "slug": "russia-labelling-guide" },
+      "ru": { "ad": "Руководство по маркировке в России", "slug": "rukovodstvo-po-markirovke" }
+    }
+  },
+  "post_tag": {}
+}

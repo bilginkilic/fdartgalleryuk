@@ -39,12 +39,16 @@ $IS = [
 		'/hakkimizda/'     => '/en/about-us/',
 		'/iletisim/'       => '/en/contact/',
 		'/kod-sorgulama/'  => '/en/code-lookup/',
+		'/blog-standard/'  => '/en/news/',
+		'/shop/'           => '/en/solutions/',
 	],
 	37703 => [
 		'/about-creative/' => '/en/about-us/',
 		'/hakkimizda/'     => '/en/about-us/',
 		'/iletisim/'       => '/en/contact/',
 		'/kod-sorgulama/'  => '/en/code-lookup/',
+		'/blog-standard/'  => '/en/news/',
+		'/shop/'           => '/en/solutions/',
 	],
 	// RU ana sayfa + RU altbilgi
 	37687 => [
@@ -52,12 +56,16 @@ $IS = [
 		'/hakkimizda/'     => '/ru/o-nas/',
 		'/iletisim/'       => '/ru/kontakty/',
 		'/kod-sorgulama/'  => '/ru/proverka-koda/',
+		'/blog-standard/'  => '/ru/novosti/',
+		'/shop/'           => '/ru/uslugi/',
 	],
 	37704 => [
 		'/about-creative/' => '/ru/o-nas/',
 		'/hakkimizda/'     => '/ru/o-nas/',
 		'/iletisim/'       => '/ru/kontakty/',
 		'/kod-sorgulama/'  => '/ru/proverka-koda/',
+		'/blog-standard/'  => '/ru/novosti/',
+		'/shop/'           => '/ru/uslugi/',
 	],
 ];
 

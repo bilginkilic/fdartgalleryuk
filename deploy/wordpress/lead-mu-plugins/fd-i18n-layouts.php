@@ -95,14 +95,33 @@ function fd_i18n_yol_esleme( $dil ) {
 			'/hakkimizda/'    => '/en/about-us/',
 			'/iletisim/'      => '/en/contact/',
 			'/kod-sorgulama/' => '/en/code-lookup/',
+			'/blog-standard/' => '/en/news/',
+			'/shop/'          => '/en/solutions/',
 		],
 		'ru' => [
 			'/hakkimizda/'    => '/ru/o-nas/',
 			'/iletisim/'      => '/ru/kontakty/',
 			'/kod-sorgulama/' => '/ru/proverka-koda/',
+			'/blog-standard/' => '/ru/novosti/',
+			'/shop/'          => '/ru/uslugi/',
 		],
 	];
 	return $harita[ $dil ] ?? [];
+}
+
+/**
+ * Widget metin sozlugu. Ayni dizindeki JSON dosyasindan okunur; boylece yeni
+ * bir metin eklemek icin kod degistirmek gerekmez.
+ * Kaynak: deploy/wordpress/lead-mu-plugins/fd-i18n-widget-sozluk.json
+ */
+function fd_i18n_widget_sozluk( $dil ) {
+	static $tumu = null;
+	if ( null === $tumu ) {
+		$yol  = __DIR__ . '/fd-i18n-widget-sozluk.json';
+		$ham  = is_readable( $yol ) ? file_get_contents( $yol ) : '';
+		$tumu = $ham ? (array) json_decode( $ham, true ) : [];
+	}
+	return isset( $tumu[ $dil ] ) ? (array) $tumu[ $dil ] : [];
 }
 
 add_filter(
@@ -115,37 +134,7 @@ add_filter(
 		if ( ! $dil || 'tr' === $dil ) {
 			return $icerik;
 		}
-		$sozluk = [
-			'en' => [
-				'Projeniz mi var?'                 => 'Have a project?',
-				'Bizimle çalışmak ister misiniz?'  => 'Want to work with us?',
-				'Bize Ulaşın'                      => 'Contact Us',
-				'Çözümlerimizi inceleyin'          => 'Explore our solutions',
-				'Mağazaya Git'                     => 'Go to Shop',
-				// cz-audit scriptinin urettigi aria-label metinleri
-				"'İletişim'"                       => "'Contact'",
-				"'Çözümlerimiz'"                   => "'Solutions'",
-				"'Hakkımızda'"                     => "'About Us'",
-				"'Haberler'"                       => "'News'",
-				"'Ana sayfa'"                      => "'Home'",
-				"'Sonraki'"                        => "'Next'",
-				"'Bize yazın'"                     => "'Write to us'",
-			],
-			'ru' => [
-				'Projeniz mi var?'                 => 'Есть проект?',
-				'Bizimle çalışmak ister misiniz?'  => 'Хотите работать с нами?',
-				'Bize Ulaşın'                      => 'Связаться с нами',
-				'Çözümlerimizi inceleyin'          => 'Наши решения',
-				'Mağazaya Git'                     => 'Перейти в магазин',
-				"'İletişim'"                       => "'Контакты'",
-				"'Çözümlerimiz'"                   => "'Услуги'",
-				"'Hakkımızda'"                     => "'О нас'",
-				"'Haberler'"                       => "'Новости'",
-				"'Ana sayfa'"                      => "'Главная'",
-				"'Sonraki'"                        => "'Далее'",
-				"'Bize yazın'"                     => "'Напишите нам'",
-			],
-		];
+		$sozluk = [ $dil => fd_i18n_widget_sozluk( $dil ) ];
 		if ( empty( $sozluk[ $dil ] ) ) {
 			return $icerik;
 		}
@@ -158,6 +147,29 @@ add_filter(
 		}
 
 		return strtr( $icerik, $sozluk[ $dil ] );
+	},
+	20
+);
+
+/* -------------------------------------------------------------------------
+ * Kenar cubugu widget BASLIKLARI.
+ *
+ * Polylang'de her widget'a dil atanabilir, ama o zaman ayni widget'i uc kez
+ * kurmak ve uc yerde bakim yapmak gerekir. Basliklar tek satirlik metinler
+ * oldugu icin ayni sozlukten sunucu tarafinda ceviriyoruz.
+ * ---------------------------------------------------------------------- */
+add_filter(
+	'widget_title',
+	function ( $baslik ) {
+		if ( ! is_string( $baslik ) || '' === $baslik || ! function_exists( 'pll_current_language' ) ) {
+			return $baslik;
+		}
+		$dil = pll_current_language();
+		if ( ! $dil || 'tr' === $dil ) {
+			return $baslik;
+		}
+		$sozluk = fd_i18n_widget_sozluk( $dil );
+		return isset( $sozluk[ $baslik ] ) ? $sozluk[ $baslik ] : $baslik;
 	},
 	20
 );

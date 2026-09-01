@@ -32,11 +32,12 @@ Sunucu kurulumu, performans, guvenlik ve yedekleme bitti.
   adresi kirar → 301 gerekir. Ayrinti `deploy/blog/BACKLOG.md`.
 - **chestnyznak kalan 14 JS enjeksiyonu** Elementor'a tasinsin mi (6f).
 - **PTR** posta alan adina cevrilsin mi — oncelik dusuk, mevcut PTR calisiyor.
-- **Haberler ve Magaza dilde kalmiyor** (6k). Cozumu icerik/butce karari:
-  470 Turkce blog yazisi ve WooCommerce urunleri. Urun cevirisi Polylang'in
-  **ucretli** WooCommerce eklentisini gerektirir.
-- **Dev'deki eklenti sadelestirmesi canliya alinsin mi** (6l) — dev'de 24 → 20
-  aktif eklenti, ana sayfa 89 → 75 istek. Canli henuz DOKUNULMADI.
+- **Dev'deki uc dil isi canliya alinsin mi** (6k, 6l) — dev'de menuden
+  ulasilan her adres uc dilde, 19 blog yazisi uc dilde, dil dusuren baglanti
+  sifir, eklenti 24 → 20, ana sayfa 89 → 75 istek. **Canli DOKUNULMADI.**
+- **Urun sayfalari** (`/product/...`) tek dilde. Cevirisi Polylang'in
+  **ucretli** WooCommerce eklentisini ister; sepet/kasa kirma riski oldugu
+  icin ucretsiz surumle denenmedi (6k).
 
 ---
 
@@ -592,16 +593,48 @@ cogullar. Dogrulandi: `HTTP/2 200`, dort site de saglam.
 **Sebep basit ve kacinilmaz:** Polylang gecerli dili **URL onekinden** belirler
 (`force_lang=1`). `/en/` menusundeki bir oge `/iletisim/` derse — cunku o
 sayfanin cevirisi yoktur — onek duser ve site Turkceye doner. Menuyu
-kandirmanin yolu yok; **cozum sayfayi gercekten cevirmektir.**
+kandirmanin yolu yok; **cozum sayfayi gercekten cevirmektir.** Denenip
+elenen iki yol:
 
-Cevrilenler (01.09.2026, dev): Hakkimizda → `/en/about-us/`, `/ru/o-nas/`;
-Iletisim → `/en/contact/`, `/ru/kontakty/`; Kod Sorgulama → `/en/code-lookup/`,
-`/ru/proverka-koda/`. Araclar: `deploy/wordpress/i18n/08..10*.php` +
-`menu-sayfalari.json`, `anasayfa-bloklari.json`.
+- **`pll_language` cerezi**: icerik dili her zaman kazanir; ustelik nginx
+  `fastcgi_cache` cerezi anahtara katmadigi icin cerez temelli bir dil
+  secimi zaten onbellek tarafindan ezilirdi. Olculdu: `/blog-standard/`
+  cerezle de `lang=tr-TR` donuyor.
+- **Onekli adresle cevirisiz icerik** (`/en/<turkce-slug>/`): Polylang
+  `redirect_lang=1` ile bunu 301 ile oneksiz adrese geri atar.
 
-**Hala Turkceye dusen iki menu ogesi:** *Haberler* (`/blog-standard/`) ve
-*Cozumlerimiz* (`/shop/`). Ikisi de arsiv: 470 Turkce yazi ve WooCommerce
-urunleri. Urun cevirisi Polylang'in **ucretli** eklentisini ister.
+**Yapilan (01.09.2026, dev):** menuden ulasilan HER adres uc dile cevrildi.
+
+| Turkce | English | Русский |
+|---|---|---|
+| `/hakkimizda/` | `/en/about-us/` | `/ru/o-nas/` |
+| `/iletisim/` | `/en/contact/` | `/ru/kontakty/` |
+| `/kod-sorgulama/` | `/en/code-lookup/` | `/ru/proverka-koda/` |
+| `/blog-standard/` | `/en/news/` | `/ru/novosti/` |
+| `/shop/` | `/en/solutions/` | `/ru/uslugi/` |
+| 19 blog yazisi | 19 yazi | 19 yazi |
+
+Araclar: `deploy/wordpress/i18n/08..15*.php` + yanlarindaki JSON sozlukler
+(`yazi-cevirileri/parti-1..5.json` blog metinleridir).
+
+**Olcut:** `/en/` ve `/ru/` sayfalarindaki ic baglantilardan **dil dusuren
+sifir tane** olmali. Tarama araci sunucuda `python3 /tmp/tara2.py <dil> <yollar>`
+mantigiyla yazildi: `<head>` ve `lang-item` ogeleri disarida birakilir (dil
+degistiricinin diger dile gitmesi dogrudur), kalan her ic baglanti onekli
+olmalidir. Son olcum: 20 sayfada **en=0, ru=0**.
+
+#### Magaza: urun sayfalari neden `[products]` ile listelenmiyor
+
+`/en/solutions/` ve `/ru/uslugi/` once `[products]` kisa koduyla yapildi ve
+urunler uc dilde de listelendi (`product` Polylang'de cevrilen tipler arasinda
+DEGIL). Ama urun baglantilari `/product/...` — oneksiz. Tiklayan ziyaretci
+Turkceye duserdi. Bu yuzden sayfalar **cevrilmis paket kartlarina** cevrildi;
+kartlarin CTA'si cevrilmis iletisim sayfasina gider. Turkce ziyaretci icin
+gercek magaza (`/shop/`) oldugu gibi durur.
+
+> `product` tipini Polylang'de cevrilebilir yapmak denenmedi: Polylang'in
+> ucretsiz surumu WooCommerce entegrasyonu icermez, sepet/kasa/vergi
+> akislarini kirma riski var. Calisan bir magazayi kirmayin.
 
 #### Uc ayri yerde adres duzeltmek gerekti
 
@@ -613,6 +646,47 @@ urunleri. Urun cevirisi Polylang'in **ucretli** eklentisini ister.
 3. **Tema widget'i** (`widget_custom_html`) — icindeki cz-* scriptleri her
    dilde ayni basildigi icin adresler `fd-i18n-layouts.php` filtresinde
    sunucu tarafinda cevrilir.
+
+#### TUZAK: sayfaya ve ELEMAN KIMLIGINE civilenmis scriptler
+
+**Sikayet:** "en ve ru ana sayfa tr'den farkli, birebir ayni olmali."
+
+Olculdu: Elementor YAPISI ucunde de birebir ayniydi (70 dugum, diff bos) ama
+govde TR 8386 px, EN/RU 6877 px. Fark **calisma aninda** olusuyordu, iki
+sebepten:
+
+1. **Yol kilavuzu.** Widget'taki `cz-hero-block` ve `cz-fix2` bloklari
+   `if(p!=='/' && !/\/home\/?$/.test(p)) return;` ile basliyordu. `/en/` ve
+   `/ru/` bu testi gecemez → scriptler HIC CALISMAZ, gizlenmesi gereken
+   bolumler acik kalir.
+2. **Eleman kimligi.** `document.querySelector('.elementor-element-54fa5520')`
+   ve `[data-id="567ae5d"]` gibi seciciler. Dil kopyalari uretilirken her
+   elemanin `id` alani YENIDEN URETILIR, bu yuzden hicbir sey bulunmaz.
+
+**Duzeltme** (`11-eleman-kimliklerini-siniflandir.php`):
+- yol kilavuzu → `document.body.classList.contains('frontpage')`
+  (tema on sayfaya bu sinifi basiyor; uc dilde de var, ic sayfalarda YOK —
+  ikisi de olculdu),
+- eleman kimligi → kalici sinif `cz-el-<kimlik>`. Sinif TR sayfasindaki
+  kimlige gore adlandirilir ama uc sayfada da **ayni indeksteki** elemana
+  yazilir; script once "uc sayfa da 70 dugum, turler ayni" diye dogrular.
+
+> **Alt tuzak:** Elementor'da "CSS Classes" denetiminin adi eleman turune
+> gore DEGISIR — widget'ta `_css_classes`, section/column'da `css_classes`
+> (`elementor/includes/elements/section.php:1291`). Hepsine `_css_classes`
+> yazildiginda 16 dugumden yalnizca 4'unun sinifi basildi.
+
+> **Ikinci alt tuzak:** yol kilavuzu duzeldikten sonra scriptler CEVRIMDISI
+> testte de calismaya basladi — `file://` yolunda `location.pathname` asla
+> `/` olmadigi icin onceki olcumler o bloklari hic calistirmamisti. Yani
+> "TR 8386 px" bir cevrimdisi artifaktiymis (CLAUDE.md 6e).
+
+Scriptler calisinca EN/RU'ya **Turkce** hero metinleri girdi (widget tek ve
+uc dilde ayni basiliyor). Bu yuzden widget metinleri de sunucu tarafinda
+cevrildi: `fd-i18n-layouts.php` + `fd-i18n-widget-sozluk.json` (47 metin).
+
+**Son olcum:** govde TR 9826 / EN 9792 / RU 9795 px (%0,35 fark, yalnizca
+satir kaydirma). Yirmi ust bolumun yuksekligi ucunde de ayni.
 
 #### TUZAK: `_elementor_data` uzerinde ham strtr CALISMAZ
 
