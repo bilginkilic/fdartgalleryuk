@@ -2123,6 +2123,75 @@ fetch(RELAY,{method:'POST',body:new URLSearchParams({
    WordPress mailini keser; bu script WordPress'i tamamen baypas eder.
    Dev'de test edilecekse once `chat_id` degistirilmeli veya relay kapatilmali.
 
+### ADIM 3 — basvuru artik WordPress'e KAYDEDILIYOR (dev, 01.09.2026)
+
+Onceki akisin uc kusuru da kapatildi. Yeni sira: **once kalici kayit**, sonra
+e-posta, en son Telegram.
+
+`deploy/wordpress/lead-mu-plugins/fd-lead-capture.php` (yalnizca chestnyznak
+sitelerine kurulur — fdartgallery'ye GITMEZ):
+
+| | |
+|---|---|
+| Uc | `POST /wp-json/fd-lead/v1/submit` |
+| Kayit | `fd_lead` icerik tipi — panelde **Basvurular** menusu, sutunlar: e-posta, telefon, e-posta bildirimi, Telegram |
+| Saklanan | ad, e-posta, telefon, kaynak adres, IP, tarayici, mail durumu, relay durumu |
+| E-posta | `FD_LEAD_NOTIFY_EMAIL` yoksa `admin_email`; `Reply-To` basvuranin adresi |
+| Telegram | **sunucu tarafinda** `wp_remote_post` ile; `chat_id` artik sayfada DEGIL |
+| Spam | gizli bal kupu alani (`website`) + IP basina saatte 8 kayit siniri |
+
+**Ziyaretciye "basarili" demenin tek olcutu veritabani kaydidir.** Uc `stored`
+donmezse form acik kalir, kirmizi hata kutusu ve WhatsApp yedegi cikar.
+Eski koddaki `.catch(show)` ve `setTimeout(show,2500)` **kaldirildi**.
+
+#### wp-config sabitleri (repoya YAZILMAZ)
+
+```php
+define( 'FD_LEAD_RELAY_URL', 'https://script.google.com/macros/s/.../exec' );
+define( 'FD_LEAD_CHAT_ID',   '-100...' );   // BOS -> aktarim yapilmaz
+define( 'FD_LEAD_NOTIFY_EMAIL', 'info@...' );
+```
+
+**Dev'de `FD_LEAD_CHAT_ID` BILEREK BOS.** Boylece dev'den yapilan denemeler
+canli Telegram grubuna dusmez (staging guard yalnizca WordPress mailini keser,
+bu akis WordPress'i baypas ediyordu — 5n'deki 3. risk). Ayri bir dev grubu
+acilirsa tek satir: o grubun id'sini bu sabite yazmak yeterli.
+Staging'de giden mesaj ayrica `🧪 DENEME ORTAMI` satiriyla baslar.
+
+#### Yan kazanc — guvenlik
+
+`chat_id` ve relay adresi sayfa kaynaginda **acikta duruyordu**; isteyen o
+gruba mesaj bastirabilirdi. Ikisi de artik sunucuda.
+Dogrulandi: dev sayfa kaynaginda `1004497432508` ve `script.google.com`
+sayisi **0**. (Canlida hala 1 — canliya alinmadi.)
+
+#### Dogrulama — uctan uca
+
+Sunucudan gercek istekler:
+
+```
+gecerli gonderim -> {"stored":true,"id":37683,"mail":true,"relay":"atlandi"}
+eksik/gecersiz alan -> HTTP 400
+bal kupu dolu -> {"stored":true,"id":0}   (bota basarili der, KAYIT ACMAZ)
+veritabani -> fd_lead kaydi olustu, meta: _fd_mail=gonderildi, _fd_relay=atlandi
+```
+
+Gercek tarayicida (yerel Chromium, uc sahte yanitla):
+
+| Senaryo | Sonuc |
+|---|---|
+| `stored:true` | basari paneli acildi, form gizlendi, hata yok |
+| HTTP 500 | **basari paneli ACILMADI**, form acik kaldi, hata kutusu + WhatsApp baglantisi |
+
+Ayrica: handler bagli (`data-cz-bound=1`), bal kupu alani sayfada, uca giden
+POST govdesi dogru.
+
+> **Not:** dev'de `mail: true` gorunur ama mesaj GITMEZ — staging guard
+> PHPMailer'i kesiyor, `wp_mail` yine de true doner. Bu kasitlidir.
+> **Canlida** ise e-posta su an zaten calismiyor (5i: timeweb SMTP parolasi
+> bekleniyor). Yani canliya alindiginda bildirim e-postasi ancak o parola
+> girildikten sonra ulasir; kayit ve Telegram o parolaya bagli DEGILDIR.
+
 ### Sirada ne var (kullanici onayi bekliyor)
 - **Canliya alma:** ayni tasima `chestnyznak.com.tr` icin de yapilmali.
   Kullanici dev'i onayladiktan sonra.
