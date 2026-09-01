@@ -32,7 +32,20 @@ if ( ! $P || empty( $P['en'] ) || empty( $P['ru'] ) ) {
 }
 kses_remove_filters();
 
-$SAYFA = [ 'en' => 37686, 'ru' => 37687 ];
+/* ID'ler ELLE YAZILMAZ — dev ve canlida farkli (bkz. 09 numarali script). */
+$tr_on = (int) get_option( 'page_on_front' );
+$SAYFA = [];
+foreach ( [ 'en', 'ru' ] as $dil ) {
+	$c = $tr_on ? (int) pll_get_post( $tr_on, $dil ) : 0;
+	if ( $c && $c !== $tr_on ) {
+		$SAYFA[ $dil ] = $c;
+	}
+}
+if ( ! $SAYFA ) {
+	echo "HATA: cevrilmis ana sayfa bulunamadi\n";
+	return;
+}
+printf( "cozulen ana sayfalar: tr=%d %s\n", $tr_on, wp_json_encode( $SAYFA ) );
 
 $imza = function ( $s ) {
 	return [ substr_count( $s, '<style' ), substr_count( $s, '<script' ) ];

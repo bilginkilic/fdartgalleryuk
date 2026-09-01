@@ -33,7 +33,19 @@ if ( ! function_exists( 'pll_set_post_language' ) ) {
 }
 kses_remove_filters();
 
-$MENU = [ 'en' => 372, 'ru' => 373 ];
+/* Menu ID'leri de ELLE YAZILMAZ — Polylang dil basina ayri menu konumu acar
+   (`menu_main___en`). Konumdan cozulur. */
+$MENU = [];
+$konumlar = get_nav_menu_locations();
+foreach ( [ 'en', 'ru' ] as $dil ) {
+	foreach ( [ 'menu_main___' . $dil, 'primary___' . $dil, 'menu_mobile___' . $dil ] as $konum ) {
+		if ( ! empty( $konumlar[ $konum ] ) ) {
+			$MENU[ $dil ] = (int) $konumlar[ $konum ];
+			break;
+		}
+	}
+}
+printf( "cozulen menuler: %s\n", wp_json_encode( $MENU ) );
 
 $magaza_id = (int) get_option( 'woocommerce_shop_page_id' );
 if ( ! $magaza_id ) {
@@ -85,11 +97,15 @@ foreach ( [ 'en', 'ru' ] as $dil ) {
 			update_post_meta( $id, $mk, $v );
 		}
 	}
-	/* Kisa kod yazildigi gibi durdu mu? (kses) */
-	if ( false === strpos( get_post( $id )->post_content, '[products' ) ) {
-		wp_delete_post( $id, true );
-		echo "  KAYIT DOGRULAMASI BASARISIZ (kisa kod kayboldu) -> silindi\n";
-		return;
+	/* Yazildigi gibi mi durdu? Isaretler yukten gelir — icerik degistiginde
+	   burayi da guncellemek gerekmesin diye kod icine gomulmez. */
+	$yazilan = get_post( $id )->post_content;
+	foreach ( (array) ( $P['dogrulama'] ?? [] ) as $isaret ) {
+		if ( false !== strpos( $m['icerik'], $isaret ) && false === strpos( $yazilan, $isaret ) ) {
+			wp_delete_post( $id, true );
+			echo "  KAYIT DOGRULAMASI BASARISIZ ('$isaret' kayboldu) -> silindi\n";
+			return;
+		}
 	}
 	pll_set_post_language( $id, $dil );
 	$ceviri[ $dil ] = $id;

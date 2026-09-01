@@ -39,7 +39,19 @@ $KORUNACAK = [
 	37375 => [ 'swordbros.com', 'rtib.org' ],
 ];
 
-$MENU = [ 'en' => 372, 'ru' => 373 ];
+/* Menu ID'leri de ELLE YAZILMAZ — Polylang dil basina ayri menu konumu acar
+   (`menu_main___en`). Konumdan cozulur. */
+$MENU = [];
+$konumlar = get_nav_menu_locations();
+foreach ( [ 'en', 'ru' ] as $dil ) {
+	foreach ( [ 'menu_main___' . $dil, 'primary___' . $dil, 'menu_mobile___' . $dil ] as $konum ) {
+		if ( ! empty( $konumlar[ $konum ] ) ) {
+			$MENU[ $dil ] = (int) $konumlar[ $konum ];
+			break;
+		}
+	}
+}
+printf( "cozulen menuler: %s\n", wp_json_encode( $MENU ) );
 $sonuc = [];
 
 foreach ( $P['sayfalar'] as $kaynak_id => $diller ) {

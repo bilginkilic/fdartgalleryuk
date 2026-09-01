@@ -27,7 +27,19 @@ if ( ! function_exists( 'pll_set_post_language' ) ) {
 }
 kses_remove_filters();
 
-$MENU = [ 'en' => 372, 'ru' => 373 ];
+/* Menu ID'leri de ELLE YAZILMAZ — Polylang dil basina ayri menu konumu acar
+   (`menu_main___en`). Konumdan cozulur. */
+$MENU = [];
+$konumlar = get_nav_menu_locations();
+foreach ( [ 'en', 'ru' ] as $dil ) {
+	foreach ( [ 'menu_main___' . $dil, 'primary___' . $dil, 'menu_mobile___' . $dil ] as $konum ) {
+		if ( ! empty( $konumlar[ $konum ] ) ) {
+			$MENU[ $dil ] = (int) $konumlar[ $konum ];
+			break;
+		}
+	}
+}
+printf( "cozulen menuler: %s\n", wp_json_encode( $MENU ) );
 
 /* -------------------------------------------------------------------------
  * 1) Blog arsiv sayfasi

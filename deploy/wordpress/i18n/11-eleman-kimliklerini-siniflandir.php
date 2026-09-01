@@ -45,8 +45,20 @@
  */
 
 $dry     = ( ( $args[0] ?? '' ) === 'dry' );
-$KAYNAK  = 5002;
-$SAYFALAR = [ 'tr' => 5002, 'en' => 37686, 'ru' => 37687 ];
+/* ID'ler ELLE YAZILMAZ — dev ve canlida farkli (bkz. 09 numarali script). */
+$KAYNAK   = (int) get_option( 'page_on_front' );
+$SAYFALAR = [ 'tr' => $KAYNAK ];
+foreach ( [ 'en', 'ru' ] as $dil ) {
+	$c = $KAYNAK && function_exists( 'pll_get_post' ) ? (int) pll_get_post( $KAYNAK, $dil ) : 0;
+	if ( $c && $c !== $KAYNAK ) {
+		$SAYFALAR[ $dil ] = $c;
+	}
+}
+if ( count( $SAYFALAR ) < 3 ) {
+	echo "HATA: uc dilin ana sayfasi bulunamadi: " . wp_json_encode( $SAYFALAR ) . "\n";
+	return;
+}
+printf( "cozulen ana sayfalar: %s\n", wp_json_encode( $SAYFALAR ) );
 
 kses_remove_filters();
 
@@ -111,20 +123,32 @@ $duz_tr = [];
 fd_dugumler( $tr, $duz_tr );
 $tr_kimlikler = array_column( $duz_tr, 'id' );
 
+/* Atiflar IKI kaynaktan toplanir:
+ *   a) tema widget'i (cz-hero-block, cz-fix2, cz-home ...)
+ *   b) SAYFANIN KENDI Elementor verisi — `cz-lead-assets` widget'indaki CSS
+ *      de eleman kimligine bagliydi:
+ *        body.frontpage .elementor-element-85f2abf,
+ *        body.frontpage .elementor-element-3c0b548 { display:none!important }
+ *      Bu kural TR sayfasinin kimliklerini tasidigi icin EN/RU'da hicbir seyi
+ *      gizlemiyordu ve iki `trx_sc_title` widget'i acik kaliyordu (+223 px).
+ * Ikisi de ayni sekilde kalici sinifa cevrilir.
+ */
 $atif = [];
-// Hem donusturulmemis (`elementor-element-x`) hem donusturulmus (`cz-el-x`)
-// bicimi toplanir; boylece script YENIDEN calistirilabilir (idempotent).
-if ( preg_match_all( '/(?:elementor-element-|cz-el-)([0-9a-f]{6,8})/', $w_ham, $m ) ) {
-	$atif = array_merge( $atif, $m[1] );
-}
-if ( preg_match_all( '/data-id="([0-9a-f]{6,8})"/', $w_ham, $m ) ) {
-	$atif = array_merge( $atif, $m[1] );
-}
-// `['7027c76','567ae5d',...].forEach(... '.elementor-element-'+id ...)` bicimi
-if ( preg_match_all( "/\\[((?:'[0-9a-f]{6,8}',?)+)\\]/", $w_ham, $m ) ) {
-	foreach ( $m[1] as $liste ) {
-		preg_match_all( '/[0-9a-f]{6,8}/', $liste, $mm );
-		$atif = array_merge( $atif, $mm[0] );
+foreach ( [ $w_ham, $ham_tr ] as $kaynak_metin ) {
+	// Hem donusturulmemis (`elementor-element-x`) hem donusturulmus (`cz-el-x`)
+	// bicimi toplanir; boylece script YENIDEN calistirilabilir (idempotent).
+	if ( preg_match_all( '/(?:elementor-element-|cz-el-)([0-9a-f]{6,8})/', $kaynak_metin, $m ) ) {
+		$atif = array_merge( $atif, $m[1] );
+	}
+	if ( preg_match_all( '/data-id=\\?"([0-9a-f]{6,8})\\?"/', $kaynak_metin, $m ) ) {
+		$atif = array_merge( $atif, $m[1] );
+	}
+	// `['7027c76','567ae5d',...].forEach(... '.elementor-element-'+id ...)` bicimi
+	if ( preg_match_all( "/\\[((?:'[0-9a-f]{6,8}',?)+)\\]/", $kaynak_metin, $m ) ) {
+		foreach ( $m[1] as $liste ) {
+			preg_match_all( '/[0-9a-f]{6,8}/', $liste, $mm );
+			$atif = array_merge( $atif, $mm[0] );
+		}
 	}
 }
 $atif = array_values( array_unique( $atif ) );
@@ -193,6 +217,29 @@ foreach ( $veriler as $dil => $bilgi ) {
 	$n     = 0;
 	fd_sinif_yaz( $veri, $indeks_sinif, $sayac, $n );
 
+	/* Sayfanin kendi dize ayarlarindaki kimlik secicileri de kalici sinifa
+	   cevrilir (cz-lead-assets icindeki dedupe CSS'i gibi). */
+	$metin_sayaci = 0;
+	$metin_donustur = function ( &$dugum ) use ( &$metin_donustur, $hedef, &$metin_sayaci ) {
+		foreach ( $dugum as $anahtar => &$v ) {
+			if ( is_string( $v ) && '_css_classes' !== $anahtar && 'css_classes' !== $anahtar ) {
+				$eski_v = $v;
+				$v = str_replace( "'.elementor-element-'+id", "'.cz-el-'+id+',.elementor-element-'+id", $v );
+				foreach ( $hedef as $k ) {
+					$v = str_replace( '[data-id="' . $k . '"]', '.cz-el-' . $k, $v );
+					$v = str_replace( 'elementor-element-' . $k, 'cz-el-' . $k, $v );
+				}
+				if ( $v !== $eski_v ) {
+					$metin_sayaci++;
+				}
+			} elseif ( is_array( $v ) ) {
+				$metin_donustur( $v );
+			}
+		}
+		unset( $v );
+	};
+	$metin_donustur( $veri );
+
 	$yeni = wp_json_encode( $veri );
 	if ( ! is_string( $yeni ) || null === json_decode( $yeni, true ) ) {
 		echo "  DURDURULDU ($dil): yeniden kodlanamadi\n";
@@ -203,7 +250,7 @@ foreach ( $veriler as $dil => $bilgi ) {
 		return;
 	}
 
-	printf( "  %-3s sinif yazilan dugum=%d\n", $dil, $sayac );
+	printf( "  %-3s sinif yazilan dugum=%d, metin donusumu=%d\n", $dil, $sayac, $metin_sayaci );
 
 	if ( $dry ) {
 		continue;

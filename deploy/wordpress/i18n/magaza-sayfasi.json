@@ -1,5 +1,10 @@
 {
- "_not": "14-magaza-sayfasi.php bunu okur. [products] kisa kodu BILEREK KULLANILMIYOR: urun sayfalari Polylang'de cevrilemeyen bir icerik tipi (product), yani onlara tiklayan EN/RU ziyaretci Turkceye duserdi. Bunun yerine paketler cevrilmis kartlar olarak anlatilir ve CTA cevrilmis iletisim sayfasina gider — ziyaretci dilinden hic cikmaz. Turkce ziyaretci icin gercek magaza (/shop/) oldugu gibi durur.",
+ "_not": "14-magaza-sayfasi.php bunu okur. [products] kisa kodu BILEREK KULLANILMIYOR: urun sayfalari Polylang'de cevrilemeyen bir icerik tipi (product), yani onlara tiklayan EN/RU ziyaretci Turkceye duserdi. Bunun yerine paketler cevrilmis kartlar olarak anlatilir ve CTA cevrilmis iletisim sayfasina gider — ziyaretci dilinden hic cikmaz. Turkce ziyaretci icin gercek magaza (/shop/) oldugu gibi durur. Sayfa yazildiktan sonra `dogrulama` listesindeki isaretler icerikte aranir; biri kaybolduysa (kses inline style'i kirpmis olabilir) sayfa silinir.",
+ "dogrulama": [
+  "style=\"border:1px solid",
+  "<h3",
+  "href=\"/"
+ ],
  "en": {
   "baslik": "Solutions",
   "slug": "solutions",

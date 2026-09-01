@@ -32,9 +32,6 @@ Sunucu kurulumu, performans, guvenlik ve yedekleme bitti.
   adresi kirar → 301 gerekir. Ayrinti `deploy/blog/BACKLOG.md`.
 - **chestnyznak kalan 14 JS enjeksiyonu** Elementor'a tasinsin mi (6f).
 - **PTR** posta alan adina cevrilsin mi — oncelik dusuk, mevcut PTR calisiyor.
-- **Dev'deki uc dil isi canliya alinsin mi** (6k, 6l) — dev'de menuden
-  ulasilan her adres uc dilde, 19 blog yazisi uc dilde, dil dusuren baglanti
-  sifir, eklenti 24 → 20, ana sayfa 89 → 75 istek. **Canli DOKUNULMADI.**
 - **Urun sayfalari** (`/product/...`) tek dilde. Cevirisi Polylang'in
   **ucretli** WooCommerce eklentisini ister; sepet/kasa kirma riski oldugu
   icin ucretsiz surumle denenmedi (6k).
@@ -214,6 +211,7 @@ sitesi eklerken o map'e bir satir eklenir.
 | Turnstile | fdartgallery giris/kayit/form/WooCommerce |
 | Blog | `deploy/blog/` araclari + haftalik Routine (`trig_01Q2abbcd19d1CQem3fs5Z7M`, Sali 06:00 UTC) |
 | chestnyznak | Elementor gecisi + basvuru kaydi (6f, 6g) |
+| Uc dil (canli) | Menuden ulasilan her adres + 20 blog yazisi tr/en/ru; dil dusuren baglanti 0; iletisim formu dile gore (6k) |
 
 Komutlar ve olcumler icin `deploy/` altindaki script'ler ve git gecmisi.
 
@@ -615,7 +613,8 @@ elenen iki yol:
 - **Onekli adresle cevirisiz icerik** (`/en/<turkce-slug>/`): Polylang
   `redirect_lang=1` ile bunu 301 ile oneksiz adrese geri atar.
 
-**Yapilan (01.09.2026, dev):** menuden ulasilan HER adres uc dile cevrildi.
+**Yapilan (01.09.2026, once dev sonra CANLI):** menuden ulasilan HER adres
+uc dile cevrildi.
 
 | Turkce | English | Русский |
 |---|---|---|
@@ -624,10 +623,17 @@ elenen iki yol:
 | `/kod-sorgulama/` | `/en/code-lookup/` | `/ru/proverka-koda/` |
 | `/blog-standard/` | `/en/news/` | `/ru/novosti/` |
 | `/shop/` | `/en/solutions/` | `/ru/uslugi/` |
-| 19 blog yazisi | 19 yazi | 19 yazi |
+| 20 blog yazisi | 20 yazi | 20 yazi |
 
 Araclar: `deploy/wordpress/i18n/08..15*.php` + yanlarindaki JSON sozlukler
-(`yazi-cevirileri/parti-1..5.json` blog metinleridir).
+(`yazi-cevirileri/parti-1..6.json` blog metinleridir).
+
+> **SCRIPTLERE POST ID YAZILMAZ.** Dev ve canlida ayni degiller: EN ana sayfa
+> dev'de 37686, canlida 37687. Ilk surumde ID'ler koda gomuluydu; canliya
+> alirken hepsi `page_on_front`, `pll_get_post()`, `get_nav_menu_locations()`
+> ve slug/baslik aramasindan cozulecek sekilde degistirildi. Ayni sebeple
+> `13-yazilari-cevir.php` yuku TR yazi ID'siyle anahtarlanir — o ID'ler
+> klonda AYNI kalir, cunku dev canlidan kopyalanmistir.
 
 **Olcut:** `/en/` ve `/ru/` sayfalarindaki ic baglantilardan **dil dusuren
 sifir tane** olmali. Tarama araci sunucuda `python3 /tmp/tara2.py <dil> <yollar>`

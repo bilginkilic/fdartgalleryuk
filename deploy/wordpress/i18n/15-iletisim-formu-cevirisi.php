@@ -28,8 +28,24 @@ if ( ! class_exists( 'WPCF7_ContactForm' ) ) {
 }
 kses_remove_filters();
 
-$KAYNAK  = (int) $P['kaynak_form'];
-$SAYFALAR = $P['sayfalar'];   // dil => cevrilmis iletisim sayfasi ID
+/* ID'ler ELLE YAZILMAZ — dev ve canlida farkli (bkz. 09 numarali script).
+   Kaynak form basligindan, sayfalar Polylang cevirisinden cozulur. */
+$kaynak_formlar = get_posts(
+	[ 'post_type' => 'wpcf7_contact_form', 'post_status' => 'any', 'numberposts' => 1, 'title' => $P['kaynak_form_basligi'] ]
+);
+$KAYNAK = $kaynak_formlar ? (int) $kaynak_formlar[0]->ID : 0;
+
+$iletisim = get_page_by_path( $P['kaynak_sayfa_slug'] );
+$SAYFALAR = [];
+if ( $iletisim ) {
+	foreach ( [ 'en', 'ru' ] as $dil ) {
+		$c = (int) pll_get_post( $iletisim->ID, $dil );
+		if ( $c && $c !== $iletisim->ID ) {
+			$SAYFALAR[ $dil ] = $c;
+		}
+	}
+}
+printf( "cozulen: form=%d, sayfalar=%s\n", $KAYNAK, wp_json_encode( $SAYFALAR ) );
 
 $kaynak = get_post( $KAYNAK );
 if ( ! $kaynak || 'wpcf7_contact_form' !== $kaynak->post_type ) {

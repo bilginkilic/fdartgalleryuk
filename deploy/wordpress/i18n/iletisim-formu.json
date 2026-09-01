@@ -1,10 +1,7 @@
 {
- "_not": "15-iletisim-formu-cevirisi.php bunu okur. E-posta ALICI adresleri BILEREK burada yok — kaynak formdan aynen kopyalanir; ceviri sirasinda adres degistirmek gelen basvurulari kaybettirir.",
- "kaynak_form": 5,
- "sayfalar": {
-  "en": 37708,
-  "ru": 37709
- },
+ "_not": "15-iletisim-formu-cevirisi.php bunu okur. ID YAZILMAZ: kaynak form basligindan, cevrilmis iletisim sayfalari Polylang cevirisinden cozulur (dev ve canlida ID'ler farkli). E-posta ALICI adresleri de burada yok — kaynak formdan aynen kopyalanir.",
+ "kaynak_form_basligi": "Contact form (main)",
+ "kaynak_sayfa_slug": "iletisim",
  "diller": {
   "en": {
    "baslik": "Contact form (main) — EN",

@@ -28,13 +28,20 @@
 $dry  = ( ( $args[0] ?? '' ) === 'dry' );
 $kok  = untrailingslashit( home_url() );
 
-/* Hangi gonderide hangi eslemenin uygulanacagi. */
-$IS = [
-	// TR ana sayfa + TR altbilgi: yalnizca yanlis demo hedefi duzelt.
-	5002  => [ '/about-creative/' => '/hakkimizda/' ],
-	4105  => [ '/about-creative/' => '/hakkimizda/' ],
-	// EN ana sayfa + EN altbilgi
-	37686 => [
+/* -------------------------------------------------------------------------
+ * ID'ler ELLE YAZILMAZ. Dev ve canlida ayni degiller (ornegin EN ana sayfa
+ * dev'de 37686, canlida 37687) ve elle yazilan bir ID yanlis sayfayi bozar.
+ * Hepsi Polylang ve WordPress ayarlarindan cozulur.
+ * ---------------------------------------------------------------------- */
+$tr_on = (int) get_option( 'page_on_front' );
+$tr_alt = function_exists( 'qwery_get_custom_layout_id' ) ? (int) qwery_get_custom_layout_id( 'footer' ) : 0;
+if ( ! $tr_on ) {
+	echo "HATA: page_on_front tanimsiz\n";
+	return;
+}
+
+$YOL = [
+	'en' => [
 		'/about-creative/' => '/en/about-us/',
 		'/hakkimizda/'     => '/en/about-us/',
 		'/iletisim/'       => '/en/contact/',
@@ -42,24 +49,7 @@ $IS = [
 		'/blog-standard/'  => '/en/news/',
 		'/shop/'           => '/en/solutions/',
 	],
-	37703 => [
-		'/about-creative/' => '/en/about-us/',
-		'/hakkimizda/'     => '/en/about-us/',
-		'/iletisim/'       => '/en/contact/',
-		'/kod-sorgulama/'  => '/en/code-lookup/',
-		'/blog-standard/'  => '/en/news/',
-		'/shop/'           => '/en/solutions/',
-	],
-	// RU ana sayfa + RU altbilgi
-	37687 => [
-		'/about-creative/' => '/ru/o-nas/',
-		'/hakkimizda/'     => '/ru/o-nas/',
-		'/iletisim/'       => '/ru/kontakty/',
-		'/kod-sorgulama/'  => '/ru/proverka-koda/',
-		'/blog-standard/'  => '/ru/novosti/',
-		'/shop/'           => '/ru/uslugi/',
-	],
-	37704 => [
+	'ru' => [
 		'/about-creative/' => '/ru/o-nas/',
 		'/hakkimizda/'     => '/ru/o-nas/',
 		'/iletisim/'       => '/ru/kontakty/',
@@ -68,6 +58,26 @@ $IS = [
 		'/shop/'           => '/ru/uslugi/',
 	],
 ];
+
+/* TR tarafinda yalnizca yanlis demo hedefi duzeltilir. */
+$IS = [];
+foreach ( [ $tr_on, $tr_alt ] as $id ) {
+	if ( $id ) {
+		$IS[ $id ] = [ '/about-creative/' => '/hakkimizda/' ];
+	}
+}
+foreach ( [ 'en', 'ru' ] as $dil ) {
+	foreach ( [ $tr_on, $tr_alt ] as $id ) {
+		if ( ! $id ) {
+			continue;
+		}
+		$ceviri = function_exists( 'pll_get_post' ) ? (int) pll_get_post( $id, $dil ) : 0;
+		if ( $ceviri && $ceviri !== $id ) {
+			$IS[ $ceviri ] = $YOL[ $dil ];
+		}
+	}
+}
+printf( "cozulen kayitlar: %s\n", implode( ', ', array_keys( $IS ) ) );
 
 kses_remove_filters();
 
