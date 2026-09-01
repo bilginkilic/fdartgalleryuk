@@ -364,6 +364,74 @@ sayfa onbellegine, rename sirasinda uretilmis bir WordPress kanonik yonlendirmes
 yazilmisti. **Ayirt edici isaret: `HEAD` 200, `GET` 301.** Adres degistiren her
 islemden sonra onbellek temizlenip GET ile tekrar test edilir.
 
+### 6i. Cok dillilik — Polylang (dev, 01.09.2026)
+
+**YALNIZCA DEV.** Canliya alinmadi; canlida Polylang kurulu degil.
+
+**Neden Polylang:** ucretsiz surumu **sinirsiz dil** destekliyor. TranslatePress'in
+ucretsiz surumu yalnizca **1** ek dil verir — bize 2 lazimdi (EN + RU). WPML ucretli.
+Polylang her dile ayri URL ve ayri gonderi verir; Elementor ile her dil ayri sayfa
+oldugu icin duzen bagimsiz duzenlenebilir.
+
+| Dil | URL | Durum |
+|---|---|---|
+| Turkce (varsayilan) | `/` | tum icerik (470 gonderi + 86 terim Turkce isaretlendi) |
+| English | `/en/` | **yalnizca ana sayfa** cevrildi (ID 37686) |
+| Русский | `/ru/` | **yalnizca ana sayfa** cevrildi (ID 37687) |
+
+Ayarlar: `force_lang=1` (dizin oneki), `hide_default=1` (Turkce koke kalir),
+`rewrite=1`, `browser=0` (tarayici diline gore otomatik yonlendirme KAPALI),
+**`redirect_lang=1`**.
+
+> **`redirect_lang=1` SART.** 0 birakilinca `/en/` cevrilmis ana sayfayi degil
+> **blog arsivini** gosteriyordu; cevrilmis sayfa `/en/home-2/` adresinde
+> kaliyordu. Ceviriler dogru bagliydi, sorun yalnizca bu ayardaydi.
+
+Script'ler: `deploy/wordpress/i18n/` (sirayla 01→04), ceviri metinleri
+`ceviriler.json`. Yedek: `/root/backups/dev-before-polylang-*.sql` ve
+`dev-before-i18n-pages-*.sql`.
+
+#### Sayfa kimligine bagli kilavuzlar KIRILIYORDU
+
+`cz-lead` blogunun script'i `if(!/page-id-5002/.test(document.body.className))return;`
+ile basliyordu; CSS'te de 7 adet `body.page-id-5002` kurali vardi. Dil kopyalari
+**farkli ID** aldigi icin EN/RU sayfalarinda script hic calismaz, form baglanmaz,
+enjekte edilen bolumler gelmezdi. Duzeltildi:
+
+- script kilavuzu → `if(!document.getElementById('cz-lead'))return;`
+- CSS `body.page-id-5002` → `body.frontpage, body.home`
+
+> Bu tema on sayfaya `home` DEGIL `frontpage` sinifi basiyor; ikisi birden yazildi.
+
+#### Menu ve dil degistirici
+
+Yalnizca ana sayfa cevrildigi icin EN/RU'ya **ayri menu acilmadi**; ayni menu
+(171) her uc dile atandi, boylece gezinme calismaya devam ediyor. Menuye
+Polylang dil degistirici ogesi eklendi (`_pll_menu_item`, bayrak + ad, acilir
+menu kapali). **Sayfalar cevrildikce dile ozel menu acilmalidir.**
+
+#### Dogrulandi
+
+```
+/     -> 200 lang=tr-TR  H1 "Rusya'nin zorunlu urun markalamasini..."
+/en/  -> 200 lang=en-US  H1 "Russia's mandatory product labelling..."
+/ru/  -> 200 lang=ru-RU  H1 "Обязательную маркировку товаров в России..."
+```
+Her ucunde `#cz-lead` + form var; tarayicida `/ru/` icin `data-cz-bound=1`,
+buton "Отправить заявку →". Dil degistirici uc sayfada da cikiyor, 6 hreflang
+etiketi basiliyor. Dev hala aramaya kapali (`Disallow: /` + `X-Robots-Tag`).
+Canli ve fdartgallery etkilenmedi.
+
+> `lang="ru-RU"` olmasinin yan faydasi: `kod-sorgulama` araci ve `cz-lead`
+> blogu zaten `document.documentElement.lang` degerine bakip TR/RU arasinda
+> geciyor — Rusca sayfada kendiliginden Rusca calisiyor.
+
+#### Kalan is (kullanici karari)
+
+Ceviri **yalnizca ana sayfada**. 177 sayfa, blog, magaza ve WooCommerce
+urunleri hala tek dilde. WooCommerce urunlerinin cevirisi Polylang'in
+ucretli eklentisini gerektirir. Hangi sayfalarin cevrilecegi icerik karari.
+
 ### 6g. Basvuru formu (chestnyznak ana sayfa)
 
 **Onceki hali uc kusurluydu:** form dogrudan tarayicidan bir Google Apps Script'e
