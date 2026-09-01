@@ -1559,7 +1559,46 @@ Origin IP'si aciga cikar; fdartgallery'yi 1. adimdaki nginx kurali korur.
 - SSL modunun `Full` mu `Full (strict)` mi oldugu (ayar okunamiyor)
 - MX / SPF / DKIM / DMARC **degismemeli** — posta timeweb'de (bkz. 5i)
 
-### Ortam degiskeni adlandirmasi (kullanici ekleyecek)
+### Token GELDI ama SALT-OKUNUR (01.09.2026)
+
+`CF_SWORDBROS_API_TOKEN` ortam degiskenine eklendi ve calisiyor. Kapsam:
+**SWORD BROS.** hesabindaki 13 zone (abcdeterjan.ru, brosmarket.ru,
+**chestnyznak.com.tr**, maicollection.ru, nazimhikmet.com, palto.ru,
+revinalife.ru, starstil.ru, swordbros.com/.net/.org/.ru, turkrusportal.com).
+
+`chestnyznak.com.tr` zone id: **`858396f27bcc338ad737fc52cf2d8a9f`**
+
+**Yetki olcumu:**
+```
+DNS kayitlarini OKU       -> OK
+Zone ayarlarini OKU       -> OK
+DNS kaydini DEGISTIR      -> REDDEDILDI (10000 Authentication error)
+Onbellek temizle          -> REDDEDILDI (10000)
+```
+Yani token **Read**, `Edit` degil. Gri buluta cekme islemi bu token'la
+YAPILAMAZ. Kullanici ya token'a `Zone.DNS: Edit` ekleyecek, ya da panelden
+elle cevirecek.
+
+Not: `/user/tokens/verify` bu token icin de `Invalid API Token` doner —
+hesap kapsamli token'larda normaldir, token gecerlidir.
+
+### Okuma yetkisiyle ogrenilenler
+
+**SSL modu = `full`** (strict DEGIL) — onceki cikarim dogrulandi.
+Diger ayarlar: `always_use_https on`, `automatic_https_rewrites on`,
+`brotli on`, `http3 on`, `development_mode off`,
+**`min_tls_version 1.0`** ← zayif, 1.2 yapilmali.
+
+**`webmail.chestnyznak.com.tr` BOZUK:** A kaydi `57.129.128.118` (bizim
+sunucu) ve turuncu. Sunucuda o isim icin vhost yok, istek ilk 443 bloguna
+dusuyor ve **301 ile `https://chestnyznak.com.tr/`'ye** gidiyor. Yani webmail'e
+girmek isteyen musteri magazanin ana sayfasina atiliyor. Dogru hedef timeweb
+olmali (`mail` CNAME'i zaten `mail.timeweb.com`'a bakiyor). Kullanici karari.
+
+**Bakim artigi:** uc adet `_acme-challenge` TXT kaydi duruyor (apex x2, www x1)
+— eski DNS-01 denemelerinden kalma, zararsiz ama temizlenebilir.
+
+### Ortam degiskeni adlandirmasi
 
 ```
 CF_SWORDBROS_ACCOUNT_ID
@@ -1569,9 +1608,10 @@ CF_SWORDBROS_R2_SECRET_ACCESS_KEY    # simdilik GEREKMIYOR
 CF_SWORDBROS_R2_ENDPOINT             # simdilik GEREKMIYOR
 ```
 
-**Not (30.08.2026):** kullanici ekledigini soyledi ama degiskenler bu oturumun
-ortaminda GORUNMEDI (tum degisken adlari tarandi). Ortam degisikligi calisan
-konteynere gecmiyor olabilir — yeni oturumda tekrar bakilmali.
+**Not (01.09.2026):** degiskenler ilk eklendiginde oturumun ortaminda
+gorunmuyordu, bir sure sonra GORUNDU. Yani ortam degisikligi calisan konteynere
+gecikmeli yansiyor — hemen gorunmezse birkac dakika sonra tekrar bakin,
+yeni oturum acmaya gerek yok.
 
 ---
 
