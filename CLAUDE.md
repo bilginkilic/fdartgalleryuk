@@ -88,6 +88,14 @@ Degerler **ortam degiskenlerinde**; asla repoya yazilmaz, log'a basilmaz.
 | `CLOUDFLARE_CF_Access_Client_Id` / `_Secret` | SSH tuneli Access service token |
 | `BREVO_API_KEY` | fdartgallery giden posta |
 
+> **Yeni eklenen ortam degiskeni CALISAN oturuma yansimayabilir.** 01.09.2026'da
+> `TIMEWEB_MAIL_PASSWORD` eklendi ve 10+ dakika sonra hala `env` ciktisinda yoktu.
+> Genelde yalnizca **yeni baslayan** oturumlar alir. Beklemek yerine ya yeni
+> oturum acin ya da isi panelden yaptirin.
+> Ayrica: arka planda `until [ -n "$VAR" ]` gibi bir bekleme **ISE YARAMAZ** —
+> arka plan sureci basladigi andaki ortami miras alir, degiskeni asla gormez.
+> Kontrol her seferinde **yeni bir komut cagrisiyla** yapilir.
+
 **OVH consumer key yalnizca `/vps/*` kapsiyor.** `GET /me`, `/ip/*` → 403.
 Reverse DNS API'den **degistirilemez** (`PUT /vps/{n}/ips/{ip}` → 403 not implemented);
 OVH Manager'dan yapilir.
