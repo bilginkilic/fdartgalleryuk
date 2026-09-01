@@ -2050,6 +2050,79 @@ section id=cz-lead: 1       Elementor editoru: 200, fatal yok
 diger sayfalarda blok sizintisi: 0
 ```
 
+### ADIM 2 SONRASI REGRESYON — form gonderimi kirilmisti (duzeltildi)
+
+Kullanici dev'de formu doldurdu; adres cubuginda veri gorundu
+(`/?adsoyad=...&eposta=...`) ve basari mesaji cikmadi. Sebep: form **AJAX
+yerine normal GET** yapti, yani gonderim handler'i hic baglanmamisti.
+
+Enjeksiyon script'i su iki korumaya takiliyordu:
+
+```js
+function build(hero){
+ if(document.getElementById('cz-lead'))return;   // artik HEP dogru -> cikiyor
+ var lt=document.getElementById('cz-lead-tpl'); if(!lt)return;  // sablon kaldirildi
+ ...
+ f.addEventListener('submit',...)                // handler SADECE burada baglaniyordu
+}
+```
+
+Blok gercek DOM'a tasindigi icin ikisi de tetikleniyor ve script hic
+calismiyordu.
+
+**Duzeltme** (`deploy/wordpress/cz-lead-block.html` icindeki script):
+- Gonderim handler'i `build()`'ten **ayrildi** → bagimsiz, idempotent
+  `bindForm()`. `#cz-hero` hic olusmasa bile baglanir
+  (`data-cz-bound` bayragi ile iki kez baglanmaz).
+- Tekrar korumasi `#cz-lead` yerine `window.__czSectionsBuilt`.
+- Sablondan klonlama ve `insertBefore(lead,hero)` kaldirildi.
+
+**Tarayiciyla dogrulandi** (sayfa indirilip yerel Chromium'da calistirildi;
+`/opt/pw-browsers/chromium-1194/chrome-linux/chrome`, harici istekler kapali):
+
+| | dev (duzeltme sonrasi) | canli (kontrol grubu) |
+|---|---|---|
+| `#cz-lead-form` | **var** | yok |
+| `data-cz-bound` | **1** | — |
+| `#cz-lead` | **var** | yok |
+| H1 metni | dogru | — |
+
+Canlida hicbiri cikmiyor cunku orada blok tamamen JS zincirine bagli ve
+cevrimdisi testte jQuery yok. Yani yeni yapi **daha dayanikli**: blok ve form
+JS zinciri koparsa bile duruyor.
+
+> `#cz-vals`, `#cz-stats`, `#cz-marquee` hala `#cz-hero`'nun olusmasina bagli
+> (bu davranis DEGISMEDI, canlida da oyle). Gercek tarayicida gorsel teyit
+> edilmeli.
+
+### FORM GONDERIMI GERCEKTE NE YAPIYOR (koddan okundu)
+
+**E-posta GITMIYOR.** Gonderim WordPress'e hic ugramaz — `wp_mail` yok,
+FluentForm/CF7 yok, `admin-ajax` yok, veritabanina **kayit yazilmaz**.
+
+```js
+fetch(RELAY,{method:'POST',body:new URLSearchParams({
+  chat_id:'-1004497432508', text:'🟡 YENI HERO BASVURUSU (Ana sayfa) ...'})})
+```
+
+- `RELAY` = bir **Google Apps Script** web uygulamasi
+  (`script.google.com/macros/s/AKfycby.../exec`)
+- Apps Script mesaji **Telegram**'a aktarir (`chat_id` + `text` = Bot API
+  `sendMessage` imzasi). Ekip **yalnizca Telegram'dan** haberdar olur.
+- Bu chat (`-1004497432508`), FluentForm'un kullandigi chat'ten
+  (`-1003786778142`, bkz. 5i) **FARKLIDIR**.
+
+**Uc risk — kullaniciya bildirildi:**
+
+1. `.then(show).catch(show)` + `setTimeout(show,2500)`: relay **basarisiz olsa
+   bile** ziyaretciye basari ekrani gosterilir. Musteri gonderdim sanir, ekip
+   hicbir sey gormez — **sessiz lead kaybi**.
+2. Tek nokta arizasi: Apps Script silinir / kota dolar / bot gruptan cikarilirsa
+   TUM basvurular kaybolur; hicbir yerde iz kalmaz.
+3. **Dev'den gonderim CANLI Telegram grubuna duser.** Staging guard yalnizca
+   WordPress mailini keser; bu script WordPress'i tamamen baypas eder.
+   Dev'de test edilecekse once `chat_id` degistirilmeli veya relay kapatilmali.
+
 ### Sirada ne var (kullanici onayi bekliyor)
 - **Canliya alma:** ayni tasima `chestnyznak.com.tr` icin de yapilmali.
   Kullanici dev'i onayladiktan sonra.

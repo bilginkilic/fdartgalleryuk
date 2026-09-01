@@ -1,0 +1,233 @@
+<!--CZLEAD-START--><style>
+#cz-lead{position:relative;overflow:clip;padding:150px 0 72px;color:#fff;min-height:600px;content-visibility:auto;background:radial-gradient(1100px 500px at 82% -6%,rgba(245,197,24,.16),transparent 60%),radial-gradient(800px 500px at 8% 110%,rgba(66,99,235,.14),transparent 60%),linear-gradient(165deg,#151d31 0%,#0e1524 55%,#0b101b 100%)}
+#cz-vals{min-height:300px}#cz-stats{min-height:140px}#cz-marquee{min-height:180px}
+@media(max-width:980px){#cz-lead{min-height:820px}#cz-vals{min-height:640px}#cz-stats{min-height:520px}}
+#cz-lead::before{content:"";position:absolute;inset:0;opacity:.5;pointer-events:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='34' height='34'><rect x='0' y='0' width='4' height='4' fill='%23ffffff' fill-opacity='0.05'/><rect x='16' y='16' width='4' height='4' fill='%23ffffff' fill-opacity='0.04'/></svg>")}
+.cz-lead-in{position:relative;max-width:1180px;margin:0 auto;padding:0 22px;display:grid;grid-template-columns:1.05fr .95fr;gap:46px;align-items:center}
+.cz-lead-eyebrow{display:inline-flex;align-items:center;gap:9px;color:#f7d247;font-size:13px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase}
+.cz-lead-eyebrow .dot{width:9px;height:9px;border-radius:50%;background:#f5c518;box-shadow:0 0 0 0 rgba(245,197,24,.6);animation:czpulse 2s infinite}
+@keyframes czpulse{0%{box-shadow:0 0 0 0 rgba(245,197,24,.55)}70%{box-shadow:0 0 0 10px rgba(245,197,24,0)}100%{box-shadow:0 0 0 0 rgba(245,197,24,0)}}
+.cz-lead-h{font-size:clamp(30px,4vw,45px);font-weight:800;line-height:1.08;letter-spacing:-.5px;margin:16px 0 0;text-wrap:balance;color:#fff}
+.cz-lead-h .g{color:#f7d247}
+.cz-lead-sub{font-size:17px;color:#b9c6dc;line-height:1.62;margin:16px 0 0;max-width:530px}
+.cz-lead-perks{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.cz-lead-perks span{background:rgba(245,197,24,.12);border:1px solid rgba(245,197,24,.35);color:#f7d247;padding:9px 15px;border-radius:999px;font-weight:700;font-size:14px}
+.cz-lead-trust{margin-top:22px;color:#8091ab;font-size:13.5px}
+.cz-lead-trust b{color:#c3d0e4;font-weight:600}
+.cz-lead-sub sup{color:#f7d247;font-weight:700}
+.cz-lead-fn{margin-top:14px;color:#6b7a93;font-size:11.5px;line-height:1.45;max-width:520px}
+.cz-lead-card{background:#fff;border-radius:18px;padding:24px 22px 20px;color:#0f1420;position:relative;border-top:4px solid #f5c518;box-shadow:0 34px 70px -24px rgba(0,0,0,.6)}
+.cz-lead-tag{position:absolute;top:16px;right:18px;background:#0f1420;color:#f7d247;font-size:11px;font-weight:800;letter-spacing:1px;padding:5px 10px;border-radius:6px}
+.cz-lead-ctitle{font-size:19px;font-weight:800;margin:0;color:#0f1420}
+.cz-lead-csub{font-size:13.5px;color:#5b6472;margin:5px 0 16px}
+.cz-fld{margin-bottom:11px}
+.cz-fld label{display:block;font-size:12px;color:#5b6472;font-weight:600;margin-bottom:5px}
+.cz-fld input,.cz-cc{width:100%;box-sizing:border-box;padding:12px 13px;border:1.5px solid #e2e6ee;border-radius:10px;font-size:15px;color:#0f1420;background:#fff;transition:.15s;font-family:inherit}
+.cz-fld input:focus,.cz-cc:focus{border-color:#f5c518;box-shadow:0 0 0 3px rgba(245,197,24,.16);outline:none}
+.cz-phone{display:grid;grid-template-columns:116px 1fr;gap:8px}
+.cz-phone>*{min-width:0}
+.cz-cc{width:100%!important;font-weight:600;cursor:pointer}
+.cz-phone input{width:100%!important}
+.cz-lead-submit{width:100%;margin-top:15px;padding:14px;border:none;border-radius:12px;cursor:pointer;background:linear-gradient(180deg,#f7d247,#f5c518);color:#0f1420;font-weight:800;font-size:16px;box-shadow:0 12px 26px -10px rgba(245,197,24,.7);transition:.15s;font-family:inherit}
+.cz-lead-submit:hover{filter:brightness(.97);transform:translateY(-1px)}
+.cz-lead-submit:disabled{opacity:.7;cursor:default;transform:none}
+.cz-lead-note{font-size:11.5px;color:#8b93a1;margin:10px 2px 0;text-align:center;line-height:1.4}
+.cz-lead-done{display:none;text-align:center;padding:8px 4px 4px}
+.cz-lead-check{width:56px;height:56px;border-radius:50%;background:rgba(37,211,102,.14);display:flex;align-items:center;justify-content:center;margin:2px auto 12px;font-size:30px}
+.cz-lead-done h3{margin:0 0 6px;font-size:20px;font-weight:800;color:#0f1420}
+.cz-lead-done p{margin:0 0 16px;font-size:14px;color:#5b6472;line-height:1.5}
+.cz-coupon{border:2px dashed #f5c518;border-radius:12px;padding:12px;background:#fffbe9;margin:0 0 16px}
+.cz-coupon .lab{font-size:11px;letter-spacing:1.5px;color:#8a7a20;font-weight:700}
+.cz-coupon .code{font-size:26px;font-weight:800;letter-spacing:2px;font-family:"SFMono-Regular",Menlo,monospace;color:#0f1420;margin:2px 0}
+.cz-coupon .amt{font-size:12.5px;color:#5b6472}
+.cz-done-btns{display:flex;flex-direction:column;gap:9px}
+.cz-done-btns a{display:block;text-decoration:none;font-weight:800;font-size:15px;padding:13px;border-radius:11px}
+.cz-dl{background:linear-gradient(180deg,#f7d247,#f5c518);color:#0f1420}
+.cz-wa{background:#25d366;color:#fff}
+@media(max-width:980px){.cz-lead-in{grid-template-columns:1fr;gap:30px}#cz-lead{padding:138px 0 54px}.cz-lead-sub{max-width:none}}
+body.page-id-5002 #cz-hero{padding-top:26px!important}
+/* dedupe: tekrar eden basliklar/CTA'lar */
+body.page-id-5002 .elementor-element-85f2abf,body.page-id-5002 .elementor-element-3c0b548{display:none!important}
+body.page-id-5002 #cz-hero .cz-eyebrow,body.page-id-5002 #cz-hero h1,body.page-id-5002 #cz-hero .cz-sub,body.page-id-5002 #cz-hero .cz-ctas{display:none!important}
+.cz-hero-sechead{text-align:center;margin:0 auto 8px;padding:0 20px}
+.cz-hero-sechead .ey{color:#f7d247;font-size:12px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase}
+.cz-hero-sechead .tt{color:#fff;font-size:26px;font-weight:800;margin:8px 0 0}
+/* value props */
+#cz-vals{background:#0e1524;padding:52px 0 20px}
+.cz-vals-in{max-width:1180px;margin:0 auto;padding:0 22px}
+.cz-vals-head{text-align:center;margin-bottom:26px}
+.cz-vals-head .ey{color:#f7d247;font-size:12px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase}
+.cz-vals-head .tt{color:#fff;font-size:27px;font-weight:800;margin:8px 0 0}
+.cz-vals-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.cz-val{background:rgba(255,255,255,.035);border:1px solid rgba(245,197,24,.22);border-radius:14px;padding:20px 18px}
+.cz-val .ic{width:44px;height:44px;border-radius:11px;background:rgba(245,197,24,.14);display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:12px}
+.cz-val .h{color:#fff;font-size:16px;font-weight:800;margin:0 0 6px}
+.cz-val .d{color:#a9b7cd;font-size:13.5px;line-height:1.55}
+@media(max-width:980px){.cz-vals-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.cz-vals-grid{grid-template-columns:1fr}}
+/* stats band */
+#cz-stats{background:#0e1524;padding:8px 0 52px}
+.cz-stats-in{max-width:1180px;margin:0 auto;padding:0 22px;display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.cz-stat{border-top:3px solid #f5c518;background:linear-gradient(180deg,rgba(245,197,24,.09),rgba(255,255,255,.02));border-radius:0 0 12px 12px;padding:18px 16px;text-align:center}
+.cz-stat .n{color:#f7d247;font-size:32px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.cz-stat .l{color:#e7edf6;font-size:13.5px;font-weight:700;margin-top:8px}
+.cz-stat .s{color:#8fa0b8;font-size:12px;margin-top:3px}
+@media(max-width:980px){.cz-stats-in{grid-template-columns:1fr 1fr}}
+/* case studies (gizli iskelet — icerik gelince acilacak) */
+#cz-cases{display:none}
+#cz-marquee{position:relative;overflow:hidden;padding:34px 0 40px;background:#0b111d;border-top:1px solid rgba(255,255,255,.06);border-bottom:1px solid rgba(255,255,255,.06)}
+.cz-mar-head{text-align:center;margin:0 auto 20px;padding:0 20px}
+.cz-mar-eyebrow{color:#f7d247;font-size:12px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase}
+.cz-mar-title{color:#eaf0f8;font-size:22px;font-weight:800;margin:7px 0 0}
+.cz-mar-rows{display:flex;flex-direction:column;gap:12px}
+.cz-mar-row{overflow:hidden;-webkit-mask:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent);mask:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent)}
+.cz-mar-track{display:inline-flex;gap:12px;width:max-content;animation:czmar 48s linear infinite;will-change:transform}
+.cz-mar-row.rev .cz-mar-track{animation-duration:60s;animation-direction:reverse}
+.cz-mar-row:hover .cz-mar-track{animation-play-state:paused}
+@keyframes czmar{to{transform:translateX(-50%)}}
+.cz-chip{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border:1px solid rgba(245,197,24,.28);border-radius:999px;background:rgba(255,255,255,.03);color:#e7edf6;font-weight:600;font-size:14.5px;white-space:nowrap}
+.cz-chip .emo{font-size:17px;line-height:1}
+@media(prefers-reduced-motion:reduce){.cz-mar-track{animation:none}}
+</style>
+
+<template id="cz-vals-tpl"><section id="cz-vals"><div class="cz-vals-in">
+<div class="cz-vals-head"><div class="ey">Net Hizmet · Net Sonuç</div><div class="tt">Sizin için ne yapıyoruz?</div></div>
+<div class="cz-vals-grid">
+<div class="cz-val"><div class="ic">🛰️</div><div class="h">Rusya'dan yönetiyoruz</div><div class="d">Moskova ofisimiz ve Rusya'daki partner ağımızla kayıt, kod ve bildirimleri kaynağında, hatasız yürütürüz.</div></div>
+<div class="cz-val"><div class="ic">🎓</div><div class="h">Çalışanlarınızı eğitiyoruz</div><div class="d">Üretim, depo ve muhasebe ekiplerinize uygulamalı markalama eğitimi veririz; hata ve ceza riskini düşürürüz.</div></div>
+<div class="cz-val"><div class="ic">⚙️</div><div class="h">Otomasyonla hızlandırıyoruz</div><div class="d">Kod üretimi, etiketleme ve veri bildirimini otomatikleştiririz — üretiminiz yavaşlamaz, işiniz durmaz.</div></div>
+<div class="cz-val"><div class="ic">🖨️</div><div class="h">Ekipman seçiminde yanınızdayız</div><div class="d">Yazıcı, aplikatör ve tarayıcı seçiminde üretim hattınıza uygun, tarafsız öneri ve kurulum desteği sunarız.</div></div>
+</div></div></section></template>
+<template id="cz-stats-tpl"><section id="cz-stats"><div class="cz-stats-in">
+<div class="cz-stat"><div class="n">15+</div><div class="l">Yıllık deneyim</div><div class="s">2020'den beri bu desteği veriyoruz</div></div>
+<div class="cz-stat"><div class="n">15 dk</div><div class="l">Teknik destek yanıtı</div><div class="s">Sorunuza çeyrek saatte dönüş</div></div>
+<div class="cz-stat"><div class="n">~20 dk</div><div class="l">Ortalama çözüm süresi</div><div class="s">Sorunlar dakikalar içinde kapanır</div></div>
+<div class="cz-stat"><div class="n">1'e 1</div><div class="l">Size özel çözüm</div><div class="s">Her aşamada müşteriye özel destek</div></div>
+</div></section></template>
+<template id="cz-cases-tpl"><section id="cz-cases"><div class="cz-vals-in"><div class="cz-vals-head"><div class="ey">Referanslar</div><div class="tt">Başarı Hikâyeleri</div></div><div class="cz-vals-grid" id="cz-cases-grid"></div></div></section></template>
+<template id="cz-mar-tpl"><section id="cz-marquee"><div class="cz-mar-head"><div class="cz-mar-eyebrow">Zorunlu Markalama Kapsamı</div><div class="cz-mar-title">Hangi sektörlere hizmet veriyoruz?</div></div><div class="cz-mar-rows"><div class="cz-mar-row"><div class="cz-mar-track" id="czrowA"></div></div><div class="cz-mar-row rev"><div class="cz-mar-track" id="czrowB"></div></div></div></section></template>
+<script>
+(function(){
+if(!/page-id-5002/.test(document.body.className))return;
+var RELAY='https://script.google.com/macros/s/AKfycbyPiKTWQHT06ZmA1Z_pEKSq6JpQCLqm--N6cNQjXHMEMMIWuUnBVu6__ndEIcb2zQ/exec';
+var rowA=[['🧵','Tekstil & Giyim'],['👟','Ayakkabı'],['💧','Parfüm & Kozmetik'],['🥛','Süt Ürünleri'],['💦','Su & İçecek'],['💊','İlaç'],['🚬','Tütün'],['🛞','Lastik'],['🧸','Oyuncak'],['🧴','Ev Kimyasalları']];
+var rowB=[['🍬','Bisküvi & Şekerleme'],['🥫','Konserve'],['🫒','Bitkisel Yağ'],['🍺','Bira'],['📱','Elektronik'],['🐾','Hayvan Yemi'],['🧱','İnşaat Malzemeleri'],['📄','Baskılı Ürünler'],['💍','Takı & Değerli Metal'],['🐟','Balık & Deniz Ürünleri']];
+function chips(a){return a.map(function(c){return '<span class="cz-chip"><span class="emo">'+c[0]+'</span>'+c[1]+'</span>';}).join('');}
+/* cz-lead artik Elementor icerigi; sablondan klonlanmiyor.
+   Gonderim handler'i build()'ten AYRILDI: #cz-hero hic olusmasa bile baglanir. */
+function bindForm(){
+ var f=document.getElementById('cz-lead-form');
+ if(!f||f.getAttribute('data-cz-bound'))return;
+ f.setAttribute('data-cz-bound','1');
+ f.addEventListener('submit',function(ev){
+  ev.preventDefault();
+  if(!f.checkValidity()){f.reportValidity();return;}
+  var btn=f.querySelector('.cz-lead-submit');btn.disabled=true;btn.textContent='Gönderiliyor…';
+  var cc=f.cc.value==='ru'?'🇷🇺 +7':'🇹🇷 +90';
+  var text='🟡 YENİ HERO BAŞVURUSU (Ana sayfa)\n👤 Ad: '+f.adsoyad.value.trim()+'\n✉️ E-posta: '+f.eposta.value.trim()+'\n📞 Telefon: '+cc+' '+f.tel.value.trim()+'\n🎁 Kupon: SWORD5000 (5.000 ₺)\n📋 Kontrol listesi talebi: Evet';
+  var shown=false;function show(){if(shown)return;shown=true;document.getElementById('cz-lead-formbody').style.display='none';document.getElementById('cz-lead-done').style.display='block';}
+  fetch(RELAY,{method:'POST',body:new URLSearchParams({chat_id:'-1004497432508',text:text})}).then(show).catch(show);
+  setTimeout(show,2500);
+ });
+}
+function build(hero){
+ if(window.__czSectionsBuilt)return;
+ var mt=document.getElementById('cz-mar-tpl');
+ if(!mt)return;
+ window.__czSectionsBuilt=1;
+ var mar=mt.content.firstElementChild.cloneNode(true);
+ var vt=document.getElementById('cz-vals-tpl'),st=document.getElementById('cz-stats-tpl'),ct=document.getElementById('cz-cases-tpl');
+ if(vt) hero.parentNode.insertBefore(vt.content.firstElementChild.cloneNode(true),hero);
+ if(st) hero.parentNode.insertBefore(st.content.firstElementChild.cloneNode(true),hero);
+ var sh=document.createElement('div'); sh.className='cz-hero-sechead';
+ sh.innerHTML='<div class="ey">3 Soruda Chestny Znak</div><div class="tt">Nedir, neden gerekli, nasıl çözüyoruz?</div>';
+ var cards=hero.querySelector('.cz-cards'); if(cards) cards.parentNode.insertBefore(sh,cards);
+ hero.parentNode.insertBefore(mar,hero.nextSibling);
+ if(ct) mar.parentNode.insertBefore(ct.content.firstElementChild.cloneNode(true),mar.nextSibling);
+ var ra=mar.querySelector('#czrowA'),rb=mar.querySelector('#czrowB');
+ if(ra)ra.innerHTML=chips(rowA)+chips(rowA);
+ if(rb)rb.innerHTML=chips(rowB)+chips(rowB);
+}
+function tryBuild(){bindForm(); var h=document.getElementById('cz-hero'); if(h){build(h); return true;} return false;}
+function boot(){
+ bindForm();
+ if(tryBuild()) return;
+ // MutationObserver: #cz-hero belirir belirmez enjekte et (CLS icin gecikmeyi minimize)
+ var obs=new MutationObserver(function(){ if(tryBuild()){ obs.disconnect(); } });
+ try{ obs.observe(document.documentElement,{childList:true,subtree:true}); }catch(e){}
+ // guvenlik: 12sn sonra durdur
+ var t=0,iv=setInterval(function(){ if(tryBuild()||++t>80){ clearInterval(iv); try{obs.disconnect();}catch(e){} } },150);
+}
+boot();
+})();
+</script>
+<script>
+/* Erisilebilirlik: isimsiz kontrolleri etiketle (site geneli) */
+(function(){
+ if(window.top!==window.self) return;
+ function label(){
+  try{
+   document.querySelectorAll('select:not([aria-label])').forEach(function(s){
+    var hasLbl = s.labels && s.labels.length;
+    if(!hasLbl) s.setAttribute('aria-label', s.getAttribute('name')||'Seçim');
+   });
+   document.querySelectorAll('a,button,[role="button"]').forEach(function(el){
+    if(el.getAttribute('aria-label')||el.getAttribute('aria-labelledby')||el.getAttribute('title')) return;
+    var txt=(el.textContent||'').replace(/\s+/g,'').trim();
+    if(txt) return;
+    var img=el.querySelector('img[alt]'); if(img && (img.getAttribute('alt')||'').trim()) return;
+    var hay=((el.className||'')+' '+(el.getAttribute('href')||'')+' '+(el.id||'')).toLowerCase();
+    var lbl='';
+    if(/wa\.me|whatsapp/.test(hay))lbl='WhatsApp ile yazın';
+    else if(/t\.me|telegram/.test(hay))lbl='Telegram';
+    else if(/facebook/.test(hay))lbl='Facebook';
+    else if(/instagram/.test(hay))lbl='Instagram';
+    else if(/twitter|\/x\.com|x-twitter|\btwitter\b/.test(hay))lbl='X (Twitter)';
+    else if(/youtube/.test(hay))lbl='YouTube';
+    else if(/linkedin/.test(hay))lbl='LinkedIn';
+    else if(/search|arama|ara\b/.test(hay))lbl='Ara';
+    else if(/cart|sepet|basket/.test(hay))lbl='Sepet';
+    else if(/menu|hamburg|toggle|nav_/.test(hay))lbl='Menü';
+    else if(/scroll.?to.?top|to-top|top_|yukar/.test(hay))lbl='Sayfa başına dön';
+    else if(/close|kapat|dismiss/.test(hay))lbl='Kapat';
+    else if(/prev|onceki|geri/.test(hay))lbl='Önceki';
+    else if(/next|sonraki|ileri/.test(hay))lbl='Sonraki';
+    else if(/cz-cf|chat|yazin|bize-yaz/.test(hay))lbl='Bize yazın';
+    else if(/logo|home|anasayfa/.test(hay))lbl='Ana sayfa';
+    if(lbl) el.setAttribute('aria-label',lbl);
+   });
+   /* isimsiz <a>: href/komsu baslik ile etiketle */
+   var pmap={'/iletisim/':'İletişim','/shop/':'Çözümlerimiz','/hakkimizda/':'Hakkımızda','/blog-standard/':'Haberler','/':'Ana sayfa'};
+   document.querySelectorAll('a[href]').forEach(function(a){
+    if(a.getAttribute('aria-label')||a.getAttribute('aria-labelledby')||a.getAttribute('title'))return;
+    var t=(a.textContent||'').replace(/\s+/g,'').trim(); if(t)return;
+    var img=a.querySelector('img[alt]'); if(img&&(img.getAttribute('alt')||'').trim())return;
+    var href=(a.getAttribute('href')||'').replace(/https?:\/\/[^\/]+/,'');
+    var lbl='';
+    if(pmap[href]) lbl=pmap[href];
+    else if(/^\/[a-z0-9À-ɏ-]+\/?$/i.test(href)){
+     var card=a.closest('article,li,.post,.sc_blogger_item,.elementor-widget,.elementor-column')||a.parentElement;
+     var h=card&&card.querySelector('h1,h2,h3,h4,.entry-title,.post_title,.sc_blogger_item_title');
+     lbl=(h&&h.textContent.trim())?('Oku: '+h.textContent.trim().slice(0,55)):'Devamını oku';
+    } else if(/#popup|panel|#/.test(href)) lbl='Aç';
+    if(lbl) a.setAttribute('aria-label',lbl);
+   });
+  }catch(e){}
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',label);else label();
+ setTimeout(label,1500); setTimeout(label,4000);
+})();
+</script><!--CZLEAD-END-->
+<style>/*cz-elementor-bridge*/
+#cz-lead > .elementor-container{max-width:1180px;margin:0 auto;padding:0 22px;align-items:center}
+#cz-lead .elementor-widget:not(:last-child){margin-bottom:0}
+#cz-lead .elementor-widget-container{margin:0}
+#cz-lead .elementor-widget-text-editor{color:inherit}
+.cz-lead-assets{display:none!important}
+@media(max-width:980px){#cz-lead > .elementor-container{gap:30px}}
+</style>
+PHP: 2026-09-01 14:05:33 [notice X 0][/var/www/dev.chestnyznak.chemiartclick.uk/public/wp-content/plugins/elementor/modules/global-classes/atomic-global-styles.php::410] Elementor\Modules\GlobalClasses\Atomic_Global_Styles::get_cache_root_key(): Implicitly marking parameter $key as nullable is deprecated, the explicit nullable type must be used instead [array (
+  'trace' => '
+#0: Elementor\Core\Logger\Manager -> shutdown()
+',
+)]
