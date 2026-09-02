@@ -6,6 +6,11 @@ Projeyi devralan her oturum icin kalici hafiza. Kisa tutulur: **su an ne oldugu*
 
 Son sadelestirme: 02.09.2026 (1529 → ~675 satir).
 
+> **YENI OTURUMSAN ONCE BURAYI OKU → [3. bolum](#3-sunucuya-baglanma-yeni-oturum-buradan-baslar).**
+> Sunucuya **ham TCP/22 ile GIRILMEZ** — Cloudflare tuneli kullanilir. Makinede
+> hazir anahtar **ARAMA**, yok: kendi anahtarini uret, `.pub`'i dala push et,
+> erisimi olan bir oturum onu sunucuya ekler. Tarif 3. bolumde, tek sayfa.
+
 ---
 
 ## 0. SU AN NE KALDI
@@ -20,8 +25,9 @@ Sunucu kurulumu, performans, guvenlik, yedekleme, uc dil ve SEO temizligi bitti.
 | 1 | **Reklam acilis sayfalari** — hangileri kampanyada kullaniliyor? | Demo temizligi (6i) menude olmayan sayfalari taslaga cekti; `rusya-markalama-danismanlik` reklamda kullaniliyormus ve **geri alindi**. Ayni riski tasiyan 5 sayfa daha var, asagida |
 | 2 | **Video** (Telegram #22, #37) YouTube'a yuklenecek | Link gelince blog yazilarina gomulur (6j) |
 | 3 | **Kalan 4 site** icin dosya arsivi + `.sql` + orijinal `wp-config.php` | fdsanatmerkezi, chemiartclick.uk apex, davetevet, byhio, wedreply |
-| 4 | **SSH parola girisi kapatilsin mi** | Kalici anahtar HAZIR (6c). Loglarda dakikalik root parola denemesi var. Kapatilirsa acil giris yolu yalnizca OVH KVM konsolu |
-| 5 | **chestnyznak Rusya'dan acilmiyor** | Gri buluta cekildi, yine acilmiyor. Geriye tek degisken alan adi; `chestnyznak-test.chemiartclick.uk` testi bekleniyor (6d) |
+| 4 | **SSH parola girisi kapatilsin mi** | Anahtarla giris CALISIYOR (5 anahtar, 6c). Loglarda dakikalik root parola denemesi var. Kapatilirsa acil giris yolu yalnizca OVH KVM konsolu |
+| 5 | **`VPS_SSH_PRIVATE_KEY` maskesiz yapistirilsin** | Env'deki deger bozuk: 1150 karakter, govdesi bastan sona `•` (U+2022). Kalici anahtari kullanacak yeni oturumlar bu yuzden giremiyor; beklenen parmak izi `SHA256:i7IciIuo…` (6c) |
+| 6 | **chestnyznak Rusya'dan acilmiyor** | Gri buluta cekildi, yine acilmiyor. Geriye tek degisken alan adi; `chestnyznak-test.chemiartclick.uk` testi bekleniyor (6k) |
 
 **Madde 1'in listesi** — demo temizliginde taslaga cekilen, reklam sayfasi
 olabilecek kayitlar (hepsi `elementor_canvas` sablonunda veya form iceriyor):
@@ -92,7 +98,7 @@ Degerler **ortam degiskenlerinde**; asla repoya yazilmaz, log'a basilmaz.
 | `cloudflare_access_keyid` / `cloudflare_access_key` | R2 / S3 |
 | `CF_SWORDBROS_API_TOKEN` / `CF_SWORDBROS_ACCOUNT_ID` | Cloudflare (SWORD BROS) |
 | `CLOUDFLARE_CF_Access_Client_Id` / `_Secret` | SSH tuneli Access service token |
-| `VPS_SSH_PRIVATE_KEY` | Sunucuya kalici SSH anahtari (6c) |
+| ~~`VPS_SSH_PRIVATE_KEY`~~ | Kalici SSH anahtari — **su an BOZUK**, maskeli yapistirilmis (0. bolum madde 5, 6c) |
 | `BREVO_API_KEY` | fdartgallery giden posta |
 | ~~`TIMEWEB_MAIL_PASSWORD`~~ | **KULLANMAYIN** — degeri YANLIS (6d) |
 
@@ -108,24 +114,56 @@ Degerler **ortam degiskenlerinde**; asla repoya yazilmaz, log'a basilmaz.
 
 ---
 
-## 3. Bu ortamin sinirlari + sunucuya erisim
+## 3. Sunucuya baglanma (yeni oturum buradan baslar)
 
-**Ham TCP/22 bu oturumdan GECMIYOR** — engel port bazli (github.com:22 de kapali,
-:443 aciliyor). Ag politikasini genisletmek TCP/22'yi acmaz.
-
-**Cozum: Cloudflare tuneli (HTTPS uzerinden SSH).** Sunucuda `cloudflared`
-servisi active; adlandirilmis tunel `ovh-vps`, adres `ssh.fdartgallery.com`,
+**Ham TCP/22 bu ortamdan GECMIYOR** — engel port bazli (github.com:22 de kapali,
+:443 aciliyor). Ag politikasini genisletmek TCP/22'yi acmaz, `nc -z ... 22`
+denemesi zaman kaybidir. **Makinede hazir anahtar/tunel yapilandirmasi de
+ARAMAYIN** — yok. Yol Cloudflare tuneli (HTTPS uzerinden SSH): sunucuda
+`cloudflared` servisi active, tunel `ovh-vps`, adres `ssh.fdartgallery.com`,
 onunde Access service token.
+
+### Adim 1 — anahtarin var mi?
+
+```sh
+ls ~/.ssh/id_ed25519 2>/dev/null || echo YOK
+```
+
+**Varsa** Adim 2'ye gec. **Yoksa** ikisinden biri:
+
+- `VPS_SSH_PRIVATE_KEY` **dolu ve gecerliyse** (kalici anahtar, 6c):
+  ```sh
+  mkdir -p ~/.ssh
+  printf '%s\n' "$VPS_SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
+  ssh-keygen -lf ~/.ssh/id_ed25519   # SHA256:i7IciIuo4c3uDhaLaH/AmNkQRb/V3VHXwqOtJ+yXuL8 olmali
+  ```
+  > Bu komut hata veriyor veya parmak izi tutmuyorsa env degeri **maskeli
+  > yapistirilmis** demektir (govde bastan sona `•` / U+2022 olur). Zorlamayin,
+  > asagidaki oturum anahtari yoluna gecin.
+
+- Aksi halde **kendi efemeral anahtarini uret ve onaya gonder**:
+  ```sh
+  ssh-keygen -t ed25519 -N '' -C "claude-session-<OTURUM-KISA-ID>-ephemeral" -f ~/.ssh/id_ed25519
+  cp ~/.ssh/id_ed25519.pub deploy/claude-session-key.pub
+  git add deploy/claude-session-key.pub && git commit -m "SSH: oturum anahtari" \
+    && git push -u origin claude/ovhcloud-vps-multisite-0eb3xj
+  ```
+  Sonra **DUR** ve kullaniciya haber ver: erisimi olan bir oturum bu `.pub`'i
+  `/root/.ssh/authorized_keys`'e ekler (6c). Private anahtar **asla** commit edilmez.
+
+### Adim 2 — baglan
 
 ```sh
 curl -fsSL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 \
      -o /tmp/cloudflared && chmod +x /tmp/cloudflared
 export TUNNEL_SERVICE_TOKEN_ID="$CLOUDFLARE_CF_Access_Client_Id"
 export TUNNEL_SERVICE_TOKEN_SECRET="$CLOUDFLARE_CF_Access_Client_Secret"
-[ -n "$VPS_SSH_PRIVATE_KEY" ] && { mkdir -p ~/.ssh; printf '%s\n' "$VPS_SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519; chmod 600 ~/.ssh/id_ed25519; }
 ssh -o "ProxyCommand=/tmp/cloudflared access ssh --hostname ssh.fdartgallery.com" \
     -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@vps
 ```
+
+**Kullanici DAIMA `root`** — `ubuntu`'nun `authorized_keys`'i bos, `debian`/`admin`
+hic yok. Giris reddedilirse `-v` ile **hangi anahtarin sunuldugunu** okuyun (6c).
 
 **Diger sinirlar:**
 - GitHub reposu sunucudan erisilemiyor (ozel repo) → dosyalar tunel uzerinden
@@ -142,6 +180,17 @@ ssh -o "ProxyCommand=/tmp/cloudflared access ssh --hostname ssh.fdartgallery.com
 > bozuldu**. Dogru yol: script yerelde dosyaya yazilir, `base64 -w0` ile
 > aktarilir, sunucuda `base64 -d` ile acilir. wp-config gibi kritik dosyalarda
 > once kopya al, degistir, `php -l` ile dogrula, bozuksa kopyadan geri yaz.
+
+### Yeni oturum acarken seed prompta NE KONUR
+
+Oturumlar birbirine mesaj gonderemez (6c); yeni oturum yalnizca seed promptta
+yazani bilir. Eksik birakilan her madde saatlerce bosuna arama demektir.
+
+1. **Bu bolumun tamami** — TCP/22 kapali, tunel tarifi, anahtar uretme adimi.
+2. **Kapsam**: hangi site / hangi repo, digerlerine dokunulmayacagi.
+3. **Dal**: `claude/ovhcloud-vps-multisite-0eb3xj` (izinsiz baska dala push yok).
+4. **Site yollari** (4. bolum) — ozellikle chestnyznak'ta **dizin adi ≠ alan adi**.
+5. **Once dev, sonra canli** ve **icerik kapatmadan once sor** kurallari (7. bolum).
 
 ---
 
@@ -187,6 +236,7 @@ PHPMailer seviyesinde keser, `blog_public`'i 0'a zorlar, `robots.txt`'yi
 | Alan | Durum |
 |---|---|
 | Sunucu | nginx + PHP 8.5-FPM + MariaDB + Redis + certbot + ufw + fail2ban + wp-cli |
+| Oturum SSH erisimi | Cloudflare tuneli (`ssh.fdartgallery.com`) + `authorized_keys`'te 5 anahtar; dort Claude oturumu bagli (3, 6c) |
 | Sayfa onbellegi | nginx `fastcgi_cache`; ana sayfa 0.90 sn → **0.006 sn** |
 | HTTP/2 | `conf.d/03-http2.conf` (`http2 on;` — `listen ... http2` kullanimdan kalkti) |
 | Reklam/bulten trafigi | `?utm_*`/`gclid`/`fbclid` artik onbellekten okuyor; TTFB ~2,3 sn → **15-25 ms** (6h) |
@@ -269,24 +319,52 @@ PHPMailer seviyesinde keser, `blog_public`'i 0'a zorlar, `robots.txt`'yi
 
 ### 6c. SSH
 
+Baglanma tarifi 3. bolumde. Burasi **anahtar yonetimi**.
+
 `sshd_config.d/*.conf` alfabetik yuklenir ve **her anahtar icin ILK deger kazanir**
 — bizim dosyamizin adi bu yuzden `00-hardening.conf`.
-
-**Kalici anahtar (02.09.2026):** `/root/.ssh/authorized_keys` icinde
-`claude-persistent-fdartgalleryuk`, parmak izi
-`SHA256:i7IciIuo4c3uDhaLaH/AmNkQRb/V3VHXwqOtJ+yXuL8`. Private kismi
-`VPS_SSH_PRIVATE_KEY` env'inde, **repoya yazilmaz**. Iptali: o satiri silmek.
 
 `root` **`prohibit-password`** modunda — root'a yalnizca anahtarla girilir.
 `ubuntu` var ama `authorized_keys`'i BOS; `debian`/`admin` HIC YOK.
 **Dogru kullanici her zaman `root`.**
 
+#### `/root/.ssh/authorized_keys` — kimin anahtari var (02.09.2026)
+
+| Parmak izi | Etiket | Ne |
+|---|---|---|
+| `SHA256:i7IciIuo…` | `claude-persistent-fdartgalleryuk` | **Kalici** — private kismi `VPS_SSH_PRIVATE_KEY` env'inde |
+| `SHA256:zQKtspd2…` | `claude-session-016mZ8S3-ephemeral` | ana oturum |
+| `SHA256:DwKDbB2c…` | `claude-session-01Y2RFQy-ephemeral` | fdartgallery oturumu |
+| `SHA256:6TJ2koLB…` | `claude-session-01MuywGH-ephemeral` | chestnyznak oturumu |
+| `SHA256:19dkzsf0…` | `claude-session-01FSqNzN-ephemeral` | chestnyznakuk oturumu |
+
+Bir anahtari iptal etmek = o satiri silmek. **`authorized_keys` her baglantida
+okunur — sshd yeniden BASLATILMAZ.**
+
+#### Yeni oturuma erisim verme (iki taraf)
+
+**Yeni oturum:** kendi anahtarini uretir, `.pub`'i `deploy/claude-session-key.pub`
+olarak dala push eder, DURUR ve haber verir (3. bolum Adim 1).
+
+**Erisimi olan oturum:** `.pub`'i alir, sunucuda `authorized_keys`'e ekler.
+Heredoc'u SSH komut dizesine gommeyin — script yerelde yazilir, `base64 -w0` ile
+aktarilir (3. bolum sonundaki uyari). Islem sirasi: **once zaman damgali kopya**,
+sonra etiket zaten varsa atla / yoksa ekle, `chmod 600`, sonunda
+`ssh-keygen -lf` ile **butun** parmak izlerini bas ve tabloyu buraya isle.
+
 > **Yeni oturum giremiyorsa once HANGI ANAHTARI SUNDUGUNA bakin.** Istemcideki
-> `Offering public key: ... SHA256:...` satirini `ssh-keygen -lf` ile sunucudaki
-> parmak izlerine karsi tutun. Farkliysa sorun sunucuda degil.
-> Cozum: yeni oturum public key'ini `deploy/claude-session-key.pub`'a yazip dala
-> push eder, erisimi olan bir oturum `authorized_keys`'e ekler.
-> `authorized_keys` her baglantida okunur — sshd yeniden baslatilmaz.
+> `Offering public key: ... SHA256:...` satirini yukaridaki tabloya karsi tutun.
+> Farkliysa sorun sunucuda degil — anahtar henuz eklenmemistir.
+
+> **TUZAK (02.09.2026): oturumlar birbirine mesaj gonderemiyor.** Bulut
+> oturumlari `ListAgents`'ta gorunmuyor, `SendMessage` "not reachable" doner.
+> Oturumlar arasi tek kanal **kullanici** ve **git dali**. Bu yuzden yeni oturum
+> anahtarini repoya push eder, tarifi de kullanici yapistirir.
+
+> **TUZAK: tarifi almayan oturum bosuna ariyor.** chestnyznakuk oturumu, seed
+> promptu tuneli anlatmadigi icin ~3,7 $ boyunca "makinede kullanilabilir anahtar
+> malzemesi" aradi ve "SSH imkansiz" sonucuna vardi. **Yeni oturum acarken 3.
+> bolumun tamami seed prompta konur.**
 
 Parola girisi hala **acik** (0. bolum madde 4). Acil durum: OVH Manager → KVM konsolu.
 
@@ -687,5 +765,8 @@ Gecici test kaynaklari (**is bitince silinecek**): `origin.chemiartclick.uk` ve
   EN/RU kopyalari acilir, `pll_save_post_translations()` ile uc kayit baglanir.
   Menuye oge eklenirken **her uc menuye** (tr=171, en=372, ru=373).
 - **Degisiklikten sonra dogrula: HTTP kodu yetmez** (6a).
+- **Yeni oturum acarken 3. bolumun tamami seed prompta konur** — oturumlar
+  birbirine mesaj gonderemez, yeni oturum yalnizca seed promptta yazani bilir.
+  Bir oturuma SSH verildiginde 6c'deki anahtar tablosu **ayni commit'te** guncellenir.
 - **Bu dosyayi guncel tut ve KISA tut**: yeni tuzagi 6'ya, biten isi 5'e,
   bekleyeni 0'a yaz. Uzun anlatiyi commit mesajina birak.
