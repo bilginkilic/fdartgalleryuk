@@ -35,12 +35,14 @@ Sunucu kurulumu, performans, guvenlik ve yedekleme bitti.
   CF7 yalnizca **tek yayinlanmis sayfada** (#2 "Ozel Siparis Formu"); geri kalan
   butun `[contact-form-7]` izleri revizyonlarda. O sayfa FluentForm'a tasinirsa
   CF7 komple kaldirilabilir.
-- **fdartgallery sayfa #2 "Ozel Siparis Formu" bozuk** (02.09.2026 olculdu):
-  form bir Gutenberg blok yorumu olarak saklanmis, `<p>` icine sikismis ve
-  sayfa Elementor ile render edildigi icin cikti inert bir HTML yorumu — sayfada
-  HIC form basilmiyor. CF7 formu #64 saglam (elle calistirilinca calisiyor).
-  Duzeltmek icin blogun Elementor'da yeniden yerlestirilmesi ya da sayfanin
-  FluentForm'a tasinmasi gerek — icerik karari (6n).
+- **fdartgallery'de CF7 artik HICBIR yayinda sayfada kullanilmiyor**
+  (02.09.2026 olculdu, 6r): sayfa #2'deki olu blok kalintisi kaldirildi, geriye
+  yalnizca bes form TANIMI kaldi, kullanan sayfa yok. Eklenti komple
+  kaldirilabilir — kullanici karari.
+- **`wp-sitemap.xml` 404 durum koduyla donuyor** (govde gecerli XML, hem canli
+  hem dev). `robots.txt` bu adresi ilan ediyor; Google boyle bir site
+  haritasini reddeder. Bugunku islerden gelmiyor — mu-pluginler kapatilarak
+  dogrulandi. Muhtemel sebep bayat rewrite kurallari (`wp rewrite flush`).
 - **Blogun en eski 4 yazisi**: slug'lari hala Ingilizce demo slug'i. Duzeltmek
   adresi kirar → 301 gerekir. Ayrinti `deploy/blog/BACKLOG.md`.
 - **chestnyznak kalan 14 JS enjeksiyonu** Elementor'a tasinsin mi (6f).
@@ -226,6 +228,7 @@ sitesi eklerken o map'e bir satir eklenir.
 | Kalici baglantilar | `/%postname%/`; urun sayfalari artik onbellege giriyor |
 | E-posta (fdartgallery) | Brevo API + DKIM/SPF/DMARC; MX = Cloudflare Email Routing + Worker |
 | Turnstile | fdartgallery giris/kayit/form/WooCommerce |
+| Sayfa #2 (fdartgallery) | 02.09.2026: olu CF7 blok kalintisi kaldirildi, slug `sample-page` → `ozel-siparis`, 301 icin `fd-eski-adresler` mu-plugin'i (6r) |
 | Blog | `deploy/blog/` araclari + haftalik Routine (`trig_01Q2abbcd19d1CQem3fs5Z7M`, Sali 06:00 UTC) |
 | chestnyznak | Elementor gecisi + basvuru kaydi (6f, 6g) |
 | Demo temizligi (canli) | Tema demosu aramadan cikarildi: site haritasi 523 -> 97 adres, 370 kayit taslaga (6p) |
@@ -1255,6 +1258,77 @@ olabilirler ve PHP tarafinda kullanilabilirler.
 suresi dolunca (200 icin 10 dk, `inactive=60m`) kimse yenilemez ve izleme'li
 istekler PHP'ye duser. Yani en kotu durum **eski davranisin aynisi** —
 gerileme degil.
+
+### 6r. Sayfa #2 "Ozel Siparis Formu" (02.09.2026, CANLI + dev)
+
+Iki is bir arada: olu form kalintisinin kaldirilmasi + slug duzeltmesi.
+
+#### TUZAK: "bozuk" gorunen seyi ONARMADAN once yerine gecenin var mi diye bak
+
+Sayfada CF7 formu bir Gutenberg blogu olarak duruyordu ama basilmiyordu:
+klasik editor donusunde blok sinirlayicilari `<p>` icine sikismis, blok
+govdesi (`<div class="wp-block-contact-form-7-contact-form-selector">`)
+bosalmisti. Cikti inert bir HTML yorumu.
+
+**Ilk mudahale YANLISTI:** bozuk blogun yerine CF7 kisa kodu konuldu ve form
+geri geldi. Dev'de dogrularken goruldu ki sayfada **ZATEN calisan bir
+FluentForm var** (`fluentform_5` = "Ozel Siparis Formu", yayinda, **7 kayit**).
+CF7 blogu FluentForm'a gecisten kalma bir KALINTIYDI; "onarmak" sayfaya
+ikinci bir form koyuyordu. Dev'de yakalandi, canliya gitmedi.
+
+> **Kural:** bir bileseni onarmadan once o sayfada AYNI ISI yapan baska bir
+> sey var mi diye bakin. Olcut: sayfadaki `<form>` etiketlerini ve siniflarini
+> saymak. Once 4 idi (2 arama + 1 giris + 1 fluentform), "onarim" 5 yapmisti.
+
+Dogru mudahale: blok kalintisini KALDIRMAK. Sonuc canli ve dev'de birebir:
+`<form` 4, `fluentform_5` 5, `wpcf7` 0, ham blok yorumu 0, bos div 0.
+
+#### TUZAK: birebir dize eslesmesi UTF-8'de sessizce tutmaz
+
+Ilk kaldirma denemesi "kalip bulunamadi" dedi. Sebep: `<div ...> </div>`
+icindeki "bosluk" duz bosluk DEGIL, **U+00A0 kirilmaz bosluk** (baytlari
+`194 160`). Meta degerini bayt bayt dokunce gorundu. Cozum: birebir dize
+yerine regex (`/su` bayraklariyla).
+
+#### TUZAK: WordPress SAYFA slug'i degisiminde 301 KURMAZ
+
+`sample-page` → `ozel-siparis` yapildi; `_wp_old_slug` **bos kaldi** ve eski
+adres duz 404 verdi. Sebebi cekirdekte, `wp_check_for_changed_slugs()`:
+
+```php
+if ( ... || is_post_type_hierarchical( $post->post_type ) ) return;
+```
+
+`page` hiyerarsiktir → cekirdek eski-slug yonlendirmesini yalnizca yazi gibi
+hiyerarsik OLMAYAN tipler icin kurar. Sayfalarda 301'i kendiniz kurmalisiniz.
+
+Cozum: `deploy/wordpress/fdart-mu-plugins/fd-eski-adresler.php` — eski yol →
+yeni yol tablosu. Yalnizca istek **404'e dustugunde** calisir, yani hicbir
+zaman gercek bir sayfayi golgeleyemez; sorgu dizesini korur (reklam
+baglantilari utm'ini kaybetmesin). Blogun Ingilizce demo slug'lari
+duzeltilirken ayni tabloya satir eklenecek (`deploy/blog/BACKLOG.md`).
+
+**Sira onemli:** once mu-plugin kurulur, sonra slug degistirilir — aksi halde
+aradaki surede eski adres 404 verir.
+
+#### Dogrulandi
+
+- `/ozel-siparis/` 200; `/sample-page/` **301** → `/ozel-siparis/` → 200;
+  `/sample-page/?utm_source=a` → 301, **sorgu dizesi korunuyor**;
+- olmayan adresler hala 404 (tablo asiri kapsamli degil);
+- menu ogesi kendiliginden guncellendi (tip `post_type`, ID 2'ye bagli);
+- `canonical` ve cekirdek site haritasi yeni adresi gosteriyor;
+- icerikte kalan `sample-page` referansi: post_content 0, `_elementor_data` 0,
+  menu 0; Cloudflare'de iki adres purge edildi.
+
+#### Yan bulgu (AYRI IS)
+
+`wp-sitemap.xml` **404 durum koduyla** donuyor, govdesi ise gecerli XML.
+`robots.txt` o adresi ilan ediyor. Hem canlida hem dev'de ayni. Bugunku
+islerden gelmedigi mu-pluginler kapatilarak dogrulandi. 0. bolume yazildi.
+
+Yedek: `/var/backups/claude-2026-09-02-sayfa2/<site>/` (`_elementor_data` ve
+`post_content` degisiklik oncesi).
 
 ### 6h. Diger
 
