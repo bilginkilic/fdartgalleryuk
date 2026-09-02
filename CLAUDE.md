@@ -31,10 +31,6 @@ Sunucu kurulumu, performans, guvenlik ve yedekleme bitti.
   karsiligi yok). `mc4wp` ACIK BIRAKILDI: tek formu **8 yerde gomulu** ama
   anahtar olmadigi icin calismiyor — form kaldirilsin mi yoksa hesap baglansin
   mi bir icerik karari.
-- **`wp-sitemap.xml` 404 durum koduyla donuyor** (govde gecerli XML, hem canli
-  hem dev). `robots.txt` bu adresi ilan ediyor; Google boyle bir site
-  haritasini reddeder. Bugunku islerden gelmiyor — mu-pluginler kapatilarak
-  dogrulandi. Muhtemel sebep bayat rewrite kurallari (`wp rewrite flush`).
 - **Blogun en eski 4 yazisi**: slug'lari hala Ingilizce demo slug'i. Duzeltmek
   adresi kirar → 301 gerekir. Ayrinti `deploy/blog/BACKLOG.md`.
 - **chestnyznak kalan 14 JS enjeksiyonu** Elementor'a tasinsin mi (6f).
@@ -222,6 +218,7 @@ sitesi eklerken o map'e bir satir eklenir.
 | Turnstile | fdartgallery giris/kayit/form/WooCommerce |
 | Sayfa #2 (fdartgallery) | 02.09.2026: olu CF7 blok kalintisi kaldirildi, slug `sample-page` → `ozel-siparis`, 301 icin `fd-eski-adresler` mu-plugin'i (6r) |
 | Contact Form 7 | 02.09.2026 **komple kaldirildi** (canli + dev): 5 form disa aktarildi, kayitlar ve eklenti dosyalari silindi; aktif eklenti 13 → **12** (6s) |
+| Site haritasi | 02.09.2026: `wp-sitemap*.xml` 404 yerine **200** donuyor; indeks + 8 alt harita, **329 adres** (6t) |
 | Blog | `deploy/blog/` araclari + haftalik Routine (`trig_01Q2abbcd19d1CQem3fs5Z7M`, Sali 06:00 UTC) |
 | Blog icerigi (canli) | Telegram kanalindan 3 yeni yazi x 3 dil; site haritasi 61 -> 70 adres (6s) |
 | chestnyznak | Elementor gecisi + basvuru kaydi (6f, 6g) |
@@ -1463,6 +1460,70 @@ gorsel, kategori, uclu ceviri baglantisi, Yoast alanlari, yazar ve durum —
 > degil**, sitede oteden beri boyle (mevcut yazilarda da var). Kirik baglanti
 > taramasinda yanlis alarm vermemesi icin bilinmeli.
 >>>>>>> Stashed changes
+
+### 6t. Site haritasi 404 donuyordu (02.09.2026, CANLI)
+
+`wp-sitemap.xml` govdesinde GECERLI XML donuyordu ama HTTP durumu **404** idi.
+`robots.txt` o adresi ilan ettigi icin arama motorlari haritayi reddeder.
+
+#### TUZAK: dev'deki ayni belirti BASKA BIR OLAYDI
+
+Teshise dev'de baslandi ve orada da 404 goruldu — ama dev'in 404'u **kasitli
+ve dogru**. Cekirdek `WP_Sitemaps::sitemaps_enabled()` `blog_public` secenegine
+bakar; `fd-staging-guard.php` dev'de onu 0'a zorlar, dolayisiyla cekirdek
+site haritalarini bilerek kapatir. Ayirt eden olcut **govde**: canlida
+`<sitemapindex ...>` (XML), dev'de `<html` (tema 404 sayfasi).
+
+> Iki ortamda ayni durum kodunu gormek ayni sebep demek DEGILDIR. Durum
+> koduyla yetinilmemeli (CLAUDE.md 6e); burada govdenin ilk etiketi karari
+> degistirdi.
+
+#### KOK SEBEP (canli)
+
+Gercek akis, gecici bir teshis mu-plugin'iyle `status_header` cagrilarinin
+backtrace'i kaydedilerek olculdu:
+
+1. `/wp-sitemap.xml` rewrite'i `index.php?sitemap=index` uretir (kural
+   kayitli ve dogru eslesiyor — `wp rewrite flush` GEREKMIYORDU),
+2. `WP::query_posts()` bunu **siradan bir gonderi sorgusu** gibi calistirir.
+   Cogu sitede son yazilar doner ve is biter.
+3. Bu sitede **yayinlanmis `post` sayisi SIFIR** (sayfa 19, urun 280, yazi 0).
+   Sorgu bos donunce `WP::handle_404()` `status_header(404)` basar.
+4. `template_redirect`'te `WP_Sitemaps::render_sitemaps()` indeksi basip
+   `exit` eder — durumu 200'e **geri cekmez**.
+
+Yani hata "harita uretilmiyor" degil, **bos blog yuzunden istek 404 damgasi
+yiyor**. Blogda tek bir yayinlanmis yazi olsaydi kendiliginden duzelirdi.
+Ayni sebep `/wp-sitemap-posts-post-1.xml`'in HTML 404 vermesini de aciklar:
+cekirdek `empty($url_list)` dalinda bilerek 404 basar.
+
+#### COZUM
+
+`deploy/wordpress/fdart-mu-plugins/fd-site-haritasi-durum.php` — cekirdegin
+tam bu is icin sundugu `pre_handle_404` kancasi ("short-circuit default header
+status handling"). Yalnizca `sitemap` / `sitemap-stylesheet` sorgu degiskeni
+doluyken `true` doner; `handle_404()` hicbir sey yapmadan cikar, durum 200
+kalir.
+
+**Neyi BOZMAZ (olculdu):**
+
+| Adres | Once | Sonra |
+|---|---|---|
+| `/wp-sitemap.xml` | 404 (XML) | **200** (XML) |
+| `/wp-sitemap-posts-page-1.xml` | 404 | **200** |
+| `/wp-sitemap-index.xsl` | 200 | 200 |
+| `/wp-sitemap-posts-post-1.xml` (0 yazi) | 404 | **404** — dogru |
+| `/var-olmayan-adres/` | 404 | **404** — gercek 404'ler etkilenmedi |
+| `/`, `/shop/` | 200 | 200 |
+| dev'in butun harita adresleri | 404 | **404** — staging korumasi kazaniyor |
+
+Indeks + 8 alt harita, toplam **329 adres**: sayfa 19, staticblocks 1,
+urun 280, brand 1, product_cat 24, pa_boy 1, pa_en 1, kullanici 2.
+`/ozel-siparis/` haritada yerinde (6r). Cloudflare uzerinden de 200.
+
+> **Yan bulgu:** fdartgallery'de yayinlanmis blog yazisi **0**. `page_for_posts`
+> tanimli (#62) ama icerik yok. Blog acilirsa bu mu-plugin gereksizlesir —
+> zarari da olmaz.
 
 ### 6h. Diger
 
