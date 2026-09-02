@@ -23,7 +23,7 @@
 set -euo pipefail
 
 KEY_URL="https://raw.githubusercontent.com/bilginkilic/fdartgalleryuk/claude/ovhcloud-vps-multisite-0eb3xj/deploy/claude-session-key.pub"
-KEY_TAG="claude-session-016mZ8S3-ephemeral"
+KEY_TAG="claude-session-01Y2RFQy-ephemeral"
 LOG="/var/log/claude-tunnel.log"
 PIDFILE="/run/claude-tunnel.pid"
 
