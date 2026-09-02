@@ -19,7 +19,7 @@ Sunucu kurulumu, performans, guvenlik ve yedekleme bitti.
 |---|---|---|
 | 1 | **chestnyznak giden e-posta** — `info@chestnyznak.com.tr` timeweb posta kutusu parolasi | Tasimada bozuldu, kurtarilamiyor. `TIMEWEB_MAIL_PASSWORD` env'e konursa kurulum hazir: `scratchpad/set-chestnyznak-smtp.sh` (bkz. 6a). **Alici adresleri artik dogru (6m) ama bu parola girilene kadar hicbir bildirim TESLIM EDILMEZ.** |
 | 2 | **Kalan 4 site** icin dosya arsivi + `.sql` + **orijinal `wp-config.php`** | fdsanatmerkezi, chemiartclick.uk apex, davetevet, byhio, wedreply |
-| 3 | **Kalici SSH anahtari** — public kismi bize, private kismi `VPS_SSH_PRIVATE_KEY` env'ine | Iki isi acar: haftalik blog Routine'inin kendi basina yayinlamasi **ve** SSH parola girisinin kapatilmasi (6c) |
+| 3 | **Kalici SSH anahtari TAMAM (02.09.2026)** — kalan tek is: **SSH parola girisi kapatilsin mi** | Anahtar sunucuda (`claude-persistent-fdartgalleryuk`, `SHA256:i7IciIuo4c3uDhaLaH/AmNkQRb/V3VHXwqOtJ+yXuL8`), private kismi `VPS_SSH_PRIVATE_KEY` env'inde. `harden-ssh.sh --disable-password` artik reddetmez; kilitlenme riski oldugu icin ayri onay bekliyor (6c) |
 | 4 | **chestnyznak Rusya'dan acilmiyor** — gri buluta cekildi, yine acilmiyor. Geriye tek degisken **alan adi** | `chestnyznak-test.chemiartclick.uk` testinin sonucu bekleniyor (6d) |
 
 ### Karar bekleyenler
@@ -295,11 +295,40 @@ cloud-init'in `50-...conf` dosyasindaki `yes` yuzunden hic devreye girmemis.
 Bizim dosyamizin adi bu yuzden **`00-hardening.conf`**.
 
 Sertlestirme yapildi (MaxAuthTries 3, LoginGraceTime 30, forwarding kapali,
-modern cipher/MAC/Kex). **Parola girisi hala acik** — kapatmak icin kullanicinin
-public key'i gerekiyor. `harden-ssh.sh --disable-password` kalici anahtar yoksa
-**reddeder** (gecici `claude-session-*` anahtarlarini saymaz — kilitlenme korumasi).
+modern cipher/MAC/Kex). **Parola girisi hala acik** ve loglarda dakikalik root
+parola denemeleri var. Kapatmanin sarti olan kalici anahtar artik **VAR**
+(asagi), yani `harden-ssh.sh --disable-password` reddetmez — ama kilitlenme
+riski tasidigi icin kullanici onayi olmadan calistirilmaz.
+(`harden-ssh.sh` gecici `claude-session-*` anahtarlarini kalici saymaz.)
 
 Acil durum: OVH Manager → VPS → KVM konsolu.
+
+#### Kalici anahtar (02.09.2026)
+
+`/root/.ssh/authorized_keys` icinde `claude-persistent-fdartgalleryuk`,
+parmak izi `SHA256:i7IciIuo4c3uDhaLaH/AmNkQRb/V3VHXwqOtJ+yXuL8`.
+Private kismi **`VPS_SSH_PRIVATE_KEY`** ortam degiskeninde; repoya YAZILMAZ.
+Iptali tek satir: `authorized_keys` icinden o yorumu tasiyan satiri silmek.
+
+`root` **`prohibit-password`** modunda — yani root'a yalnizca anahtarla girilir.
+`ubuntu` kullanicisi var ama `authorized_keys`'i BOS; `debian` ve `admin`
+kullanicilari hic YOK. Dogru kullanici her zaman **`root`**.
+
+> **YENI OTURUM SUNUCUYA GIREMIYORSA once HANGI ANAHTARI SUNDUGUNA bakin.**
+> 02.09.2026'da yeni bir oturum "publickey reddedildi" aliyordu; sunucu tarafi
+> dogruydu, oturum kendi urettigi gecici anahtari sunuyordu. Sebep: **ortam
+> degiskeni CALISAN oturuma yansimaz** (CLAUDE.md 2) — `VPS_SSH_PRIVATE_KEY`
+> oturum basladiktan sonra tanimlanmisti, dolayisiyla oturum onu hic gormedi.
+>
+> Teshis: istemcideki `Offering public key: ... SHA256:...` satirini
+> `ssh-keygen -lf` ile sunucudaki anahtarlarin parmak izlerine karsi tutun.
+> Farkliysa sorun sunucuda degil, istemcinin hangi anahtari yukledigindedir.
+>
+> Cozum (kullaniciyi konsola dusurmeden): yeni oturum public key'ini
+> `deploy/claude-session-key.pub` dosyasina yazip dala push eder; **erisimi
+> olan bir oturum** dali cekip anahtari `authorized_keys`'e ekler.
+> `authorized_keys` her baglantida okunur — sshd yeniden baslatilmaz.
+> Kalici anahtari alan **yeni** oturumlarda bu adim hic gerekmez.
 
 ### 6d. Rusya erisimi (chestnyznak)
 
