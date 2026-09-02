@@ -4,7 +4,7 @@ Projeyi devralan her oturum icin kalici hafiza. Kisa tutulur: **su an ne oldugu*
 **nasil erisilecegi**, **hangi tuzaklara dusuldugu**. Anlati git gecmisinde:
 `git log -p -- CLAUDE.md`.
 
-Son sadelestirme: 02.09.2026 (1529 → ~675 satir).
+Son duzenleme: 02.09.2026 — 1529 satirdan sadelestirildi, su an 778 satir.
 
 > **YENI OTURUMSAN ONCE BURAYI OKU → [3. bolum](#3-sunucuya-baglanma-yeni-oturum-buradan-baslar).**
 > Sunucuya **ham TCP/22 ile GIRILMEZ** — Cloudflare tuneli kullanilir. Makinede
@@ -220,6 +220,18 @@ yazani bilir. Eksik birakilan her madde saatlerce bosuna arama demektir.
 
 Izolasyon: ayri unix kullanicisi + `open_basedir`.
 
+**mu-plugin envanteri** (`deploy/wordpress/` altinda, dizin = hangi siteye gider):
+
+| Dosya | Dizin | Ne yapar |
+|---|---|---|
+| `fd-webp-rewrite.php` | `mu-plugins/` (hepsi) | `.webp` varsa onu servis eder |
+| `fd-staging-guard.php` | `staging-mu-plugins/` (dev) | e-postayi keser, `blog_public`=0, noindex, "DENEME ORTAMI" bandi |
+| `fd-asset-diyet.php` | `fdart-` ve `lead-` (AYRI dosyalar) | sayfada karsiligi olmayan CSS/JS'i kuyruktan cikarir (6h) |
+| `fd-font-hizlandirma.php` | `fdart-` | googleapis isteklerini tek istege indirir, preconnect (6h) |
+| `fd-eski-adresler.php` | `fdart-` | slug degisimi icin 301 tablosu — cekirdek SAYFA slug'inda 301 kurmaz (6i) |
+| `fd-site-haritasi-durum.php` | `fdart-` | `wp-sitemap*.xml` 404 yerine 200 doner (6i) |
+| `fd-lead-capture.php`, `fd-i18n-layouts.php`, `fd-404-cevirisi.php` | `lead-` (chestnyznak) | basvuru kaydi (6g), dile gore layout, 404 cevirisi (6e, 6i) |
+
 **Staging korumasi.** `fd-staging-guard.php` (mu-plugin): giden e-postayi
 PHPMailer seviyesinde keser, `blog_public`'i 0'a zorlar, `robots.txt`'yi
 `Disallow: /` yapar, "DENEME ORTAMI" bandi gosterir. nginx'te
@@ -242,7 +254,7 @@ PHPMailer seviyesinde keser, `blog_public`'i 0'a zorlar, `robots.txt`'yi
 | Reklam/bulten trafigi | `?utm_*`/`gclid`/`fbclid` artik onbellekten okuyor; TTFB ~2,3 sn → **15-25 ms** (6h) |
 | WebP | fdartgallery 6394, chestnyznak 5839 dosya; orijinaller korunur, gece cron |
 | Redis | site basina izole: canli fd=3, dev fd=4, chestnyznak=8 |
-| fdartgallery hizi | **canli + dev**: 17 → 13 eklenti, 47 → 26 script, 32 → 26 stylesheet, react+12 `js/dist` dustu, `.ttf` gzip, TTFB 16-19 ms (6h) |
+| fdartgallery hizi | **canli + dev**: 47 → 26 script, 32 → 26 stylesheet, react+12 `js/dist` dustu, `.ttf` gzip, isinmis TTFB 15-19 ms (6h) |
 | Yedekleme | Cloudflare R2, gece 04:15, 30 gun; uploads artimli (`copy`, `sync` DEGIL) |
 | UpdraftPlus | komple kaldirildi; disk %40 → **%26** (9,7 GB yerel arsiv silindi) |
 | Sertifikalar | Let's Encrypt, otomatik yenileme |
@@ -250,8 +262,7 @@ PHPMailer seviyesinde keser, `blog_public`'i 0'a zorlar, `robots.txt`'yi
 | fail2ban | 3 jail; Cloudflare edge + yerel nftables bani |
 | E-posta | fdartgallery Brevo API + DKIM/SPF/DMARC; chestnyznak timeweb SMTP — **ikisi de calisiyor** |
 | Turnstile | fdartgallery giris/kayit/form/WooCommerce |
-| Contact Form 7 | fdartgallery'de **komple kaldirildi** (formlar FluentForm'da); aktif eklenti 13 → **12** |
-| Mailchimp for WP (`mc4wp`) | fdartgallery'de **komple kaldirildi** — hicbir sayfada basilmiyordu; aktif eklenti 12 → **11** |
+| fdartgallery eklenti sadelestirmesi | **17 → 11**, canli ve dev esit. Kapatilan 4: `mailchimp-for-woocommerce`, `fluentforms-pdf`, `image-optimization`, `updraftplus`. Komple kaldirilan 2: **Contact Form 7** (formlar FluentForm'da) ve **`mc4wp`** (hicbir sayfada basilmiyordu) |
 | Site haritasi (fdartgallery) | `wp-sitemap*.xml` 404 yerine **200**; indeks + 8 alt harita, 329 adres (6i) |
 | Uc dil (chestnyznak) | Menuden ulasilan her adres + 23 blog yazisi tr/en/ru; dil dusuren baglanti **0** (6e) |
 | Demo temizligi (chestnyznak) | Site haritasi **523 → 97** adres, 370 kayit taslaga (6i) |
@@ -525,11 +536,9 @@ wp-config sabitleri (repoya yazilmaz): `FD_LEAD_RELAY_URL`, `FD_LEAD_CHAT_ID`,
 **Once olcun, sonra dokunun.** Sunucu darbogaz degil (TTFB 16-26 ms); darbogaz
 **istek sayisi** ve **harici kaynak**.
 
-**Varlik diyeti** — iki AYRI dosya, karistirmayin:
-`deploy/wordpress/fdart-mu-plugins/fd-asset-diyet.php` (fdartgallery) ve
-`deploy/wordpress/lead-mu-plugins/fd-asset-diyet.php` (chestnyznak).
-Ikisi de:
-sayfada karsiligi olmayan dosyalari kuyruktan cikarir. Kosul saglanmiyorsa dosya
+**Varlik diyeti** — `fd-asset-diyet.php` **iki AYRI dosya**, karistirmayin:
+`fdart-mu-plugins/` (fdartgallery) ve `lead-mu-plugins/` (chestnyznak). Ikisi de
+sayfada karsiligi olmayan dosyalari kuyruktan cikarir; kosul saglanmiyorsa dosya
 AYNEN kalir (hata durumunda eksik degil, fazla yuklenir).
 
 > **TUZAK: tek bagimlilik 15 dosya getiriyordu.** `cfturnstile-woo-js`
@@ -550,7 +559,6 @@ istege birlestirilir, agirlik listesi 18 → 9, `fonts.googleapis.com` ve
 Aile ELENMEDI — kit tipografisi sayfada kullaniliyor, aile atmak basliklari
 sistem fontuna dusururdu; bu bir **tasarim** karari.
 
-`fd-font-hizlandirma.php` fdart mu-plugins altinda.
 `deploy/nginx/snippets/font-gzip.conf` — Ubuntu `mime.types`'ta `ttf`/`otf` YOK,
 nginx `application/octet-stream` veriyor ve o tur global `gzip_types`'a
 **konmamali**. Cozum: yalnizca `.ttf|.otf|.eot` eslesen location icinde gzip.
@@ -741,8 +749,6 @@ Gecici test kaynaklari (**is bitince silinecek**): `origin.chemiartclick.uk` ve
   Vhost: `deploy/nginx/sites-available/webmail.chestnyznak.com.tr.conf`.
   > `mail.chestnyznak.com.tr` **bilerek dokunulmadi** — posta istemcisinde
   > sunucu adi olarak kullaniliyor olabilir.
-- **`wp export` post tipi kayitli degilse calismaz** (`--skip-plugins` ile).
-  `wp post get` / `wp post meta list` ham DB satirini okur, o zaman da calisir.
 
 ---
 
