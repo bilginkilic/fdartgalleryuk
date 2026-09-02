@@ -227,6 +227,7 @@ sitesi eklerken o map'e bir satir eklenir.
 | Turnstile | fdartgallery giris/kayit/form/WooCommerce |
 | Blog | `deploy/blog/` araclari + haftalik Routine (`trig_01Q2abbcd19d1CQem3fs5Z7M`, Sali 06:00 UTC) |
 | chestnyznak | Elementor gecisi + basvuru kaydi (6f, 6g) |
+| Demo temizligi (canli) | Tema demosu aramadan cikarildi: site haritasi 523 -> 97 adres, 370 kayit taslaga (6p) |
 | Uc dil (canli) | Menuden ulasilan her adres + 20 blog yazisi tr/en/ru; dil dusuren baglanti 0; iletisim formu dile gore (6k) |
 
 Komutlar ve olcumler icin `deploy/` altindaki script'ler ve git gecmisi.
@@ -1085,6 +1086,73 @@ Canlida 3 yetim cron olayi da silindi (`updraft_backup_database`,
 > hepsi `wp-content/plugins/updraftplus/` altindaki EKLENTI KAYNAK dosyalari.
 > Dogru olcut: `tar -tzf ... | grep -c '^wp-content/updraft/'` → **0**.
 > Uploads da tarball'da yok, R2'ye ayrica artimli gidiyor.
+
+### 6p. Tema demosu aramaya sizmisti (02.09.2026, CANLI + dev)
+
+**Sikayet (Ali):** `site:chestnyznak.com.tr` aramasi tema demosunu gosteriyor.
+
+**Olculen durum:**
+
+| | Once | Sonra |
+|---|---|---|
+| Site haritasindaki adres | **523** | **97** |
+| Alt site haritasi | 16 | 6 |
+| Yayindaki `page` | 191 (27'si gercek) | **27** |
+| `cpt_portfolio` / `cpt_services` / `cpt_testimonials` / `cpt_team` | 98 / 50 / 33 / 11 | 0 |
+| `tribe_events` | 15 | 0 |
+| Yoast tip bazinda `noindex` | **hicbiri** | 21 ayar acildi |
+
+**KOK SEBEP sayfalarin yayinda olmasi DEGILDI:** Yoast'ta `noindex-cpt_portfolio`,
+`noindex-cpt_layouts`, `noindex-cpt_services`, `noindex-tribe_events`... **hepsi
+`false`**. Yalnizca sayfalari kapatmak yetmez; tip bazinda noindex olmadan yeni
+demo icerik ayni yerden geri doner.
+
+Arac: `deploy/scripts/demo-icerik-temizle.php` (`dry` ve `geri-al` destegi var,
+yeniden calistirilabilir). Degistirdigi her kimligi
+`wp-content/demo-temizlik-geri-alma.json` dosyasina yazar.
+
+#### TUZAK: "menude var" olcut DEGILDIR
+
+Ilk denemede menulerden ulasilan her sayfa "gercek" sayildi ve sonuc **174
+gercek / 26 demo** cikti — tam tersi. Sebep: temanin **atanmamis demo menuleri**
+hala kayitli (`Main Menu` **179 oge**, `Developer`s menu`, `Footer Menu 2/3`,
+`Simple Menu`, `Single Styles`) ve hepsi demo sayfalara link veriyor.
+
+> Gercek olcut: **yalnizca bir tema konumuna ATANMIS** menuler
+> (`get_nav_menu_locations()`). Bu sitede yalnizca `menu_main`/`menu_mobile`
+> (#171) ve dil kopyalari (#372 en, #373 ru) atanmis. Dogru sonuc: **27 gercek,
+> 164 demo**.
+
+#### `cpt_layouts` TASLAGA CEKILMEZ
+
+83 kayitlik bu tipin icinde sitenin **kullanilan** basligi ve altbilgisi var
+(`Header Main` #4614, `Footer Default` #4105). Taslaga cekmek siteyi kirar.
+Onlara yalnizca `noindex` uygulanir — yayinda kalirlar.
+
+#### Korunanlar (kullanici karari)
+
+`cerez-politikasi` yayinda BIRAKILDI (yasal sayfa, cerez bildiriminden baglanti
+aliyor). Reklam acilis sayfalari (`urun-talep-formu`, `lp-iletisim-formu`,
+`datamatrix-kod-etiket`) ve sohbet iframe sayfalari (`site-iletisim-formu` +
+EN/RU kopyalari) menude olmadiklari icin script'te **slug ile** korunur.
+
+#### 404 zaten CALISIYOR
+
+"404 aktif edilmeli" denmisti; olculdu: `HTTP 404` donuyor,
+`<meta robots content="noindex, follow">` basiyor, tema sablonu
+(`qwery/404.php`) menu + altbilgi + arama kutusu + ana sayfa baglantisiyla
+geliyor. Eksik olan **metin**: baslik "Page not found", govde "Oops..." —
+ucu de Ingilizce ve dile gore degismiyor. Yapilacak is 404'u "acmak" degil,
+metnini uc dile cevirmek.
+
+#### Dogrulama
+
+Dev'de yapildi, yapisal olarak canliyla karsilastirildi, sonra canliya alindi.
+Uc dilde ana sayfa + 5 ic sayfa: **20 bolum, 76 widget, 135 menu ogesi,
+25 gorsel, 24 `cz-*` blogu, ayni H1'ler** — dev ve canli birebir ayni (aradaki
+birkac yuz bayt tam olarak `dev.` onekinin uzunlugu). 17 gercek sayfada
+66 benzersiz ic baglanti, 914 gecis: **kirik baglanti 0**. Demo adresler 404.
+fdartgallery ve dev.chestnyznak etkilenmedi.
 
 ### 6h. Diger
 
