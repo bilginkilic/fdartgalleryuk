@@ -213,6 +213,7 @@ sitesi eklerken o map'e bir satir eklenir.
 |---|---|
 | Sunucu | nginx + PHP 8.5-FPM + MariaDB + Redis + certbot + ufw + fail2ban + wp-cli |
 | Sayfa onbellegi | nginx `fastcgi_cache`; ana sayfa 0.90 sn → **0.006 sn** |
+| Reklam/bulten trafigi | 02.09.2026: `?utm_*`/`gclid`/`fbclid` istekleri artik onbellekten okuyor (fdartgallery + dev); TTFB ~2,3 sn → **15-25 ms** (6q) |
 | WebP | fdartgallery 6394 dosya, chestnyznak 5820; orijinaller korunuyor, gece cron |
 | Redis | site basina izole (db indeksi + anahtar oneki): canli fd=3, dev fd=4, chestnyznak=8 |
 | fdartgallery hizi (DEV) | 17 → 13 eklenti, 47 → 26 script, 5 → 1 font istegi, fontlar gzip'li (6n) |
@@ -998,9 +999,8 @@ gzip'lemek. `woff/woff2` **bilerek disarida** — zaten sikistirilmis.
 - **TTF → WOFF2** cevirisi yapilmadi: `@font-face` kurallarini uretmek
   temanin/`custom-fonts` ozelliginin isi, elle degistirmek kirilgan. gzip zaten
   %46 verdi; woff2 ~%30 daha verirdi.
-- **`?utm_...` gibi sorgu dizeli istekler sayfa onbellegini ATLIYOR**
-  (`00-tuning.conf` icindeki `$wpc_bypass_qs`). Reklam ve bulten trafiginin
-  tamami PHP'ye gidiyor. Duzeltmek global bir nginx degisikligi — ayri is.
+- ~~**`?utm_...` istekleri sayfa onbellegini ATLIYOR**~~ → **02.09.2026'da
+  duzeltildi, bkz. 6q.**
 
 #### CANLIYA ALINDI (02.09.2026)
 
@@ -1186,6 +1186,75 @@ Uc dilde ana sayfa + 5 ic sayfa: **20 bolum, 76 widget, 135 menu ogesi,
 birkac yuz bayt tam olarak `dev.` onekinin uzunlugu). 17 gercek sayfada
 66 benzersiz ic baglanti, 914 gecis: **kirik baglanti 0**. Demo adresler 404.
 fdartgallery ve dev.chestnyznak etkilenmedi.
+
+### 6q. Izleme parametreli istekler ve sayfa onbellegi (02.09.2026)
+
+**Sorun:** `00-tuning.conf`'taki 4. kural "sorgu dizesi varsa onbellegi atla"
+diyordu. Reklam, bulten ve sosyal medya trafiginin TAMAMI (`?utm_source=...`,
+`?gclid=...`, `?fbclid=...`) PHP'ye gidiyordu — yani en pahali ziyaretciler
+en yavas sayfayi aliyordu.
+
+**Once olculdu, sonra dokunuldu.** Ilk akla gelen cozum "utm'i onbellek
+anahtarindan at, hepsi ayni girdiyi paylassin" idi. **YANLIS OLURDU:**
+
+> Sorgu dizesi HTML'e SIZIYOR. Ana sayfada WooCommerce'in **19 adet**
+> `add-to-cart` baglantisi gecerli URL uzerine kuruluyor
+> (`/?utm_source=a&add-to-cart=93`), `_wp_http_referer` gizli alani da oyle.
+> Izleme'li bir yaniti duz `/` anahtarina YAZSAYDIK, sonraki ziyaretci
+> **baskasinin utm'ini** tasiyan baglantilar gorurdu — hem yanlis atif hem
+> kirli URL. (Bunu goren test: `?utm_source=a` ve `?probe=1` ciktilarini
+> normallestirip diff'lemek; fark tam da o 19 baglantida.)
+
+**Dogru kurgu — okuma ile yazmayi AYIRMAK.** nginx'te bu ikisi zaten ayri
+direktif: `fastcgi_cache_bypass` OKUMAYI, `fastcgi_no_cache` YAZMAYI kontrol
+eder. Izleme-only istekler icin:
+
+| | davranis |
+|---|---|
+| okuma | **serbest** — anahtar sorgu dizesiz, yani duz `/` girdisini okur |
+| yazma | **YASAK** — o yanit asla onbellege girmez |
+
+Sonuc: girdiyi yalnizca duz istekler doldurur, izleme'li istekler onu okur.
+utm tarayicinin adres cubugunda kalir, GA/sourcebuster `location.search`'ten
+okumaya devam eder — istemci tarafi hic etkilenmez.
+
+**Olculen:** `?utm_source=...` TTFB ~2,3 sn (PHP) → **15-25 ms** (onbellek).
+
+**Kapsam:** yalnizca `fdartgallery.com`, `www.fdartgallery.com`,
+`dev.fdartgallery.com` (`$wpc_qs_norm` map'i). chestnyznak BILEREK disarida —
+degisiklik onun icin bit bit etkisiz; test edildi: `chestnyznak.com.tr/`
+HIT, `?utm_source=a` BYPASS, yani eski davranis.
+
+**Dort site snippet'ine HIC dokunulmadi.** `fastcgi_no_cache $skip_cache
+$wpc_bypass_respcookie;` satiri oldugu gibi durur; yazma yasagi
+`$wpc_bypass_respcookie`'yi ureten map'in girdisine katilarak eklendi.
+
+**Izleme sayilan parametreler** (hepsi eslesirse "izleme", tek yabanci
+parametre varsa "diger" → eski davranis): `utm_*`, `gclid`, `gbraid`,
+`wbraid`, `dclid`, `fbclid`, `msclkid`, `ttclid`, `twclid`, `igshid`,
+`yclid`, `epik`, `mc_cid`, `mc_eid`, `_gl`, `gad_source`, `gad_campaignid`,
+`srsltid`, `s_kwcid`, `li_fat_id`, `hsa_*`, `pk_*`, `mtm_*`, `piwik_*`.
+`ref`, `source`, `campaign` BILEREK YOK — ortu ortaklik/affiliate kodu
+olabilirler ve PHP tarafinda kullanilabilirler.
+
+**Dogrulandi:**
+- zehirleme testi: onbellek bosaltildi → `?utm_source=POISON123` iki kez MISS
+  (yazilmiyor) → duz `/` girdisinde `POISON123` **0 kez**;
+- okuma: `?utm_source=`, `?gclid=`, `?fbclid=` → **HIT**, yanit duz `/` ile
+  **birebir ayni bayt**, `add-to-cart` baglantilari temiz;
+- hala atliyor: `?s=`, `?orderby=`, `?add-to-cart=`, `?utm_source=a&s=arama`,
+  bilinmeyen parametre, `/cart/`, `/checkout/`, `/my-account/`, `/wp-admin/`;
+- giris cerezi + utm → BYPASS, sepet cerezi + utm → BYPASS.
+
+> **$uri KULLANILAMAZ.** Sorgu dizesini atmak icin `$uri` cazip gorunur ama
+> `try_files ... /index.php?$args` sonrasi `$uri` **`/index.php`** olur ve
+> butun sayfalar tek onbellek girdisinde toplanirdi. Bu yuzden yol
+> `$request_uri`'den regex ile kesiliyor (`$wpc_request_path`).
+
+**Bilinen odun:** bir sayfaya SADECE izleme'li trafik gelirse girdi
+suresi dolunca (200 icin 10 dk, `inactive=60m`) kimse yenilemez ve izleme'li
+istekler PHP'ye duser. Yani en kotu durum **eski davranisin aynisi** —
+gerileme degil.
 
 ### 6h. Diger
 
