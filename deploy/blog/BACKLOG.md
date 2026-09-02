@@ -12,6 +12,9 @@ Detayli sure ve uslup kurallari: `deploy/blog/README.md`
 ## Kuyruk
 
 - [x] Rusya’da EDO (Elektronik Belge Akisi) — Chestny Znak devir bildiriminin sarti — *01.09.2026, ID 37684*
+- [x] Rusya’ya sevkiyat oncesi kontrol listesi — tiri sinirda durduran hatalar — *02.09.2026, TR 38064 / EN 38066 / RU 38068* (kaynak: Telegram #28+#33+#38)
+- [ ] **Vaka: sevkiyat oncesi tek kod kontrolu 15.000 dolarlik zarari nasil onledi** — *kaynak: Telegram #20; blogda hic vaka calismasi yok, en ayirt edici icerik*
+- [ ] **Turkiye–Rusya ticareti: uretici icin ticaret gercekleri** — *kaynak: Telegram #17; blogda karsiligi yok*
 - [ ] Rusya’ya ayakkabi ihracatinda Chestny Znak (en eski zorunlu kategori, 6401-6405)
 - [ ] Kozmetik ve ev kimyasallarinda markalama — 2025-2026 kademeli takvim
 - [ ] DataMatrix etiket baskisi: cozunurluk, malzeme ve dogrulama (okunmayan kod sorunu)
@@ -31,6 +34,37 @@ Detayli sure ve uslup kurallari: `deploy/blog/README.md`
 - [ ] Evcil hayvan mamasi ihracatinda markalama
 - [ ] Lastik ihracatinda Chestny Znak (4011)
 - [ ] Parfum ve tuvalet suyu ihracatinda Chestny Znak (3303)
+
+## Telegram kanali bir icerik kaynagi (02.09.2026)
+
+`t.me/globalznak_rusya` (@global_znak) herkese acik; arsivi
+`https://t.me/s/globalznak_rusya` adresinden sayfalanarak okunabiliyor —
+Bot API veya oturum gerekmiyor. Arac: `deploy/blog/telegram-cek.py`.
+
+Olculen: 17 mesaj (22.07.2026 – 02.09.2026), 9'u blog malzemesi
+(150–500 kelime), 1 video, 3 kisa selamlama.
+
+**Telegram yazilari HAZIR BLOG YAZISI DEGILDIR.** 150–500 kelime, blog
+standardi 1200–1600. Kaynak malzeme olarak kullanilir ve birlestirilir.
+
+**Ortusme ONCE olculur.** Ilk planda 5 yazi vardi; mevcut 20 yaziyla
+karsilastirinca ikisi elendi:
+
+| Aday | Sonuc |
+|---|---|
+| "Hangi urunlerde zorunlu" | **ELENDI** — 4 yazida islenmis; `rusya-zorunlu-etiketleme-chestny-znak-2026` icinde birebir ayni baslik var |
+| "Adim adim yol haritasi" | **ELENDI** — ayni yazinin bir bolumu |
+| Sevkiyat oncesi kontrol listesi | yazildi (02.09.2026) |
+| Vaka calismasi | kuyrukta — blogda hic vaka yok |
+| Turkiye–Rusya ticaret gercekleri | kuyrukta — karsiligi yok |
+
+Ortusmeyi olcmeden yazmak, kendi yazilarimizla rekabet eden kopya icerik
+uretir. Yeni konu once `BACKLOG.md` ve yayindaki yazilarla karsilastirilir.
+
+**Video (Telegram #22, #37):** kullanici karari — YouTube'a yuklenecek, link
+gelince yazilara gomulecek.
+
+---
 
 Kuyruk bitmek uzereyse yeni konu uretin: mevzuat takvimindeki yaklasan
 zorunluluk tarihleri, kapsama yeni giren urun gruplari ve musteriden gelen
