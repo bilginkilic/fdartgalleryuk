@@ -26,6 +26,16 @@
  * `WP_Dependencies::add()` mevcut bir handle'i EZMEDIGI icin eklentinin sonraki
  * `wp_enqueue_script()` cagrisi bizim kaydimizi kullanir.
  *
+ * TUZAK (02.09.2026, canliya alirken yakalandi): FORM REFERANSI HER ZAMAN
+ * KISA KOD DEGILDIR. Sayfa #2 "Ozel Siparis Formu" formu su sekilde saklamis:
+ *     <!-- wp:contact-form-7/contact-form-selector {"id":64,...} -->
+ * yani Gutenberg BLOK yorumu; ortada `[contact-form-7` YOK. Eski desen
+ * yalnizca kose parantezli kisa kodu ariyordu, bu yuzden o sayfada CF7
+ * kuyruktan cikariliyordu. (O sayfada form zaten basilmiyor -- blok yorumu
+ * `<p>` icine sikismis ve sayfa Elementor ile render ediliyor, dolayisiyla
+ * cikti inert bir HTML yorumu. Ama blok bir gun duzeltilirse JS eksik
+ * kalirdi.) Desenler blok sozdizimini de kapsayacak sekilde genisletildi.
+ *
  * KURAL: burada yalnizca "o sayfada karsiligi OLMAYAN" dosyalar cikarilir.
  * Kosul saglanmiyorsa dosya AYNEN kalir — yani hata durumunda eksik degil,
  * fazla yuklenir. Yeni bir kural eklenmeden once sayfanin HTML'inde o
@@ -203,14 +213,14 @@ add_action(
 
 		/* 1) Contact Form 7 — sitede yalnizca TEK yayinlanmis sayfa kullaniyor
 		      (olculdu: digerlerinin hepsi revizyon). */
-		if ( ! fd_diyet_metinde( '/\[contact-form-7|wpcf7-form|"shortcode":"\[contact-form-7/i' )
-			&& ! fd_diyet_sablonlarda( '/\[contact-form-7|wpcf7/i' ) ) {
+		if ( ! fd_diyet_metinde( '/\[contact-form-7|wpcf7|wp:contact-form-7|contact-form-selector/i' )
+			&& ! fd_diyet_sablonlarda( '/\[contact-form-7|wpcf7|wp:contact-form-7|contact-form-selector/i' ) ) {
 			fd_diyet_cikar( [ 'contact-form-7', 'swv' ], [ '/plugins/contact-form-7/' ] );
 		}
 
 		/* 2) FluentForm'un Elementor widget varliklari — form yoksa gereksiz. */
-		if ( ! fd_diyet_metinde( '/\[fluentform|fluentform_wrap|"widgetType":"fluent[^"]*"/i' )
-			&& ! fd_diyet_sablonlarda( '/\[fluentform|"widgetType":"fluent/i' ) ) {
+		if ( ! fd_diyet_metinde( '/\[fluentform|fluentform_wrap|wp:fluentfom|"widgetType":"fluent[^"]*"/i' )
+			&& ! fd_diyet_sablonlarda( '/\[fluentform|wp:fluentfom|"widgetType":"fluent/i' ) ) {
 			fd_diyet_cikar(
 				[ 'fluentform-elementor', 'fluentform-elementor-widget' ],
 				[ 'fluent-forms-elementor-widget' ]

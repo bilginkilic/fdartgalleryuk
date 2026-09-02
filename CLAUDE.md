@@ -26,10 +26,6 @@ Sunucu kurulumu, performans, guvenlik ve yedekleme bitti.
 
 - **Cloudflare APO** (~5 $/ay): HTML'i edge'de onbellekler. Turkiye'deki ziyaretci
   icin en buyuk tek kazanc; su an `cf-cache-status: DYNAMIC`.
-- **fdartgallery hiz calismasi CANLIYA ALINSIN MI** — dev'de bitti ve olculdu (6n).
-  Canliya gidecek dort parca: 4 eklentinin kapatilmasi, iki mu-plugin
-  (`fd-asset-diyet`, `fd-font-hizlandirma`), font gzip snippet'i, Redis nesne
-  onbellegi (canlida ZATEN acik). Olculen: 105 → 83 istek, 47 → 26 script.
 - **UpdraftPlus yerel yedekleri** — `wp-content/updraft` altinda **canli 6,9 GB +
   dev 2,8 GB**. `updraft_service` BOS, yani yedek yalnizca AYNI DISKTE duruyor;
   gercek yedek zaten gece R2'ye gidiyor. Dev'de eklenti kapatildi (dosyalara
@@ -44,6 +40,12 @@ Sunucu kurulumu, performans, guvenlik ve yedekleme bitti.
   CF7 yalnizca **tek yayinlanmis sayfada** (#2 "Ozel Siparis Formu"); geri kalan
   butun `[contact-form-7]` izleri revizyonlarda. O sayfa FluentForm'a tasinirsa
   CF7 komple kaldirilabilir.
+- **fdartgallery sayfa #2 "Ozel Siparis Formu" bozuk** (02.09.2026 olculdu):
+  form bir Gutenberg blok yorumu olarak saklanmis, `<p>` icine sikismis ve
+  sayfa Elementor ile render edildigi icin cikti inert bir HTML yorumu — sayfada
+  HIC form basilmiyor. CF7 formu #64 saglam (elle calistirilinca calisiyor).
+  Duzeltmek icin blogun Elementor'da yeniden yerlestirilmesi ya da sayfanin
+  FluentForm'a tasinmasi gerek — icerik karari (6n).
 - **Blogun en eski 4 yazisi**: slug'lari hala Ingilizce demo slug'i. Duzeltmek
   adresi kirar → 301 gerekir. Ayrinti `deploy/blog/BACKLOG.md`.
 - **chestnyznak kalan 14 JS enjeksiyonu** Elementor'a tasinsin mi (6f).
@@ -219,6 +221,7 @@ sitesi eklerken o map'e bir satir eklenir.
 | WebP | fdartgallery 6394 dosya, chestnyznak 5820; orijinaller korunuyor, gece cron |
 | Redis | site basina izole (db indeksi + anahtar oneki): canli fd=3, dev fd=4, chestnyznak=8 |
 | fdartgallery hizi (DEV) | 17 → 13 eklenti, 47 → 26 script, 5 → 1 font istegi, fontlar gzip'li (6n) |
+| fdartgallery hizi (**CANLI**) | 02.09.2026 alindi: 47 → 26 script, 32 → 26 stylesheet, react+12 `js/dist` dosyasi dustu, `.ttf` 62.044 → 33.984 bayt, isinmis TTFB 16-19 ms (6n) |
 | Yedekleme | Cloudflare R2, gece 04:15, 30 gun; uploads artimli (`copy`, `sync` DEGIL) |
 | Sertifikalar | Let's Encrypt, otomatik yenileme |
 | MariaDB | `root@localhost` parolasizdi → `unix_socket` + yedek parola |
@@ -1001,6 +1004,62 @@ gzip'lemek. `woff/woff2` **bilerek disarida** — zaten sikistirilmis.
 - **`?utm_...` gibi sorgu dizeli istekler sayfa onbellegini ATLIYOR**
   (`00-tuning.conf` icindeki `$wpc_bypass_qs`). Reklam ve bulten trafiginin
   tamami PHP'ye gidiyor. Duzeltmek global bir nginx degisikligi — ayri is.
+
+#### CANLIYA ALINDI (02.09.2026)
+
+Dort parca da uygulandi. Yedek: `/var/backups/claude-2026-09-02-hiz/`
+(DB dokumu 77 MB, mu-plugins kopyasi, vhost kopyasi, eklenti listesi).
+
+Dev'in HTML'i KOPYALANMADI — 4 eklentinin kullanilmadigi canlinin KENDI
+icerigi uzerinde yeniden tarandi (`mailchimp-for-woocommerce` API anahtari yok
+ve 0 referans; `fluentforms-pdf` 0 referans, PDF feed tablosu yok;
+`image-optimization` optimize meta 0, diskteki 6437 webp sunucu cron'undan;
+`updraftplus` `updraft_service` bos).
+
+| Olcum | canli once | canli sonra | dev |
+|---|---|---|---|
+| Aktif eklenti | 17 | **13** | 13 |
+| `<script src>` | 47 | **26** | 26 |
+| stylesheet | 32 | **26** | 26 |
+| `wp-includes/js/dist/*` | 13 | **1** | 1 |
+| react/react-dom | 3 | **0** | 0 |
+| googleapis istegi | 5 | **2** | 2 |
+| `.ttf` telde | 62.044 B | **33.984 B** (gzip) | 33.984 B |
+| `woocommerce-form-login` | 2 | **2** | 2 |
+| `cf-turnstile` alani | 5 | **5** | 5 |
+| Isinmis TTFB | — | **16-19 ms** | 19-23 ms |
+
+Dogrulama: canli ile dev'in varlik listeleri (27 benzersiz js/css) **birebir
+ayni**; 27 varligin hepsi 200/304 (tek istisna Turnstile'in kendi 302 → 200
+surum yonlendirmesi, dev'de de ayni). Yapi sayimlari da esit (urun karti,
+`<img>`, menu ogesi, `<form>`).
+
+> Tarayici testi bu oturumdan KOSULAMADI: konteynerin egress proxy'si
+> Chromium'un TLS el sikismasini kesiyor (`ws_closed_mid_exchange`; curl
+> geciyor, BoringSSL gecmiyor) ve sunucuda node/chromium yok. Yerine
+> varlik listesi diff'i + her varligin HTTP durumu + yapi sayimlari
+> kullanildi.
+
+#### TUZAK: form referansi her zaman kisa kod degildir
+
+Canliya alirken yakalandi. Sayfa #2 "Ozel Siparis Formu" formu soyle sakliyor:
+
+```
+<!-- wp:contact-form-7/contact-form-selector {"id":64,"hash":"8783421",...} -->
+```
+
+Gutenberg **blok yorumu** — ortada `[contact-form-7` YOK. `fd-asset-diyet`'in
+ilk deseni yalnizca kose parantezli kisa kodu ariyordu, dolayisiyla o sayfada
+CF7'yi kuyruktan cikariyordu. Desen `wp:contact-form-7|contact-form-selector`
+(ve FluentForm icin `wp:fluentfom`) ile genisletildi; ana sayfadaki kazanc
+korundu (26/26), sayfa #2 artik CF7 JS'ini yukluyor.
+
+> **Ayrica olculdu:** o sayfada form ZATEN BASILMIYOR ve bu bizden ONCE de
+> boyleydi. Kanit enqueue'dan bagimsiz: `apply_filters("the_content", ...)`
+> ciktisinda `wpcf7` **0**, blok yorumu ham metin olarak duruyor; ayni formun
+> kisa kodu elle calistirilinca **58** `wpcf7` uretiyor. Yani CF7 eklentisi ve
+> form #64 saglam, bozuk olan sayfanin saklanmis markup'i (blok yorumu `<p>`
+> icine sikismis ve sayfa Elementor ile render ediliyor). **Ayri is.**
 
 ### 6h. Diger
 

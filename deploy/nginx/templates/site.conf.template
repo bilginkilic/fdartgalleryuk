@@ -24,6 +24,11 @@ server {
     # Cloudflare proxy arkasinda gercek ziyaretci IP'si
     include snippets/cloudflare-realip.conf;
 
+    # Font gzip: wordpress.conf'tan ONCE olmali — nginx regex location'lari
+    # tanim sirasina gore dener ve wordpress.conf'un statik blogu
+    # ttf|otf|eot uzantilarini da kapsar (CLAUDE.md 6n).
+    include snippets/font-gzip.conf;
+
     include snippets/wordpress.conf;
     include snippets/security.conf;
 
