@@ -117,10 +117,22 @@ foreach ( $P['diller'] as $dil => $m ) {
 		return;
 	}
 
-	/* --- kategori: Turkce yazinin kategorisinin AYNI DILDEKI karsiligi --- */
+	/* --- dil ONCE isaretlenir: Polylang, dil atandiktan sonra atanan bir
+	       kategoriyi kendiliginden O DILDEKI karsiligina esler. Sira ters
+	       olursa terim Turkce kalir. --- */
+	pll_set_post_language( $id, $dil );
+
+	/* --- kategori --- */
+	$terimler = [];
 	foreach ( get_the_category( $tr->ID ) as $kat ) {
 		$kat_ceviri = function_exists( 'pll_get_term' ) ? pll_get_term( $kat->term_id, $dil ) : 0;
-		wp_set_post_terms( $id, [ (int) ( $kat_ceviri ?: $kat->term_id ) ], 'category', true );
+		$terimler[] = (int) ( $kat_ceviri ?: $kat->term_id );
+	}
+	if ( $terimler ) {
+		/* `append` MUTLAKA false: true birakilirsa WordPress'in ekleme aninda
+		   atadigi varsayilan kategori ("uncategorized") uzerinde kalir.
+		   02.09.2026'da dort yazi bu yuzden `modern,uncategorized` oldu. */
+		wp_set_post_terms( $id, $terimler, 'category', false );
 	}
 
 	if ( $kapak_id ) {
@@ -133,7 +145,6 @@ foreach ( $P['diller'] as $dil => $m ) {
 		update_post_meta( $id, '_yoast_wpseo_metadesc', $m['yoast_desc'] );
 	}
 
-	pll_set_post_language( $id, $dil );
 	$ceviri[ $dil ] = (int) $id;
 	printf( "    olusturuldu: #%d\n", $id );
 }

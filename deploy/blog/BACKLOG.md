@@ -14,7 +14,7 @@ Detayli sure ve uslup kurallari: `deploy/blog/README.md`
 - [x] Rusya’da EDO (Elektronik Belge Akisi) — Chestny Znak devir bildiriminin sarti — *01.09.2026, ID 37684*
 - [x] Rusya’ya sevkiyat oncesi kontrol listesi — tiri sinirda durduran hatalar — *02.09.2026, TR 38064 / EN 38066 / RU 38068* (kaynak: Telegram #28+#33+#38)
 - [x] Vaka: sevkiyat oncesi tek kod kontrolu 15.000 dolarlik zarari nasil onledi — *02.09.2026, TR 38072 / EN 38074 / RU 38076* (kaynak: Telegram #20; blogun ilk vaka calismasi)
-- [ ] **Turkiye–Rusya ticareti: uretici icin ticaret gercekleri** — *kaynak: Telegram #17; blogda karsiligi yok*
+- [x] Turkiye–Rusya ticareti: uretici icin ticaret gercekleri — *02.09.2026, TR 38078 / EN 38080 / RU 38082* (kaynak: Telegram #17)
 - [ ] Rusya’ya ayakkabi ihracatinda Chestny Znak (en eski zorunlu kategori, 6401-6405)
 - [ ] Kozmetik ve ev kimyasallarinda markalama — 2025-2026 kademeli takvim
 - [ ] DataMatrix etiket baskisi: cozunurluk, malzeme ve dogrulama (okunmayan kod sorunu)
@@ -55,14 +55,18 @@ karsilastirinca ikisi elendi:
 | "Hangi urunlerde zorunlu" | **ELENDI** — 4 yazida islenmis; `rusya-zorunlu-etiketleme-chestny-znak-2026` icinde birebir ayni baslik var |
 | "Adim adim yol haritasi" | **ELENDI** — ayni yazinin bir bolumu |
 | Sevkiyat oncesi kontrol listesi | yazildi (02.09.2026) |
-| Vaka calismasi | kuyrukta — blogda hic vaka yok |
-| Turkiye–Rusya ticaret gercekleri | kuyrukta — karsiligi yok |
+| Vaka calismasi | yazildi (02.09.2026) — blogun ilk vaka calismasi |
+| Turkiye–Rusya ticaret gercekleri | yazildi (02.09.2026) |
 
 Ortusmeyi olcmeden yazmak, kendi yazilarimizla rekabet eden kopya icerik
 uretir. Yeni konu once `BACKLOG.md` ve yayindaki yazilarla karsilastirilir.
 
 **Video (Telegram #22, #37):** kullanici karari — YouTube'a yuklenecek, link
-gelince yazilara gomulecek.
+gelince yazilara gomulecek. **BEKLIYOR.**
+
+**Telegram kaynagi TUKENDI:** 9 blog malzemesinden 3'u yazildi, 2'si ortusme
+nedeniyle elendi, 3'u kisa selamlama, 1'i tarihe bagli haber (#19, atlandi).
+Kanala yeni yazi geldikce `telegram-cek.py` yeniden calistirilabilir.
 
 ---
 

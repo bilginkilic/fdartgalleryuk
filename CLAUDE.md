@@ -223,6 +223,7 @@ sitesi eklerken o map'e bir satir eklenir.
 | Sayfa #2 (fdartgallery) | 02.09.2026: olu CF7 blok kalintisi kaldirildi, slug `sample-page` → `ozel-siparis`, 301 icin `fd-eski-adresler` mu-plugin'i (6r) |
 | Contact Form 7 | 02.09.2026 **komple kaldirildi** (canli + dev): 5 form disa aktarildi, kayitlar ve eklenti dosyalari silindi; aktif eklenti 13 → **12** (6s) |
 | Blog | `deploy/blog/` araclari + haftalik Routine (`trig_01Q2abbcd19d1CQem3fs5Z7M`, Sali 06:00 UTC) |
+| Blog icerigi (canli) | Telegram kanalindan 3 yeni yazi x 3 dil; site haritasi 61 -> 70 adres (6s) |
 | chestnyznak | Elementor gecisi + basvuru kaydi (6f, 6g) |
 | Demo temizligi (canli) | Tema demosu aramadan cikarildi: site haritasi 523 -> 97 adres, 370 kayit taslaga (6p) |
 | Uc dil (canli) | Menuden ulasilan her adres + 20 blog yazisi tr/en/ru; dil dusuren baglanti 0; iletisim formu dile gore (6k) |
@@ -1323,6 +1324,7 @@ islerden gelmedigi mu-pluginler kapatilarak dogrulandi. 0. bolume yazildi.
 Yedek: `/var/backups/claude-2026-09-02-sayfa2/<site>/` (`_elementor_data` ve
 `post_content` degisiklik oncesi).
 
+<<<<<<< Updated upstream
 ### 6s. Contact Form 7 kaldirildi (02.09.2026, CANLI + dev)
 
 6r'de sayfa #2'deki olu CF7 kalintisi temizlenince CF7'yi kullanan sayfa
@@ -1371,6 +1373,96 @@ FluentForm yerinde; butun sayfalar 200; PHP Fatal/Parse 0; isinmis TTFB
 
 `fd-asset-diyet.php`'deki CF7 kurali BILEREK BIRAKILDI: artik hicbir seye
 denk gelmiyor ama CF7 bir gun geri kurulursa koruma yeniden devreye girer.
+=======
+### 6s. Blog: Telegram kanalindan icerik (02.09.2026, CANLI)
+
+Ali'nin "blog yazilari cok az, Telegram kanalindaki yazilar eklenebilir"
+maddesi. Kanal `t.me/globalznak_rusya` (@global_znak) herkese acik; arsivi
+`https://t.me/s/<kanal>` uzerinden sayfalanarak okunuyor — **Bot API veya
+oturum gerekmiyor**. Arac: `deploy/blog/telegram-cek.py`.
+
+Olculen: 17 mesaj (22.07–02.09.2026); 9'u blog malzemesi, 3'u kisa selamlama,
+1'i tarihe bagli haber, 1 video.
+
+#### Telegram yazisi HAZIR BLOG YAZISI DEGILDIR
+
+Telegram yazilari 150–500 kelime, blog standardi (`deploy/blog/README.md`)
+1200–1600. Kaynak malzeme olarak kullanilir ve birlestirilir.
+
+#### ORTUSME ONCE OLCULUR — plan bu yuzden degisti
+
+Ilk plan 5 yaziydi. Mevcut 20 yaziyla karsilastirinca **ikisi elendi**:
+
+| Aday | Sonuc |
+|---|---|
+| "Hangi urunlerde zorunlu" | ELENDI — 4 yazida islenmis; `rusya-zorunlu-etiketleme-chestny-znak-2026` icinde birebir ayni h2 var |
+| "Adim adim yol haritasi" | ELENDI — ayni yazinin bir bolumu |
+
+Olcmeden yazsaydim kendi yazilarimizla rekabet eden kopya icerik uretirdim.
+Olcum yontemi: `post_title + post_content` uzerinde konu kelimeleri sayilir,
+sonra en yakin rakiplerin `<h2>` basliklari okunur.
+
+Yayinlanan uc yazi (her biri uc dilde, toplam 9 kayit):
+
+| Konu | TR / EN / RU | Kaynak |
+|---|---|---|
+| Sevkiyat oncesi kontrol listesi | 38064 / 38066 / 38068 | TG #28+#33+#38 |
+| Vaka calismasi (15.000 $) | 38072 / 38074 / 38076 | TG #20 |
+| Turkiye–Rusya ticaret gercekleri | 38078 / 38080 / 38082 | TG #17 |
+
+`post-sitemap.xml`: 61 → 70 adres.
+
+#### Yeni araclar
+
+- `deploy/blog/yazi-yayinla.php` — Turkce yaziyi kapak gorseli, kategori,
+  Yoast alanlari ve dil isaretiyle yayinlar.
+- `deploy/blog/ceviri-yayinla.php` — EN/RU cevirilerini yayinlar ve Polylang
+  ile baglar.
+
+Ikisi de `dry` destekli, yeniden calistirilabilir; **post ID gomulmez** (TR
+yazi slug ile bulunur, dev ve canlida kimlikler farklidir).
+
+#### TUZAK: wp-cli `--porcelain` bu kurulumda GUVENILIR DEGIL
+
+Elementor'un shutdown kaydedicisi STDOUT'a bir deprecation uyarisi basiyor.
+`AID=$(wp media import ... --porcelain)` bu uyariyi da yakaliyor ve degisken
+`PHP: 2026-... )]` oluyor. Ilk denemede yazi ve gorsel olustu ama meta
+atanamadi. **Cozum:** olusturma islemi kabuktan degil PHP'den yapilir
+(yukaridaki iki arac). Kabuktan kimlik yakalamak gerekirse
+`| grep -oE '^[0-9]+$' | head -1` sart. Ayni tuzak `wp user list --field=ID`
+icin de gecerlidir.
+
+#### TUZAK: ceviri yazilarda `uncategorized` yapisiyordu
+
+`wp_set_post_terms( $id, $terimler, 'category', true )` — `append=true`
+birakilinca WordPress'in ekleme aninda atadigi varsayilan kategori uzerinde
+kaliyor ve yazi `modern,uncategorized` gorunuyor. **`append=false` sart.**
+
+> **Sira da onemli:** Polylang, **dil atandiktan sonra** atanan bir kategoriyi
+> kendiliginden O DILDEKI karsiligina esler (`modern` → `russia-labelling-guide`
+> → `rukovodstvo-po-markirovke`). Once kategori atanip sonra dil isaretlenirse
+> terim Turkce kalir. Aracta `pll_set_post_language()` artik kategoriden ONCE
+> cagriliyor.
+
+#### TUZAK: EN/RU slug'lari TAHMIN EDILMEZ
+
+Ilk yazida tahmin ettigim yedi ic baglantinin **yedisi de yanlisti**
+(orn. tahmin `/en/russia-customs-labelling-marking-2026/`, gercek
+`/en/labelling-before-russian-customs/`). Ceviri yazisi yazmadan once hedef
+yazilarin gercek slug'lari `pll_get_post( $tr_id, $dil )` ile cozulur.
+
+#### Dogrulama olcutu
+
+HTTP kodu yetmez. Her yazi icin: `<h2>`/`<h3>` sayisi, kapak gorseli,
+`og:image`, 3 `hreflang`, kendi dilindeki arsivde gorunme, ve **butun ic
+baglantilarin tek tek denenmesi**. Dokuz kaydin tamami icin kontrol edildi:
+gorsel, kategori, uclu ceviri baglantisi, Yoast alanlari, yazar ve durum —
+**eksik 0**.
+
+> `/comments/feed/` her yazida 404 doner; bu **bizim eklediğimiz yazilara ozgu
+> degil**, sitede oteden beri boyle (mevcut yazilarda da var). Kirik baglanti
+> taramasinda yanlis alarm vermemesi icin bilinmeli.
+>>>>>>> Stashed changes
 
 ### 6h. Diger
 
