@@ -244,6 +244,11 @@ Ortak kurallarin tamami **genel dosyanin 7. bolumunde**. Bu depoya ozgu olan:
 
 - Tum gelistirme `claude/ovhcloud-vps-multisite-0eb3xj` dalinda; izinsiz baska
   dala push yok, izinsiz PR yok.
+- **Bu dalda birden fazla oturum calisiyor — push etmeden once `git fetch
+  origin claude/ovhcloud-vps-multisite-0eb3xj` + `git rebase`.** Gelen
+  commit'leri once **okuyun**: 02.09.2026'da iki push reddedildi, ikisinde de
+  araya giren commit CLAUDE.md'ye deger bir sey eklemisti (mu-plugin envanteri,
+  duzeltilmis eklenti sayimi) ve korunmasi gerekti. **Force push YOK.**
 - **Sirlar asla commit edilmez**: token, DB sifresi, private key, `wp-config.php`.
 - **Once dev, sonra canli.** Canliya alirken dev'in HTML'i **kopyalanmaz** —
   ayni donusum canlinin kendi icerigi uzerinde calistirilir, cikti denetlenir.
