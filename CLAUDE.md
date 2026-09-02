@@ -17,7 +17,7 @@ Sunucu kurulumu, performans, guvenlik ve yedekleme bitti.
 
 | # | Is | Neden bekliyor |
 |---|---|---|
-| 1 | **chestnyznak giden e-posta** — `info@chestnyznak.com.tr` timeweb posta kutusu parolasi | Tasimada bozuldu, kurtarilamiyor. `TIMEWEB_MAIL_PASSWORD` env'e konursa kurulum hazir: `scratchpad/set-chestnyznak-smtp.sh` (bkz. 6a). **Alici adresleri artik dogru (6m) ama bu parola girilene kadar hicbir bildirim TESLIM EDILMEZ.** |
+| 1 | ~~chestnyznak giden e-posta~~ — **COZULDU, BEKLEYEN IS DEGIL** (dogrulandi 02.09.2026) | Kullanici 01.09 ~16:40'ta panelden dogru parolayi girmis. O saatten beri kayitlarda **hic `failed` yok**. **`TIMEWEB_MAIL_PASSWORD` ortam degiskenini KULLANMAYIN** — icindeki deger YANLIS (SMTP ve IMAP reddediyor); FluentSMTP'ye yazmak CALISAN postayi kirar. Ayrinti 6a. |
 | 2 | **Kalan 4 site** icin dosya arsivi + `.sql` + **orijinal `wp-config.php`** | fdsanatmerkezi, chemiartclick.uk apex, davetevet, byhio, wedreply |
 | 3 | **Kalici SSH anahtari TAMAM (02.09.2026)** — kalan tek is: **SSH parola girisi kapatilsin mi** | Anahtar sunucuda (`claude-persistent-fdartgalleryuk`, `SHA256:i7IciIuo4c3uDhaLaH/AmNkQRb/V3VHXwqOtJ+yXuL8`), private kismi `VPS_SSH_PRIVATE_KEY` env'inde. `harden-ssh.sh --disable-password` artik reddetmez; kilitlenme riski oldugu icin ayri onay bekliyor (6c) |
 | 4 | **chestnyznak Rusya'dan acilmiyor** — gri buluta cekildi, yine acilmiyor. Geriye tek degisken **alan adi** | `chestnyznak-test.chemiartclick.uk` testinin sonucu bekleniyor (6d) |
@@ -264,8 +264,39 @@ Uc ek tuzak:
    `fluentMailSetSettings()` — duz metin alir, sifrelemeyi kendi yapar.
 
 `info@chestnyznak.com.tr` **timeweb**'de barinir (MX `mx1/mx2.timeweb.ru`,
-SMTP `smtp.timeweb.ru:465/587` acik, DKIM timeweb imzali). **Gelen posta
-calisiyor**; giden posta yalnizca parola eksikligi yuzunden durdu.
+SMTP `smtp.timeweb.ru:465/587` acik, DKIM timeweb imzali). Gelen posta da
+giden posta da **CALISIYOR**.
+
+#### Giden posta COZULDU — ve artik dokunulmamali (02.09.2026)
+
+Kullanici 01.09.2026 ~16:40'ta panelden dogru posta kutusu parolasini girdi.
+`ChestZna_fsmpt_email_logs` tablosu bunu net gosteriyor:
+
+| | |
+|---|---|
+| son **`failed`** kaydi | 01.09.2026 **16:20:06** (`SMTP hatasi: Kimlik dogrulanamadi`) |
+| ilk **`sent`** kaydi | 01.09.2026 **16:41:07** |
+| o tarihten sonra | 8 `sent`, **0 `failed`** — icinde gercek bir form basvurusu ve 02.09 03:23'teki iletisim formu da var |
+
+Kayitli parola dogrudan sunucudan da sinandi: `smtp.timeweb.ru:465` **ve**
+`imap.timeweb.ru:993` ikisinde de **GIRIS BASARILI**.
+
+> **`TIMEWEB_MAIL_PASSWORD` ortam degiskenini KULLANMAYIN.** Icindeki 9
+> karakterlik deger **YANLIS** — hem SMTP hem IMAP `Incorrect authentication
+> data` doner. Veritabaninda duran (29 karakterlik) parola ise calisiyor.
+> Env degiskenini FluentSMTP'ye yazmak CALISAN postayi KIRAR. Bu satir
+> silinmedikce o degiskene dokunulmaz.
+
+Neden artik cozulebiliyor: `FLUENTMAIL_ENCRYPT_KEY`/`_SALT` sabitleri
+wp-config'de tanimli oldugu icin parola sabit anahtarla sifreleniyor; panelden
+yeniden kaydedilen deger `fluentMailEncryptDecrypt($ham,'d')` ile sorunsuz
+cozuluyor. Yani 6a'nin basindaki tuzak artik ONLENMIS durumda.
+
+**Kontrol etmenin gonderimsiz yolu** (posta YOLLAMAZ): parolayi
+`fluentMailEncryptDecrypt` ile coz, gecici bir dosyaya yaz (mod 600), sunucudan
+`smtplib.SMTP_SSL(...).login()` ile sina, sonra dosyayi `shred -u` ile sil.
+Ayrica `fsmpt_email_logs` tablosundaki `status` dagilimina bakmak cogu zaman
+yeterlidir — gercek gonderimler zaten orada kayitli.
 
 ### 6b. nginx
 
