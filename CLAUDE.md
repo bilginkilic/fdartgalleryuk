@@ -31,14 +31,6 @@ Sunucu kurulumu, performans, guvenlik ve yedekleme bitti.
   karsiligi yok). `mc4wp` ACIK BIRAKILDI: tek formu **8 yerde gomulu** ama
   anahtar olmadigi icin calismiyor — form kaldirilsin mi yoksa hesap baglansin
   mi bir icerik karari.
-- **fdartgallery iki form eklentisi**: FluentForm gercek kullanimda (58 kayit),
-  CF7 yalnizca **tek yayinlanmis sayfada** (#2 "Ozel Siparis Formu"); geri kalan
-  butun `[contact-form-7]` izleri revizyonlarda. O sayfa FluentForm'a tasinirsa
-  CF7 komple kaldirilabilir.
-- **fdartgallery'de CF7 artik HICBIR yayinda sayfada kullanilmiyor**
-  (02.09.2026 olculdu, 6r): sayfa #2'deki olu blok kalintisi kaldirildi, geriye
-  yalnizca bes form TANIMI kaldi, kullanan sayfa yok. Eklenti komple
-  kaldirilabilir — kullanici karari.
 - **`wp-sitemap.xml` 404 durum koduyla donuyor** (govde gecerli XML, hem canli
   hem dev). `robots.txt` bu adresi ilan ediyor; Google boyle bir site
   haritasini reddeder. Bugunku islerden gelmiyor — mu-pluginler kapatilarak
@@ -229,6 +221,7 @@ sitesi eklerken o map'e bir satir eklenir.
 | E-posta (fdartgallery) | Brevo API + DKIM/SPF/DMARC; MX = Cloudflare Email Routing + Worker |
 | Turnstile | fdartgallery giris/kayit/form/WooCommerce |
 | Sayfa #2 (fdartgallery) | 02.09.2026: olu CF7 blok kalintisi kaldirildi, slug `sample-page` → `ozel-siparis`, 301 icin `fd-eski-adresler` mu-plugin'i (6r) |
+| Contact Form 7 | 02.09.2026 **komple kaldirildi** (canli + dev): 5 form disa aktarildi, kayitlar ve eklenti dosyalari silindi; aktif eklenti 13 → **12** (6s) |
 | Blog | `deploy/blog/` araclari + haftalik Routine (`trig_01Q2abbcd19d1CQem3fs5Z7M`, Sali 06:00 UTC) |
 | chestnyznak | Elementor gecisi + basvuru kaydi (6f, 6g) |
 | Demo temizligi (canli) | Tema demosu aramadan cikarildi: site haritasi 523 -> 97 adres, 370 kayit taslaga (6p) |
@@ -1329,6 +1322,55 @@ islerden gelmedigi mu-pluginler kapatilarak dogrulandi. 0. bolume yazildi.
 
 Yedek: `/var/backups/claude-2026-09-02-sayfa2/<site>/` (`_elementor_data` ve
 `post_content` degisiklik oncesi).
+
+### 6s. Contact Form 7 kaldirildi (02.09.2026, CANLI + dev)
+
+6r'de sayfa #2'deki olu CF7 kalintisi temizlenince CF7'yi kullanan sayfa
+kalmadi. Kullanici karariyla eklenti komple kaldirildi.
+
+**KALDIRMADAN ONCE TAM TARAMA** (CLAUDE.md 6e kurali — "kullanilmiyor" demek
+icin tek bir yere bakmak yetmez):
+
+| Nerede | Canli | Dev |
+|---|---|---|
+| `post_content` (revizyon HARIC, her durum) | 0 | 0 |
+| `_elementor_data` (revizyon HARIC) | 0 | 0 |
+| `_elementor_data` (**revizyonlar**) | 57 | 58 |
+| `elementor_library` sablonlari | 0 | 0 |
+| widget alanlari / tema ayarlari | 0 | 0 |
+| `termmeta` / `usermeta` | 0 | 0 |
+
+> Butun eslesmeler REVIZYONLARDA. Revizyona dokunulmadi — gecmis kayittir,
+> silmek ayri bir istir.
+
+Dosya duzeyindeki referanslar da denetlendi ve hicbiri kirilmaz:
+XStore'un `.wpcf7-*` stilleri (olu CSS/JS), Turnstile'in CF7 entegrasyon
+dosyasi (CF7 yoksa hic calismaz), FluentForm'un **ICE AKTARMA** gocmeni
+(`ContactForm7Migrator`, yalnizca elle calistirilir), Akismet kancasi.
+
+**Yapilan sira** (post tipi yalnizca eklenti AKTIFKEN kayitli oldugu icin
+form kayitlari once silinir):
+1. 5 form disa aktarildi → `/var/backups/claude-2026-09-02-cf7/<site>/`
+   (her form icin `form-<id>.json` + `form-<id>-meta.json`; icinde `_form`,
+   `_mail`, `_mail_2`, `_messages`, `_locale` — formu yeniden kurmaya yeter),
+2. 5 `wpcf7_contact_form` kaydi silindi,
+3. eklenti kapatildi ve **dosyalari silindi**,
+4. `wpcf7` option'i silindi.
+
+> **`wp export` IKI KEZ BASARISIZ OLDU, JSON kurtardi.** Once yedek dizini
+> site kullanicisina kapaliydi; duzeltince bu kez `--skip-plugins` yuzunden
+> `wpcf7_contact_form` post tipi kayitli olmadigindan WXR uretilemedi.
+> `wp post get` / `wp post meta list` ham DB satirini okudugu icin post tipi
+> kayitli olmasa da calisti — yedek onlarla alindi ve icerigi tek tek
+> dogrulandi (5 formun hepsinde `_form` ve `_mail` var).
+
+**Sonuc:** aktif eklenti canli 13 → **12**, dev 13 → **12** (ikisi esit).
+Ana sayfada `contact-form-7|wpcf7` gecisi **0**; `/ozel-siparis/` sayfasinda
+FluentForm yerinde; butun sayfalar 200; PHP Fatal/Parse 0; isinmis TTFB
+16-18 ms; ana sayfa script sayisi 26 (degismedi).
+
+`fd-asset-diyet.php`'deki CF7 kurali BILEREK BIRAKILDI: artik hicbir seye
+denk gelmiyor ama CF7 bir gun geri kurulursa koruma yeniden devreye girer.
 
 ### 6h. Diger
 
