@@ -1,0 +1,27 @@
+{
+  "_aciklama": [
+    "404 sayfasinin metinleri. fd-404-cevirisi.php okur.",
+    "`aciklama` icindeki %cozumler%, %kod%, %iletisim% yer tutuculari",
+    "PHP tarafinda o dilin GERCEK adresiyle degistirilir — elle URL yazmayin,",
+    "yoksa dil dusuren baglanti olusur (CLAUDE.md 6k).",
+    "Izin verilen etiketler kses ile sinirli: a, br, span, strong, em (bkz. qwery_kses_content)."
+  ],
+  "tr": {
+    "baslik": "Sayfa bulunamadı",
+    "altbaslik": "Sayfa bulunamadı",
+    "aciklama": "Aradığınız sayfa taşınmış, adı değişmiş veya kaldırılmış olabilir.<br>Aşağıdaki bağlantılardan devam edebilirsiniz:<br><span class=\"fd-404-links\"><a href=\"%cozumler%\">Çözümlerimiz</a> <a href=\"%kod%\">Kod Sorgulama</a> <a href=\"%iletisim%\">İletişim</a></span>",
+    "dugme": "Ana sayfaya dön"
+  },
+  "en": {
+    "baslik": "Page not found",
+    "altbaslik": "Page not found",
+    "aciklama": "The page you are looking for may have been moved, renamed or removed.<br>You can continue from the links below:<br><span class=\"fd-404-links\"><a href=\"%cozumler%\">Solutions</a> <a href=\"%kod%\">Code Lookup</a> <a href=\"%iletisim%\">Contact</a></span>",
+    "dugme": "Back to homepage"
+  },
+  "ru": {
+    "baslik": "Страница не найдена",
+    "altbaslik": "Страница не найдена",
+    "aciklama": "Запрашиваемая страница могла быть перемещена, переименована или удалена.<br>Вы можете продолжить по ссылкам ниже:<br><span class=\"fd-404-links\"><a href=\"%cozumler%\">Услуги</a> <a href=\"%kod%\">Проверка кода</a> <a href=\"%iletisim%\">Контакты</a></span>",
+    "dugme": "На главную"
+  }
+}

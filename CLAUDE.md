@@ -1136,14 +1136,47 @@ aliyor). Reklam acilis sayfalari (`urun-talep-formu`, `lp-iletisim-formu`,
 `datamatrix-kod-etiket`) ve sohbet iframe sayfalari (`site-iletisim-formu` +
 EN/RU kopyalari) menude olmadiklari icin script'te **slug ile** korunur.
 
-#### 404 zaten CALISIYOR
+#### 404 zaten CALISIYORDU — eksik olan METINDI (cevrildi)
 
 "404 aktif edilmeli" denmisti; olculdu: `HTTP 404` donuyor,
 `<meta robots content="noindex, follow">` basiyor, tema sablonu
-(`qwery/404.php`) menu + altbilgi + arama kutusu + ana sayfa baglantisiyla
-geliyor. Eksik olan **metin**: baslik "Page not found", govde "Oops..." —
-ucu de Ingilizce ve dile gore degismiyor. Yapilacak is 404'u "acmak" degil,
-metnini uc dile cevirmek.
+(`qwery/skins/default/templates/content-404.php`) menu + altbilgi + arama
+kutusu + ana sayfa baglantisiyla geliyor. Polylang dili de DOGRU algiliyor
+(`lang=tr-TR/en-US/ru-RU`) ve `home_url()` zaten `/en/`, `/ru/` veriyor.
+
+Eksik olan metindi — dordu de Ingilizceydi ve dile gore degismiyordu:
+`Page not found` (Yoast baslik), `Oops...`, `We're sorry, but something went
+wrong.`, `Homepage`.
+
+**Cozum:** `deploy/wordpress/lead-mu-plugins/fd-404-cevirisi.php` +
+`fd-404-metinleri.json`. Metinler `gettext` filtresiyle (`qwery` metin alani)
+cevriliyor, baslik `wpseo_title` ile.
+
+> **`gettext` filtresinde `is_404()` sarti ZORUNLU.** Filtre her istekte
+> calisir; sartsiz birakilirsa "Homepage" gecen HER yer degisir. Olculdu:
+> sartla birlikte `/`, `/en/`, `/shop/` sayfalarinda 404 metni gecen yer 0.
+
+**Tema dosyasi DEGISTIRILMEDI, cocuk temaya da kopyalanmadi.** Ana temayi
+degistirmek guncellemede kaybolur; sablonu cocuk temaya kopyalamak ise
+catallar ve ileride tema tarafindaki duzeltmeler gelmez.
+
+**Faydali baglantilar sablona dokunmadan eklendi:** aciklama metni
+`wp_kses( ..., 'qwery_kses_content' )` icinden geciyor ve o kural kumesi
+`<a href class style target>`, `<span>`, `<br>` etiketlerine izin veriyor
+(`qwery_kses_allowed_html`). Baglantilar JSON'da `%cozumler%`, `%kod%`,
+`%iletisim%` yer tutucusu olarak duruyor ve PHP tarafinda
+`fd_i18n_yol_esleme()` haritasindan cozuluyor — **elle adres yazilmaz**,
+yoksa dil dusuren baglanti olusur (CLAUDE.md 6k).
+
+Olculen sonuc (canli):
+
+| Dil | Baslik | Baglantilar |
+|---|---|---|
+| tr | Sayfa bulunamadi | `/shop/` `/kod-sorgulama/` `/iletisim/` |
+| en | Page not found | `/en/solutions/` `/en/code-lookup/` `/en/contact/` |
+| ru | Stranica ne naydena | `/ru/uslugi/` `/ru/proverka-koda/` `/ru/kontakty/` |
+
+Dokuz baglantinin hepsi 200; hicbiri dil dusurmuyor.
 
 #### Dogrulama
 
