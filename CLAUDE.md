@@ -42,8 +42,6 @@ Tam liste `wp-content/demo-temizlik-geri-alma.json` icinde (370 kayit).
 
 - **Cloudflare APO** (~5 $/ay) — fdartgallery turuncu bulutta, secenek. chestnyznak
   gri oldugu icin kullanilamaz. Su an `cf-cache-status: DYNAMIC`.
-- **fdartgallery `mc4wp`**: API anahtari yok, yani form calismiyor; ama tek formu
-  **8 yerde gomulu**. Form kaldirilsin mi, hesap baglansin mi — icerik karari.
 - **Blogun en eski 4 yazisi** hala Ingilizce demo slug'inda. Duzeltmek 301 ister;
   tablo hazir (`fd-eski-adresler.php`). Ayrinti `deploy/blog/BACKLOG.md`.
 - **chestnyznak kalan 14 JS enjeksiyonu** Elementor'a tasinsin mi (6f).
@@ -203,6 +201,7 @@ PHPMailer seviyesinde keser, `blog_public`'i 0'a zorlar, `robots.txt`'yi
 | E-posta | fdartgallery Brevo API + DKIM/SPF/DMARC; chestnyznak timeweb SMTP — **ikisi de calisiyor** |
 | Turnstile | fdartgallery giris/kayit/form/WooCommerce |
 | Contact Form 7 | fdartgallery'de **komple kaldirildi** (formlar FluentForm'da); aktif eklenti 13 → **12** |
+| Mailchimp for WP (`mc4wp`) | fdartgallery'de **komple kaldirildi** — hicbir sayfada basilmiyordu; aktif eklenti 12 → **11** |
 | Site haritasi (fdartgallery) | `wp-sitemap*.xml` 404 yerine **200**; indeks + 8 alt harita, 329 adres (6i) |
 | Uc dil (chestnyznak) | Menuden ulasilan her adres + 23 blog yazisi tr/en/ru; dil dusuren baglanti **0** (6e) |
 | Demo temizligi (chestnyznak) | Site haritasi **523 → 97** adres, 370 kayit taslaga (6i) |
@@ -232,6 +231,13 @@ PHPMailer seviyesinde keser, `blog_public`'i 0'a zorlar, `robots.txt`'yi
   "kullanilmiyor" sanilip kapatildi, **canli ana sayfa 2 gun bozuk kaldi**.
 - **Form referansi her zaman kisa kod degildir:** `<!-- wp:contact-form-7/
   contact-form-selector {"id":64} -->` ortada `[contact-form-7` YOK.
+- **`postmeta` sayimlarinda `post_type != 'revision'` FILTRESI OLMADAN cikan
+  sayi KULLANIM DEGILDIR.** `mc4wp` icin bu dosyada uzun sure "formu **8 yerde
+  gomulu**" yaziyordu ve bir icerik karari gibi sunuluyordu; sayinin kaynagi
+  revizyonlari filtrelemeyen bir `_elementor_data` sorgusuydu. Kirilim
+  alininca revizyon HARIC kullanim **0** cikti (CF7'de de ayni tuzak vardi:
+  canli 57 / dev 58 eslesmenin hepsi revizyonda). Son olcut **basilan HTML**:
+  alti temsili sayfada `mc4wp` gecisi 0.
 - **Yorum satirina bakip cikarim yapmayin, yaniti olcun.** `gzip_types` yorumdaydi
   diye "sikistirilmiyor" sanildi; olcunce gzip'li cikti.
 - **Ekran goruntusuyle gelen kanitta durum cubugunu okuyun** (VPN, roaming).
@@ -630,6 +636,16 @@ Gecici test kaynaklari (**is bitince silinecek**): `origin.chemiartclick.uk` ve
   Elementor Pro'nun `submissions/database` klasoru eksik kalip site fatal verdi.
   Kaliplar `/database/` seklinde koke sabitlenir.
 - **Yedegin tablo oneki `wp_` olmayabilir** — `deploy-site.sh` onegi DB'den okur.
+- **`wp rewrite flush` ASLA `--skip-plugins` ile calistirilmaz** — kural tablosu
+  eklenti kurallari olmadan yeniden uretilir (WooCommerce urun/magaza adresleri).
+  Bir kez oyle calistirildi; hasar, dokunulmamis canli ile dev'in **saklanan**
+  `rewrite_rules` anahtarlari diff'lenerek denetlendi: fark tam 20 kural ve hepsi
+  kaldirilan eklentinin kendi `mc4wp-form/...` kurallariydi, baska hicbir sey
+  dusmemisti. Yine de dogru bicimiyle tekrar flush edildi.
+- **Eklenti kaldirma sirasi:** ozel post tipi YALNIZCA eklenti aktifken kayitlidir.
+  Once form/kayit disa aktarilir ve silinir, SONRA eklenti kapatilip dosyalari
+  silinir. `wp export` bu yuzden `--skip-plugins` ile calismaz; `wp post get` ve
+  `wp post meta list` ham DB satirini okudugu icin calisir.
 - **Cloudflare Universal SSL yalnizca TEK seviye alt alan adi kapsar.**
   Kural: yeni alt alan adlari tek seviye olsun.
 - **`clone-site.sh` sonrasi `chown` hemen gelir**; yoksa hedef kullanici
