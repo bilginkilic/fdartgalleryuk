@@ -1,49 +1,59 @@
 # CLAUDE.md — OVHcloud VPS / cok siteli WordPress runbook
 
-Bu dosya projeyi devralan her oturum icin kalici hafizadir. Kisa tutulur:
-**su an ne oldugu**, **nasil erisilecegi** ve **hangi tuzaklara dusuldugu**.
-Ayrintili gecmis git gecmisinde duruyor (`git log -p -- CLAUDE.md`).
+Projeyi devralan her oturum icin kalici hafiza. Kisa tutulur: **su an ne oldugu**,
+**nasil erisilecegi**, **hangi tuzaklara dusuldugu**. Anlati git gecmisinde:
+`git log -p -- CLAUDE.md`.
 
-Son sadelestirme: 01.09.2026 (2237 → ~380 satir).
+Son sadelestirme: 02.09.2026 (1529 → ~675 satir).
 
 ---
 
 ## 0. SU AN NE KALDI
 
 Yayindaki siteler: **fdartgallery.com**, **chestnyznak.com.tr** (+ iki dev ortami).
-Sunucu kurulumu, performans, guvenlik ve yedekleme bitti.
+Sunucu kurulumu, performans, guvenlik, yedekleme, uc dil ve SEO temizligi bitti.
 
 ### Kullanicidan bekleyenler
 
-| # | Is | Neden bekliyor |
+| # | Is | Not |
 |---|---|---|
-| 1 | ~~chestnyznak giden e-posta~~ — **COZULDU, BEKLEYEN IS DEGIL** (dogrulandi 02.09.2026) | Kullanici 01.09 ~16:40'ta panelden dogru parolayi girmis. O saatten beri kayitlarda **hic `failed` yok**. **`TIMEWEB_MAIL_PASSWORD` ortam degiskenini KULLANMAYIN** — icindeki deger YANLIS (SMTP ve IMAP reddediyor); FluentSMTP'ye yazmak CALISAN postayi kirar. Ayrinti 6a. |
-| 2 | **Kalan 4 site** icin dosya arsivi + `.sql` + **orijinal `wp-config.php`** | fdsanatmerkezi, chemiartclick.uk apex, davetevet, byhio, wedreply |
-| 3 | **Kalici SSH anahtari TAMAM (02.09.2026)** — kalan tek is: **SSH parola girisi kapatilsin mi** | Anahtar sunucuda (`claude-persistent-fdartgalleryuk`, `SHA256:i7IciIuo4c3uDhaLaH/AmNkQRb/V3VHXwqOtJ+yXuL8`), private kismi `VPS_SSH_PRIVATE_KEY` env'inde. `harden-ssh.sh --disable-password` artik reddetmez; kilitlenme riski oldugu icin ayri onay bekliyor (6c) |
-| 4 | **chestnyznak Rusya'dan acilmiyor** — gri buluta cekildi, yine acilmiyor. Geriye tek degisken **alan adi** | `chestnyznak-test.chemiartclick.uk` testinin sonucu bekleniyor (6d) |
+| 1 | **Reklam acilis sayfalari** — hangileri kampanyada kullaniliyor? | Demo temizligi (6i) menude olmayan sayfalari taslaga cekti; `rusya-markalama-danismanlik` reklamda kullaniliyormus ve **geri alindi**. Ayni riski tasiyan 5 sayfa daha var, asagida |
+| 2 | **Video** (Telegram #22, #37) YouTube'a yuklenecek | Link gelince blog yazilarina gomulur (6j) |
+| 3 | **Kalan 4 site** icin dosya arsivi + `.sql` + orijinal `wp-config.php` | fdsanatmerkezi, chemiartclick.uk apex, davetevet, byhio, wedreply |
+| 4 | **SSH parola girisi kapatilsin mi** | Kalici anahtar HAZIR (6c). Loglarda dakikalik root parola denemesi var. Kapatilirsa acil giris yolu yalnizca OVH KVM konsolu |
+| 5 | **chestnyznak Rusya'dan acilmiyor** | Gri buluta cekildi, yine acilmiyor. Geriye tek degisken alan adi; `chestnyznak-test.chemiartclick.uk` testi bekleniyor (6d) |
+
+**Madde 1'in listesi** — demo temizliginde taslaga cekilen, reklam sayfasi
+olabilecek kayitlar (hepsi `elementor_canvas` sablonunda veya form iceriyor):
+
+| ID | slug | baslik |
+|---|---|---|
+| ~~37518~~ | `rusya-markalama-danismanlik` | **GERI ALINDI, yayinda** |
+| 37231 | `rusya-markalama-kaydi-chestny-znak-...` | Rusya Markalama Kaydi (TR+RU) |
+| 37209 | `chestny-znak-oguz-k` | Chestny Znak Oguz K |
+| 37182 | `chestny-znak-webinar-landing-page-taslak-icerik` | Webinar Landing (form var) |
+| 37124 | `elementor-37124` | Chestny Znak Destek |
+| 36972 | `elementor-sayfa-36972` | Yapim Asamasinda Form RUS |
+
+Geri almak tek komut: `wp post update <id> --post_status=publish`.
+Tam liste `wp-content/demo-temizlik-geri-alma.json` icinde (370 kayit).
 
 ### Karar bekleyenler
 
-- **Cloudflare APO** (~5 $/ay): HTML'i edge'de onbellekler. Turkiye'deki ziyaretci
-  icin en buyuk tek kazanc; su an `cf-cache-status: DYNAMIC`.
-- **fdartgallery iki mailchimp eklentisi de BAGLANTISIZ** (olculdu: ikisinde de
-  API anahtari yok). `mailchimp-for-woocommerce` dev'de kapatildi (icerikte
-  karsiligi yok). `mc4wp` ACIK BIRAKILDI: tek formu **8 yerde gomulu** ama
-  anahtar olmadigi icin calismiyor — form kaldirilsin mi yoksa hesap baglansin
-  mi bir icerik karari.
-- **Blogun en eski 4 yazisi**: slug'lari hala Ingilizce demo slug'i. Duzeltmek
-  adresi kirar → 301 gerekir. Ayrinti `deploy/blog/BACKLOG.md`.
+- **Cloudflare APO** (~5 $/ay) — fdartgallery turuncu bulutta, secenek. chestnyznak
+  gri oldugu icin kullanilamaz. Su an `cf-cache-status: DYNAMIC`.
+- **fdartgallery `mc4wp`**: API anahtari yok, yani form calismiyor; ama tek formu
+  **8 yerde gomulu**. Form kaldirilsin mi, hesap baglansin mi — icerik karari.
+- **Blogun en eski 4 yazisi** hala Ingilizce demo slug'inda. Duzeltmek 301 ister;
+  tablo hazir (`fd-eski-adresler.php`). Ayrinti `deploy/blog/BACKLOG.md`.
 - **chestnyznak kalan 14 JS enjeksiyonu** Elementor'a tasinsin mi (6f).
+- **Urun sayfalari** (`/product/...`) tek dilde — Polylang'in **ucretli** WooCommerce
+  eklentisini ister, sepet/kasa kirma riski var (6e).
 - **PTR** posta alan adina cevrilsin mi — oncelik dusuk, mevcut PTR calisiyor.
-- **Urun sayfalari** (`/product/...`) tek dilde. Cevirisi Polylang'in
-  **ucretli** WooCommerce eklentisini ister; sepet/kasa kirma riski oldugu
-  icin ucretsiz surumle denenmedi (6k).
 
 ---
 
 ## 1. Altyapi
-
-### VPS
 
 | Alan | Deger |
 |---|---|
@@ -53,30 +63,22 @@ Sunucu kurulumu, performans, guvenlik ve yedekleme bitti.
 | OS / PHP | Ubuntu 26.04 / **PHP 8.5**-FPM |
 | Bolge | `os-uk2` — Londra |
 
-PTR **calisiyor** ve ileri-dogrulamali: `57.129.128.118 <-> vps-913eb1fb.vps.ovh.net`.
+PTR **calisiyor**, ileri-dogrulamali: `57.129.128.118 <-> vps-913eb1fb.vps.ovh.net`.
 
-### Cloudflare zone'lari
+**Cloudflare zone'lari.** Chemiartclick hesabi (`cloudflare_api_token`):
+fdartgallery.com `fa3f51825d634f23741ff5fbf2ae8b1a`, chemiartclick.uk
+`56fcc0694b5c39e44fd5ada387e72da7`, + fdsanatmerkezi.com, davetevet.com,
+byhio.com, wedreply.co.uk. SWORD BROS hesabi (`CF_SWORDBROS_API_TOKEN`,
+**yazma yetkisi var**): chestnyznak.com.tr `858396f27bcc338ad737fc52cf2d8a9f` + 12 zone.
 
-**Chemiartclick hesabi** (`cloudflare_api_token`): fdartgallery.com
-`fa3f51825d634f23741ff5fbf2ae8b1a`, chemiartclick.uk
-`56fcc0694b5c39e44fd5ada387e72da7`, ayrica fdsanatmerkezi.com, davetevet.com,
-byhio.com, wedreply.co.uk.
+| DNS kaydi | Proxy |
+|---|---|
+| `fdartgallery.com`, `www`, `dev` | **turuncu** |
+| `chestnyznak.com.tr`, `www`, `dev.` | **gri** (Rusya erisimi icin) |
+| `chestnyznak.chemiartclick.uk` | turuncu |
 
-**SWORD BROS hesabi** (`CF_SWORDBROS_API_TOKEN`, **yazma yetkisi VAR**):
-chestnyznak.com.tr `858396f27bcc338ad737fc52cf2d8a9f` + 12 zone daha.
-
-### DNS durumu
-
-| Kayit | Deger | Proxy |
-|---|---|---|
-| `fdartgallery.com`, `www`, `dev` | 57.129.128.118 | **turuncu** |
-| `chestnyznak.com.tr`, `www` | 57.129.128.118 | **gri** (Rusya erisimi icin) |
-| `dev.chestnyznak.com.tr` | 57.129.128.118 | gri |
-| `chestnyznak.chemiartclick.uk` | 57.129.128.118 | turuncu |
-
-fdartgallery mail kayitlari (Brevo DKIM, DMARC, SPF, Email Routing MX)
-**degistirilmez**. chestnyznak mail kayitlari timeweb'de, **dokunulmaz**.
-
+Hepsi `57.129.128.118`. fdartgallery mail kayitlari (Brevo DKIM, DMARC, SPF,
+Email Routing MX) ve chestnyznak mail kayitlari (timeweb) **degistirilmez**.
 `fdartgallery.com` SSL modu **Full (strict)** — `Flexible` yapmayin, dongu olur.
 
 ---
@@ -87,39 +89,35 @@ Degerler **ortam degiskenlerinde**; asla repoya yazilmaz, log'a basilmaz.
 
 | Degisken | Kullanim |
 |---|---|
-| `OVH_ENDPOINT` / `_APPLICATION_KEY` / `_APPLICATION_SECRET` / `_CONSUMER_KEY` | OVH API (`ovh-ca` → `https://ca.api.ovh.com/1.0`) |
-| `cloudflare_api_token` / `cloudflare_account_id` | Cloudflare (chemiartclick hesabi) |
-| `cloudflare_access_keyid` / `cloudflare_access_key` | R2 / S3 anahtarlari |
-| `CF_SWORDBROS_API_TOKEN` / `CF_SWORDBROS_ACCOUNT_ID` | Cloudflare (SWORD BROS hesabi) |
+| `OVH_ENDPOINT` / `_APPLICATION_KEY` / `_APPLICATION_SECRET` / `_CONSUMER_KEY` | OVH API (`ovh-ca`) |
+| `cloudflare_api_token` / `cloudflare_account_id` | Cloudflare (chemiartclick) |
+| `cloudflare_access_keyid` / `cloudflare_access_key` | R2 / S3 |
+| `CF_SWORDBROS_API_TOKEN` / `CF_SWORDBROS_ACCOUNT_ID` | Cloudflare (SWORD BROS) |
 | `CLOUDFLARE_CF_Access_Client_Id` / `_Secret` | SSH tuneli Access service token |
+| `VPS_SSH_PRIVATE_KEY` | Sunucuya kalici SSH anahtari (6c) |
 | `BREVO_API_KEY` | fdartgallery giden posta |
+| ~~`TIMEWEB_MAIL_PASSWORD`~~ | **KULLANMAYIN** — degeri YANLIS (6d) |
 
-> **Yeni eklenen ortam degiskeni CALISAN oturuma yansimayabilir.** 01.09.2026'da
-> `TIMEWEB_MAIL_PASSWORD` eklendi ve 10+ dakika sonra hala `env` ciktisinda yoktu.
-> Genelde yalnizca **yeni baslayan** oturumlar alir. Beklemek yerine ya yeni
-> oturum acin ya da isi panelden yaptirin.
-> Ayrica: arka planda `until [ -n "$VAR" ]` gibi bir bekleme **ISE YARAMAZ** —
-> arka plan sureci basladigi andaki ortami miras alir, degiskeni asla gormez.
-> Kontrol her seferinde **yeni bir komut cagrisiyla** yapilir.
+> **Yeni eklenen ortam degiskeni CALISAN oturuma yansimayabilir.** Genelde
+> yalnizca **yeni baslayan** oturumlar alir. Arka planda `until [ -n "$VAR" ]`
+> beklemesi **ISE YARAMAZ** — arka plan sureci basladigi andaki ortami miras alir.
+> Kontrol her seferinde yeni bir komut cagrisiyla yapilir.
 
-**OVH consumer key yalnizca `/vps/*` kapsiyor.** `GET /me`, `/ip/*` → 403.
-Reverse DNS API'den **degistirilemez** (`PUT /vps/{n}/ips/{ip}` → 403 not implemented);
-OVH Manager'dan yapilir.
-
-**Cloudflare notu:** `GET /user/tokens/verify` hesap kapsamli token'lar icin
-`Invalid API Token` doner — normaldir. `GET /zones` ile test edin.
+- **OVH consumer key yalnizca `/vps/*` kapsiyor.** `GET /me`, `/ip/*` → 403.
+  Reverse DNS API'den degistirilemez; OVH Manager'dan yapilir.
+- **Cloudflare:** `GET /user/tokens/verify` hesap kapsamli token'da `Invalid API
+  Token` doner — normaldir. `GET /zones` ile test edin.
 
 ---
 
 ## 3. Bu ortamin sinirlari + sunucuya erisim
 
-**Ham TCP/22 bu oturumdan GECMIYOR** — engel port bazli, host bazli degil
-(github.com:22 de kapali, :443 aciliyor). Ikinci bir ortamda da dogrulandi.
-Ag politikasini genisletmek host listesini genisletir, TCP/22'yi acmaz.
+**Ham TCP/22 bu oturumdan GECMIYOR** — engel port bazli (github.com:22 de kapali,
+:443 aciliyor). Ag politikasini genisletmek TCP/22'yi acmaz.
 
 **Cozum: Cloudflare tuneli (HTTPS uzerinden SSH).** Sunucuda `cloudflared`
-servisi **active**; adlandirilmis tunel `ovh-vps`, adres `ssh.fdartgallery.com`,
-onunde Cloudflare Access service token var.
+servisi active; adlandirilmis tunel `ovh-vps`, adres `ssh.fdartgallery.com`,
+onunde Access service token.
 
 ```sh
 curl -fsSL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 \
@@ -131,562 +129,206 @@ ssh -o "ProxyCommand=/tmp/cloudflared access ssh --hostname ssh.fdartgallery.com
     -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@vps
 ```
 
-Sunucuda ayrica bu oturumun public key'i `authorized_keys`'te olmali.
-**Yeni oturumlarda yoktur** — kalici anahtar icin 0. bolumdeki 3. madde.
-
 **Diger sinirlar:**
-- GitHub reposu sunucudan erisilemiyor (ozel repo) → `git pull` calismaz;
-  dosyalar tunel uzerinden `rsync` / `cat >` ile aktarilir.
-- Sunucunun 443'u de bu oturuma kapali; egress gateway 403 doner.
-- KVM konsolunda klavye eslemesi bozuk (`:`→`;`, `|`→`\`); `sudo loadkeys us` duzeltir.
+- GitHub reposu sunucudan erisilemiyor (ozel repo) → dosyalar tunel uzerinden
+  `base64` / `rsync` ile aktarilir.
+- Sunucunun 443'u bu oturuma kapali; egress gateway 403 doner.
+- **Chromium konteynerden disari cikamiyor** — egress proxy BoringSSL el
+  sikismasini kesiyor (`ws_closed_mid_exchange`); curl geciyor. Tarayici testi
+  icin sayfayi ve varliklarini yerele aynalayip `python3 -m http.server` ile
+  servis edin.
+- KVM konsolunda klavye eslemesi bozuk (`:`→`;`); `sudo loadkeys us` duzeltir.
 
-> **SSH KOMUT DIZESININ ICINE GOMULU HEREDOC YAZMAYIN.** Tirnak icinde tirnak
-> katmanlari sessizce bozulur. 01.09.2026'da bir Python heredoc'u
-> `ssh "... <<PY ... '\"'\"' ... PY"` seklinde gomuldu; tirnaklar mahvoldu ve
-> **canli + dev `wp-config.php` ayni anda bozuldu** (yaklasik 30 sn iki site
-> de PHP parse hatasi verdi). Yedekten geri alindi.
->
-> **Dogru yol:** script yerelde dosyaya yazilir, `base64 -w0` ile aktarilir,
-> sunucuda `base64 -d` ile acilip calistirilir. wp-config gibi kritik
-> dosyalarda ayrica: once kopyasini al, degistir, `php -l` ile dogrula,
-> bozuksa **kopyadan geri yaz**. Bu oruntu artik butun script aktarimlarinda
-> kullaniliyor.
+> **SSH KOMUT DIZESININ ICINE GOMULU HEREDOC YAZMAYIN.** Tirnak katmanlari
+> sessizce bozulur; 01.09.2026'da **canli + dev `wp-config.php` ayni anda
+> bozuldu**. Dogru yol: script yerelde dosyaya yazilir, `base64 -w0` ile
+> aktarilir, sunucuda `base64 -d` ile acilir. wp-config gibi kritik dosyalarda
+> once kopya al, degistir, `php -l` ile dogrula, bozuksa kopyadan geri yaz.
 
 ---
 
 ## 4. Siteler
 
-| Adres | Kok dizin | DB | Not |
+| Adres | Kok dizin | DB | Onek |
 |---|---|---|---|
-| `fdartgallery.com` | `/var/www/fdartgallery.com` | `wp_fdartgallery_com` | onek `fdArt0Og_` |
+| `fdartgallery.com` | `/var/www/fdartgallery.com` | `wp_fdartgallery_com` | `fdArt0Og_` |
 | `dev.fdartgallery.com` | `/var/www/dev.fdartgallery.com` | — | staging |
-| `chestnyznak.com.tr` | `/var/www/chestnyznak.chemiartclick.uk` | `wp_chestnyznak_chemiartclic` | onek `ChestZna_` |
+| `chestnyznak.com.tr` | `/var/www/chestnyznak.chemiartclick.uk` | `wp_chestnyznak_chemiartclic` | `ChestZna_` |
 | `dev.chestnyznak.com.tr` | `/var/www/dev.chestnyznak.chemiartclick.uk` | `wp_dev_chestnyznak_chemiart` | staging |
 
-> **DIKKAT:** chestnyznak sitelerinde **dizin adi ile alan adi FARKLI**.
-> Dizin, sistem kullanicisi, FPM havuzu, socket, DB ve log adlari hala eski
-> `*.chemiartclick.uk` adina gore. Yeniden adlandirmak `open_basedir`'i, cron'u
-> ve yedek isini birden kirar — bilerek dokunulmadi.
+> **DIKKAT:** chestnyznak'ta **dizin adi ile alan adi FARKLI**. Dizin, sistem
+> kullanicisi, FPM havuzu, socket, DB ve log adlari eski `*.chemiartclick.uk`
+> adina gore. Yeniden adlandirmak `open_basedir`'i, cron'u ve yedegi kirar.
 
-### Site basina duzen
-
-| Bilesen | Ornek |
+| Bilesen | Yol |
 |---|---|
 | Kok | `/var/www/<dizin>/public` |
-| Kullanici | `web_<slug>` — dizinden `stat -c %U` ile okuyun, tahmin etmeyin |
-| FPM havuzu | `/etc/php/8.5/fpm/pool.d/<slug>.conf` |
+| Kullanici | `web_<slug>` — **`stat -c %U` ile okuyun, tahmin etmeyin** |
+| FPM havuzu | `/etc/php/8.5/fpm/pool.d/<slug>.conf` (`memory_limit` 512M) |
 | vhost | `/etc/nginx/sites-available/<ad>.conf` |
 | DB sifresi | `/var/www/<dizin>/db-credentials.txt` (mod 600) |
-| Loglar | `/var/log/nginx/<slug>.{access,error}.log`, `/var/log/php/<slug>.error.log` |
+| Loglar | `/var/log/nginx/<slug>.{access,error}.log` |
 | WP cron | `/etc/cron.d/wp-cron-<slug>` (10 dk, CLI) |
+| Repo (sunucuda) | `/opt/fdartgalleryuk/` |
 
 Izolasyon: ayri unix kullanicisi + `open_basedir`.
 
-### Staging korumasi
+**Staging korumasi.** `fd-staging-guard.php` (mu-plugin): giden e-postayi
+PHPMailer seviyesinde keser, `blog_public`'i 0'a zorlar, `robots.txt`'yi
+`Disallow: /` yapar, "DENEME ORTAMI" bandi gosterir. nginx'te
+`conf.d/02-staging-hosts.conf` dev hostlarina `X-Robots-Tag: noindex` basar
+(statik dosyalar dahil); yeni dev sitesi eklerken o map'e satir eklenir.
 
-`fd-staging-guard.php` (mu-plugin): giden e-postayi PHPMailer seviyesinde keser,
-`blog_public`'i 0'a zorlar, `robots.txt`'yi `Disallow: /` yapar, `X-Robots-Tag`
-basar, panelde ve sayfada "DENEME ORTAMI" bandi gosterir.
-
-Ayrica nginx'te `conf.d/02-staging-hosts.conf` icindeki `$robots_tag` map'i dev
-hostlarina `X-Robots-Tag: noindex` basar — **statik dosyalar dahil**. Yeni dev
-sitesi eklerken o map'e bir satir eklenir.
-
-> DB'deki `blog_public` degeri **1 gorunur**, bu normaldir — guard calisma
-> aninda filtreyle 0'a ceker. Olcut sayfadaki `noindex, nofollow` etiketidir.
+> DB'deki `blog_public` **1 gorunur**, normaldir — guard calisma aninda filtreyle
+> 0'a ceker. Olcut sayfadaki `noindex, nofollow` etiketidir.
 
 ---
 
-## 5. Yapilmis isler (ozet)
+## 5. Yapilmis isler
 
 | Alan | Durum |
 |---|---|
 | Sunucu | nginx + PHP 8.5-FPM + MariaDB + Redis + certbot + ufw + fail2ban + wp-cli |
 | Sayfa onbellegi | nginx `fastcgi_cache`; ana sayfa 0.90 sn → **0.006 sn** |
-| Reklam/bulten trafigi | 02.09.2026: `?utm_*`/`gclid`/`fbclid` istekleri artik onbellekten okuyor (fdartgallery + dev); TTFB ~2,3 sn → **15-25 ms** (6q) |
-| WebP | fdartgallery 6394 dosya, chestnyznak 5820; orijinaller korunuyor, gece cron |
-| Redis | site basina izole (db indeksi + anahtar oneki): canli fd=3, dev fd=4, chestnyznak=8 |
-| fdartgallery hizi (DEV) | 17 → 13 eklenti, 47 → 26 script, 5 → 1 font istegi, fontlar gzip'li (6n) |
-| fdartgallery hizi (**CANLI**) | 02.09.2026 alindi: 47 → 26 script, 32 → 26 stylesheet, react+12 `js/dist` dosyasi dustu, `.ttf` 62.044 → 33.984 bayt, isinmis TTFB 16-19 ms (6n) |
+| HTTP/2 | `conf.d/03-http2.conf` (`http2 on;` — `listen ... http2` kullanimdan kalkti) |
+| Reklam/bulten trafigi | `?utm_*`/`gclid`/`fbclid` artik onbellekten okuyor; TTFB ~2,3 sn → **15-25 ms** (6h) |
+| WebP | fdartgallery 6394, chestnyznak 5839 dosya; orijinaller korunur, gece cron |
+| Redis | site basina izole: canli fd=3, dev fd=4, chestnyznak=8 |
+| fdartgallery hizi | **canli + dev**: 17 → 13 eklenti, 47 → 26 script, 32 → 26 stylesheet, react+12 `js/dist` dustu, `.ttf` gzip, TTFB 16-19 ms (6h) |
 | Yedekleme | Cloudflare R2, gece 04:15, 30 gun; uploads artimli (`copy`, `sync` DEGIL) |
-| UpdraftPlus | 02.09.2026 komple kaldirildi: eklenti kapali, yerel arsivler silindi (canli 6,88 GB + dev 2,77 GB), yetim cron olaylari temizlendi; disk %40 → **%26** (6o) |
+| UpdraftPlus | komple kaldirildi; disk %40 → **%26** (9,7 GB yerel arsiv silindi) |
 | Sertifikalar | Let's Encrypt, otomatik yenileme |
 | MariaDB | `root@localhost` parolasizdi → `unix_socket` + yedek parola |
-| fail2ban | 3 jail; hem Cloudflare edge hem yerel nftables bani |
-| Kalici baglantilar | `/%postname%/`; urun sayfalari artik onbellege giriyor |
-| E-posta (fdartgallery) | Brevo API + DKIM/SPF/DMARC; MX = Cloudflare Email Routing + Worker |
+| fail2ban | 3 jail; Cloudflare edge + yerel nftables bani |
+| E-posta | fdartgallery Brevo API + DKIM/SPF/DMARC; chestnyznak timeweb SMTP — **ikisi de calisiyor** |
 | Turnstile | fdartgallery giris/kayit/form/WooCommerce |
-| Sayfa #2 (fdartgallery) | 02.09.2026: olu CF7 blok kalintisi kaldirildi, slug `sample-page` → `ozel-siparis`, 301 icin `fd-eski-adresler` mu-plugin'i (6r) |
-| Contact Form 7 | 02.09.2026 **komple kaldirildi** (canli + dev): 5 form disa aktarildi, kayitlar ve eklenti dosyalari silindi; aktif eklenti 13 → **12** (6s) |
-| Site haritasi | 02.09.2026: `wp-sitemap*.xml` 404 yerine **200** donuyor; indeks + 8 alt harita, **329 adres** (6t) |
-| Blog | `deploy/blog/` araclari + haftalik Routine (`trig_01Q2abbcd19d1CQem3fs5Z7M`, Sali 06:00 UTC) |
-| Blog icerigi (canli) | Telegram kanalindan 3 yeni yazi x 3 dil; site haritasi 61 -> 70 adres (6s) |
-| chestnyznak | Elementor gecisi + basvuru kaydi (6f, 6g) |
-| Demo temizligi (canli) | Tema demosu aramadan cikarildi: site haritasi 523 -> 97 adres, 370 kayit taslaga (6p) |
-| Uc dil (canli) | Menuden ulasilan her adres + 20 blog yazisi tr/en/ru; dil dusuren baglanti 0; iletisim formu dile gore (6k) |
-
-Komutlar ve olcumler icin `deploy/` altindaki script'ler ve git gecmisi.
+| Contact Form 7 | fdartgallery'de **komple kaldirildi** (formlar FluentForm'da); aktif eklenti 13 → **12** |
+| Site haritasi (fdartgallery) | `wp-sitemap*.xml` 404 yerine **200**; indeks + 8 alt harita, 329 adres (6i) |
+| Uc dil (chestnyznak) | Menuden ulasilan her adres + 23 blog yazisi tr/en/ru; dil dusuren baglanti **0** (6e) |
+| Demo temizligi (chestnyznak) | Site haritasi **523 → 97** adres, 370 kayit taslaga (6i) |
+| 404 sayfasi | Uc dile cevrildi, dile uygun faydali baglantilarla (6i) |
+| Blog | `deploy/blog/` araclari + haftalik Routine (`trig_01Q2abbcd19d1CQem3fs5Z7M`, Sali 06:00 UTC); Telegram'dan 3 yazi x 3 dil (6j) |
 
 ---
 
 ## 6. Tuzaklar — hepsi yasandi, tekrarlanmasin
 
-### 6a. E-posta: tasima sirlari bozuyor
+### 6a. Dogrulama — bunlar olmadan "calisiyor" denmez
 
-FluentSMTP kayitli parolayi `LOGGED_IN_KEY`+`LOGGED_IN_SALT` ile sifreler.
-Yeni `wp-config.php` uretilince cozulemez, saglayici 401 doner.
-**fdartgallery ve chestnyznak'ta bu yasandi.**
-
-Onlem — tasimadan once wp-config'e sabit anahtar (dort sitede yapildi):
-```php
-define( 'FLUENTMAIL_ENCRYPT_KEY',  '<sabit>' );
-define( 'FLUENTMAIL_ENCRYPT_SALT', '<sabit>' );
-```
-
-**Her tasimadan sonra e-posta testi zorunlu:**
-```sh
-sudo -u <user> wp --path=<kok> eval \
- 'add_action("wp_mail_failed",function($e){echo $e->get_error_message();});
-  var_dump(wp_mail(get_option("admin_email"),"t","t"));'
-```
-
-Uc ek tuzak:
-1. **`wp_mail()` TRUE donmesi teslimat demek DEGIL.** Brevo istegi kabul edip
-   kuyrukta reddedebilir. `GET /v3/smtp/statistics/events` ile dogrulayin.
-2. **`sudo -u <user> -E wp` ortam degiskeni TASIMAZ** (sudoers `env_reset`).
-   Sir gecici bir PHP dosyasina yazilip `wp eval-file` ile calistirilir.
-3. **Ham `update_option('fluentmail-settings',...)` KULLANMAYIN.** Dogru API
-   `fluentMailSetSettings()` — duz metin alir, sifrelemeyi kendi yapar.
-
-`info@chestnyznak.com.tr` **timeweb**'de barinir (MX `mx1/mx2.timeweb.ru`,
-SMTP `smtp.timeweb.ru:465/587` acik, DKIM timeweb imzali). Gelen posta da
-giden posta da **CALISIYOR**.
-
-#### Giden posta COZULDU — ve artik dokunulmamali (02.09.2026)
-
-Kullanici 01.09.2026 ~16:40'ta panelden dogru posta kutusu parolasini girdi.
-`ChestZna_fsmpt_email_logs` tablosu bunu net gosteriyor:
-
-| | |
-|---|---|
-| son **`failed`** kaydi | 01.09.2026 **16:20:06** (`SMTP hatasi: Kimlik dogrulanamadi`) |
-| ilk **`sent`** kaydi | 01.09.2026 **16:41:07** |
-| o tarihten sonra | 8 `sent`, **0 `failed`** — icinde gercek bir form basvurusu ve 02.09 03:23'teki iletisim formu da var |
-
-Kayitli parola dogrudan sunucudan da sinandi: `smtp.timeweb.ru:465` **ve**
-`imap.timeweb.ru:993` ikisinde de **GIRIS BASARILI**.
-
-> **`TIMEWEB_MAIL_PASSWORD` ortam degiskenini KULLANMAYIN.** Icindeki 9
-> karakterlik deger **YANLIS** — hem SMTP hem IMAP `Incorrect authentication
-> data` doner. Veritabaninda duran (29 karakterlik) parola ise calisiyor.
-> Env degiskenini FluentSMTP'ye yazmak CALISAN postayi KIRAR. Bu satir
-> silinmedikce o degiskene dokunulmaz.
-
-Neden artik cozulebiliyor: `FLUENTMAIL_ENCRYPT_KEY`/`_SALT` sabitleri
-wp-config'de tanimli oldugu icin parola sabit anahtarla sifreleniyor; panelden
-yeniden kaydedilen deger `fluentMailEncryptDecrypt($ham,'d')` ile sorunsuz
-cozuluyor. Yani 6a'nin basindaki tuzak artik ONLENMIS durumda.
-
-**Kontrol etmenin gonderimsiz yolu** (posta YOLLAMAZ): parolayi
-`fluentMailEncryptDecrypt` ile coz, gecici bir dosyaya yaz (mod 600), sunucudan
-`smtplib.SMTP_SSL(...).login()` ile sina, sonra dosyayi `shred -u` ile sil.
-Ayrica `fsmpt_email_logs` tablosundaki `status` dagilimina bakmak cogu zaman
-yeterlidir — gercek gonderimler zaten orada kayitli.
+- **HTTP 200 gorsel dogrulama DEGILDIR.** revslider kapatildiginda ana sayfa ustte
+  ham `[rev_slider ...]` metni gosteriyor ve yine 200 donuyordu.
+- **VARLIK kontrolu GORUNURLUK kontrolu DEGILDIR.** Bir keresinde HTML 303 KB'di,
+  `getElementById` her seyi buluyordu, butun testler yesildi — sayfa bomboştu
+  (`body{display:none}`). Tarayici testinde `getComputedStyle(body).display` ve
+  `getBoundingClientRect()` olculur.
+- **Konteynerden `curl --resolve` YOK SAYILIR** (`HTTPS_PROXY` var; istek yine
+  Cloudflare'den gider, yaniltici 200 doner). Dogru test **sunucudan**:
+  `curl --resolve <host>:443:127.0.0.1 ...`.
+- **Konteynerden `openssl s_client` GECERSIZ** — egress proxy kendi sertifikasini
+  sunar (`CN=Egress Gateway SDS Issuing CA`).
+- **Eklenti/handle kullaniliyor mu?** `post_content` + `postmeta` aramak YANILTIR.
+  `_elementor_data`, `elementor_library`, tema widget alanlari, `cpt_layouts`,
+  tema secenekleri ve **Gutenberg blok yorumlari** da taranmali. revslider
+  "kullanilmiyor" sanilip kapatildi, **canli ana sayfa 2 gun bozuk kaldi**.
+- **Form referansi her zaman kisa kod degildir:** `<!-- wp:contact-form-7/
+  contact-form-selector {"id":64} -->` ortada `[contact-form-7` YOK.
+- **Yorum satirina bakip cikarim yapmayin, yaniti olcun.** `gzip_types` yorumdaydi
+  diye "sikistirilmiyor" sanildi; olcunce gzip'li cikti.
+- **Ekran goruntusuyle gelen kanitta durum cubugunu okuyun** (VPN, roaming).
+- Cevrimdisi tarayici testinde `location.pathname` asla `/` olmaz — yol
+  kilavuzlu scriptler hic calismaz ve yanlis olcum verir. **Karsilastirma icin
+  canli sayfayi da ayni testten gecirin.**
 
 ### 6b. nginx
 
-- **`location = /robots.txt` bloguna `try_files` SART.** Yoksa nginx 404 doner,
-  istek WordPress'e ulasmaz ve Yoast'in `Sitemap:` satiri kanonik adresinde
-  bulunmaz. Iki sitede de bu yuzden 404 aliniyordu.
-- **Kendi `add_header`'i olan bir location ust seviyedekileri MIRAS ALMAZ.**
-  Staging noindex basligi bu yuzden statik dosya blogunda TEKRAR edilir.
-- **`$realip_remote_addr` kullanin, `$remote_addr` DEGIL.** real_ip modulu
-  `$remote_addr`'i ziyaretcinin IP'siyle degistirir; gercek TCP eslenigini
-  yalnizca `$realip_remote_addr` tutar (Cloudflare ayrimi buna dayanir).
-- **Vhost'ta ad degistirirken YALNIZCA `server_name` satirini degistirin.**
-  `sed` ile toplu degisim sertifika yollarini ve kok dizini de bozdu.
-- **80 portundaki blokta server seviyesinde `return` KOYMAYIN.** Rewrite
-  asamasinda calisip location eslesmesini kisa devre yapar; ACME dogrulamasi
+- **`location = /robots.txt` bloguna `try_files` SART.** Yoksa nginx 404 doner ve
+  Yoast'in `Sitemap:` satiri kanonik adresinde bulunmaz.
+- **Kendi `add_header`'i olan location ust seviyeyi MIRAS ALMAZ** — staging
+  noindex basligi statik dosya blogunda TEKRAR edilir.
+- **`$realip_remote_addr` kullanin, `$remote_addr` DEGIL** — real_ip modulu
+  `$remote_addr`'i ziyaretcinin IP'siyle degistirir.
+- **Vhost'ta ad degistirirken YALNIZCA `server_name` satirini degistirin**;
+  toplu `sed` sertifika yollarini ve kok dizini de bozdu.
+- **80 portundaki blokta server seviyesinde `return` KOYMAYIN** — ACME dogrulamasi
   404 alir. Yonlendirme `location / { return 301 ... }` icine konur.
-- **Sertifika icin `certbot certonly --webroot`** tercih edin, `--nginx` degil:
-  nginx eklentisi vhost'u yeniden yazar.
-- **`update-cloudflare-ips.sh` iki dosyayi AYNI listeden uretir** (realip
-  snippet + `$cf_peer` geo blogu). Ayrisirlarsa mesru ziyaretciler 444 yer.
+- **Sertifika icin `certbot certonly --webroot`**, `--nginx` degil (vhost'u yeniden yazar).
+- **`fastcgi_cache_valid` yalnizca `200`** olmali
+  (`deploy/nginx/templates/fastcgi-php.conf.template`). `301 302` da onbellege girerse
+  duruma bagli bir yonlendirme herkese servis edilir ve tarayici onu KALICI sayar.
+  Ayirt edici isaret: **`HEAD` 200 ama `GET` 301**.
+- **`update-cloudflare-ips.sh` iki dosyayi AYNI listeden uretir**; ayrisirlarsa
+  mesru ziyaretciler 444 yer.
+- **Regex location'lar TANIM SIRASINA gore denenir** — `snippets/font-gzip.conf`
+  bu yuzden `snippets/wordpress.conf`'tan ONCE include edilir.
 
 ### 6c. SSH
 
-`sshd_config.d/*.conf` alfabetik yuklenir ve **her anahtar icin ILK deger kazanir**.
-Imajin `60-cloudimg-settings.conf` dosyasindaki `PasswordAuthentication no`,
-cloud-init'in `50-...conf` dosyasindaki `yes` yuzunden hic devreye girmemis.
-Bizim dosyamizin adi bu yuzden **`00-hardening.conf`**.
+`sshd_config.d/*.conf` alfabetik yuklenir ve **her anahtar icin ILK deger kazanir**
+— bizim dosyamizin adi bu yuzden `00-hardening.conf`.
 
-Sertlestirme yapildi (MaxAuthTries 3, LoginGraceTime 30, forwarding kapali,
-modern cipher/MAC/Kex). **Parola girisi hala acik** ve loglarda dakikalik root
-parola denemeleri var. Kapatmanin sarti olan kalici anahtar artik **VAR**
-(asagi), yani `harden-ssh.sh --disable-password` reddetmez — ama kilitlenme
-riski tasidigi icin kullanici onayi olmadan calistirilmaz.
-(`harden-ssh.sh` gecici `claude-session-*` anahtarlarini kalici saymaz.)
+**Kalici anahtar (02.09.2026):** `/root/.ssh/authorized_keys` icinde
+`claude-persistent-fdartgalleryuk`, parmak izi
+`SHA256:i7IciIuo4c3uDhaLaH/AmNkQRb/V3VHXwqOtJ+yXuL8`. Private kismi
+`VPS_SSH_PRIVATE_KEY` env'inde, **repoya yazilmaz**. Iptali: o satiri silmek.
 
-Acil durum: OVH Manager → VPS → KVM konsolu.
+`root` **`prohibit-password`** modunda — root'a yalnizca anahtarla girilir.
+`ubuntu` var ama `authorized_keys`'i BOS; `debian`/`admin` HIC YOK.
+**Dogru kullanici her zaman `root`.**
 
-#### Kalici anahtar (02.09.2026)
-
-`/root/.ssh/authorized_keys` icinde `claude-persistent-fdartgalleryuk`,
-parmak izi `SHA256:i7IciIuo4c3uDhaLaH/AmNkQRb/V3VHXwqOtJ+yXuL8`.
-Private kismi **`VPS_SSH_PRIVATE_KEY`** ortam degiskeninde; repoya YAZILMAZ.
-Iptali tek satir: `authorized_keys` icinden o yorumu tasiyan satiri silmek.
-
-`root` **`prohibit-password`** modunda — yani root'a yalnizca anahtarla girilir.
-`ubuntu` kullanicisi var ama `authorized_keys`'i BOS; `debian` ve `admin`
-kullanicilari hic YOK. Dogru kullanici her zaman **`root`**.
-
-> **YENI OTURUM SUNUCUYA GIREMIYORSA once HANGI ANAHTARI SUNDUGUNA bakin.**
-> 02.09.2026'da yeni bir oturum "publickey reddedildi" aliyordu; sunucu tarafi
-> dogruydu, oturum kendi urettigi gecici anahtari sunuyordu. Sebep: **ortam
-> degiskeni CALISAN oturuma yansimaz** (CLAUDE.md 2) — `VPS_SSH_PRIVATE_KEY`
-> oturum basladiktan sonra tanimlanmisti, dolayisiyla oturum onu hic gormedi.
->
-> Teshis: istemcideki `Offering public key: ... SHA256:...` satirini
-> `ssh-keygen -lf` ile sunucudaki anahtarlarin parmak izlerine karsi tutun.
-> Farkliysa sorun sunucuda degil, istemcinin hangi anahtari yukledigindedir.
->
-> Cozum (kullaniciyi konsola dusurmeden): yeni oturum public key'ini
-> `deploy/claude-session-key.pub` dosyasina yazip dala push eder; **erisimi
-> olan bir oturum** dali cekip anahtari `authorized_keys`'e ekler.
+> **Yeni oturum giremiyorsa once HANGI ANAHTARI SUNDUGUNA bakin.** Istemcideki
+> `Offering public key: ... SHA256:...` satirini `ssh-keygen -lf` ile sunucudaki
+> parmak izlerine karsi tutun. Farkliysa sorun sunucuda degil.
+> Cozum: yeni oturum public key'ini `deploy/claude-session-key.pub`'a yazip dala
+> push eder, erisimi olan bir oturum `authorized_keys`'e ekler.
 > `authorized_keys` her baglantida okunur — sshd yeniden baslatilmaz.
-> Kalici anahtari alan **yeni** oturumlarda bu adim hic gerekmez.
 
-### 6d. Rusya erisimi (chestnyznak)
+Parola girisi hala **acik** (0. bolum madde 4). Acil durum: OVH Manager → KVM konsolu.
 
-**Kanitlandi:** engel Cloudflare IP araliklarina. VPN kapali, ayni telefon:
-`chestnyznak.com.tr` (turuncuyken) → `ERR_TIMED_OUT`; ayni sunucudaki
-`origin.chemiartclick.uk` (gri) → **acildi**. DNS temiz, TCP hic kurulmuyor.
+### 6d. E-posta
 
-Gri buluta cekildi (TTL 120, geri alma yedegi `scratchpad/chestnyznak-A-before.json`).
-Origin'i acmadan once nginx'te kaynak ayrimi yapildi: `cloudflare-only.conf`
-fdartgallery ve dev vhost'larinda var, chestnyznak'ta **YOK**.
+**FluentSMTP kayitli parolayi `LOGGED_IN_KEY`+`LOGGED_IN_SALT` ile sifreler.**
+Yeni `wp-config.php` uretilince cozulemez → saglayici 401. Onlem (dort sitede
+yapildi): wp-config'e sabit `FLUENTMAIL_ENCRYPT_KEY` / `_SALT`.
 
-**AMA gri olduktan sonra da acilmiyor.** Geriye tek degisken alan adi.
-`chestnyznak-test.chemiartclick.uk` testi bunun icin kuruldu (sonuc bekleniyor):
-- 2 acilmaz + 1 acilirsa → engel **isimde**; barindirma degisikligi kurtarmaz.
-- 2 acilirsa → engel yalnizca `chestnyznak.com.tr`'ye ozel; yeni alan adi cozer.
+- **`wp_mail()` TRUE donmesi teslimat demek DEGIL** — saglayici kuyrukta reddedebilir.
+- **`sudo -u <user> -E wp` ortam degiskeni TASIMAZ** (sudoers `env_reset`); sir
+  gecici PHP dosyasina yazilip `wp eval-file` ile calistirilir.
+- **Ham `update_option('fluentmail-settings',...)` KULLANMAYIN.** Dogru API
+  `fluentMailSetSettings()` — duz metin alir, sifrelemeyi kendi yapar.
 
-Gecici test kaynaklari (**is bitince silinecek**): `origin.chemiartclick.uk` ve
-`chestnyznak-test.chemiartclick.uk` A kayitlari,
-`/etc/nginx/sites-available/origin-test.conf`, `/var/www/origin-test`,
-`certbot delete --cert-name origin.chemiartclick.uk`.
+**chestnyznak giden posta CALISIYOR** (dogrulandi 02.09.2026): son `failed`
+01.09 16:20, ilk `sent` 16:41; sonrasinda 0 hata. Kayitli parola sunucudan
+SMTP **ve** IMAP ile sinandi, ikisi de basarili.
 
-### 6e. Test tuzaklari — yanlis sonuca goturur
+> **`TIMEWEB_MAIL_PASSWORD` env degiskenini KULLANMAYIN** — icindeki deger
+> YANLIS (SMTP ve IMAP reddediyor). FluentSMTP'ye yazmak **CALISAN postayi kirar**.
 
-- **Konteynerden `curl --resolve` YOK SAYILIR.** `HTTPS_PROXY` tanimli; curl
-  proxy'ye `CONNECT <host>:443` der, adi proxy cozer. Istek yine Cloudflare'den
-  gider ve yaniltici 200 doner. Dogru test **sunucudan**:
-  `curl --interface 57.129.128.118 --resolve <host>:443:57.129.128.118 ...`
-  veya yerel icin `--resolve <host>:443:127.0.0.1`.
-- **Konteynerden `openssl s_client` GECERSIZ.** Egress proxy kendi sertifikasini
-  sunar (`CN=Egress Gateway SDS Issuing CA`). Sunucudan bakin.
-- **"Sayfa 200 donuyor" gorsel dogrulama DEGILDIR.** revslider kapatildiginda
-  ana sayfa ustte ham `[rev_slider ...]` metni gosteriyor ve yine 200 donuyordu.
-- **Ekran goruntusuyle gelen kanitta durum cubugunu okuyun** (VPN, roaming, Wi-Fi).
-  Bir "basarili" kare VPN acikken cekilmisti; iki degisken degistigi icin kanit sayilmadi.
-- **Eklenti kullaniliyor mu?** `post_content` + `postmeta` aramak YANILTIR;
-  `_elementor_data`, tema widget alanlari ve `cpt_layouts` da taranmali.
-  revslider "kullanilmiyor" sanilip kapatildi, **canli ana sayfa 2 gun bozuk kaldi**.
-- Sayfa JS'i test edilecekse: sunucudan HTML indirilip yerel Chromium'da
-  calistirilabilir (`/opt/pw-browsers/chromium-1194/chrome-linux/chrome`,
-  harici istekler kapali). Karsilastirma icin **canli sayfayi da ayni testten
-  gecirin** — yoksa cevrimdisi artifakti gercek ariza sanilir.
+Gonderim yapmadan kontrol: parolayi `fluentMailEncryptDecrypt($ham,'d')` ile coz,
+mod 600 dosyaya yaz, `smtplib.SMTP_SSL(...).login()` ile sina, `shred -u` ile sil.
+Cogu zaman `<onek>_fsmpt_email_logs` tablosundaki `status` dagilimi yeterlidir.
 
-### 6f. chestnyznak — Elementor duzenlenebilirligi
+**Form bildirim politikasi (chestnyznak).** Ekip bildirimleri To `info@`,
+Cc `oguzk@`; `admin_email` (`swordbros@gmail.com`) **DEGISMEZ**. Arac:
+`deploy/scripts/eposta-alicilari.php` (`dry` destekli, yeniden calistirilabilir).
 
-> **KURAL (kullanici karari):** siteye eklenen her icerik **Elementor ile
-> duzenlenebilir** olmalidir. JS enjeksiyonu, Custom HTML widget'i veya tema
-> widget alani KULLANILMAZ. Once **dev**'de yapilir, onaydan sonra canliya alinir.
+> **Otomatik yanitlara ekip adresi YAZILMAZ** — FluentForm'da `sendTo.type=field`
+> olan bildirimlerin alicisi BASVURANIN kendisidir; ekip kopyasi yalnizca `cc`.
+> **"E-postayla paylas" dugmesi bir alici ayari DEGILDIR** — `mailto:` ziyaretcinin
+> istemcisini acar; alici kismi bos birakilir.
 
-**Bulunan durum:** sitenin gorunur bolumlerinin buyuk kismi, tema widget
-alanindaki tek bir 57 KB'lik Custom HTML widget'indan **16 JS enjeksiyonuyla**
-uretiliyordu. Elementor bunlari goremez; editorde o alan bos gorunur.
+### 6e. Cok dillilik — Polylang (chestnyznak, canli)
 
-**Yapilan (01.09.2026, dev → canli):** `CZLEAD` bolgesi (style + 5 template +
-scriptler) widget'tan cikarilip ana sayfanin Elementor icerigine tasindi.
-Ust blok artik gercek bir section (`_element_id=cz-lead`, 2 kolon 52/48):
-sol kolonda **6 text-editor widget'i** (eyebrow, H1, alt metin, rozetler, guven
-satiri, dipnot), sag kolonda form karti tek HTML widget. Olu `trx_widget_slider`
-kaldirildi. Ozgun `.cz-lead-*` siniflari markup'in icinde kaldigi icin CSS
-degismedi; Elementor sarmalayicilari icin kucuk bir kopru CSS'i eklendi.
-
-Script: `deploy/scripts/migrate-czlead-to-elementor.php` (`dry` destegi var).
-Blogun arsivi: `deploy/wordpress/cz-lead-block.html`.
-
-**Elementor editoru 500 veriyordu** — editorun JS yapilandirmasi tek bir
-`json_encode` cagrisinda 256M'yi asiyordu (bu sitede cikti 5.4 MB). Dort sitede
-de duzeltildi:
-- FPM havuzu `memory_limit` 256M → **512M**
-- wp-config `WP_MAX_MEMORY_LIMIT` = **512M**, `WP_MEMORY_LIMIT` = 256M
-
-**Ikisi de gerekli:** `php_admin_value` HARD tavandir (`ini_set` yukseltemez);
-WordPress ise panelde bellegi kendi `WP_MAX_MEMORY_LIMIT` degerine ceker.
-512M bir tavandir, rezervasyon degil; sunucu takasa duserse `pm.max_children`
-(havuz basina 12) dusurulur.
-
-**Kalan 14 enjeksiyon** hala widget'ta: `cz-hero-block`, `cz-header`, `cz-banner`,
-`cz-news`, `cz-marquee`, `cz-home`, `cz-wa`, `cz-contact`, `cz-shop`, `cz-cookie`,
-`cz-audit`, `cz-relabel`, `cz-fixlinks`, `cz-btn-brand`, `cz-urun-talep`.
-Sirayla tasinmali; her biri ayri dogrulama ister.
-
-#### wp-cli ile Elementor verisine yazarken
-
-**`wp --user=<admin>` SART.** Oturum acmis kullanici yoksa
-`current_user_can('unfiltered_html')` false doner ve WordPress `<style>`,
-`<script>`, `<template>` etiketlerini **sessizce siler** — hata vermez.
-Ilk denemede CSS sayfaya ciplak metin olarak basildi.
-
-Yazan her script **kayittan sonra kendini dogrulamali** ve etiketler yoksa
-degisikligi geri almali. Ayrica `wp_json_encode` `/` karakterini `\/` yapar —
-kontrol dizesinde egik cizgi kullanmayin.
-
-#### Onbellege yazilan yonlendirme — KOK SEBEP BULUNDU ve duzeltildi
-
-Ana sayfa bir sure `301 → kendisi` donuyordu; sonra kullanici "dev acilmiyor"
-dedi ama sunucu disaridan **200** veriyordu. Ikisinin de sebebi ayni:
-
-```nginx
-fastcgi_cache_valid 200 301 302 10m;   # <-- 301/302 de onbellege giriyordu
-```
-
-WordPress yonlendirmeleri **duruma baglidir** (kanonik, giris, dil). Onbellege
-yazilan tek bir 301, on dakika boyunca **herkese** servis edilir; dahasi tarayici
-301'i **KALICI** sayip saklar. Sonuc: site sunucuda calisirken kullanicida
-acilmaz hale gelir ve sunucuyu ne kadar test etseniz sorunu goremezsiniz.
-
-**Duzeltildi (01.09.2026):** dort sitede de `fastcgi_cache_valid 200 10m;`.
-Artik yalnizca 200 ve 404 onbellege girer. Repo: `deploy/nginx/templates/fastcgi-php.conf.template`
-
-> **Ayirt edici isaret: `HEAD` 200 ama `GET` 301** → onbellekte yonlendirme var.
-> **Kullanicida acilmiyor ama sunucuda 200** → tarayiciya yazilmis 301.
-> Cozum kullanici tarafinda: gizli sekmede dene, ya da site verisini temizle
-> (Chrome: adres cubugundaki kilit → "Cerezler ve site verileri" → temizle).
-
-Adres degistiren her islemden sonra onbellek temizlenip **GET** ile test edilir.
-
-### 6i. Cok dillilik — Polylang (dev, 01.09.2026)
-
-**CANLIDA VE DEV'DE AKTIF (01.09.2026).**
-
-**Neden Polylang:** ucretsiz surumu **sinirsiz dil** destekliyor. TranslatePress'in
-ucretsiz surumu yalnizca **1** ek dil verir — bize 2 lazimdi (EN + RU). WPML ucretli.
-Polylang her dile ayri URL ve ayri gonderi verir; Elementor ile her dil ayri sayfa
-oldugu icin duzen bagimsiz duzenlenebilir.
-
-| Dil | URL | Durum |
-|---|---|---|
-| Turkce (varsayilan) | `/` | tum icerik (470 gonderi + 86 terim Turkce isaretlendi) |
-| English | `/en/` | **yalnizca ana sayfa** cevrildi (ID 37686) |
-| Русский | `/ru/` | **yalnizca ana sayfa** cevrildi (ID 37687) |
-
-Ayarlar: `force_lang=1` (dizin oneki), `hide_default=1` (Turkce koke kalir),
-`rewrite=1`, `browser=0` (tarayici diline gore otomatik yonlendirme KAPALI),
-**`redirect_lang=1`**.
+**Neden Polylang:** ucretsiz surumu sinirsiz dil destekler (TranslatePress 1,
+WPML ucretli). Ayarlar: `force_lang=1`, `hide_default=1`, `rewrite=1`,
+`browser=0`, **`redirect_lang=1`**.
 
 > **`redirect_lang=1` SART.** 0 birakilinca `/en/` cevrilmis ana sayfayi degil
-> **blog arsivini** gosteriyordu; cevrilmis sayfa `/en/home-2/` adresinde
-> kaliyordu. Ceviriler dogru bagliydi, sorun yalnizca bu ayardaydi.
+> blog arsivini gosteriyordu.
 
-Script'ler: `deploy/wordpress/i18n/` (sirayla 01→04), ceviri metinleri
-`ceviriler.json`. Yedek: `/root/backups/dev-before-polylang-*.sql` ve
-`dev-before-i18n-pages-*.sql`.
-
-#### Sayfa kimligine bagli kilavuzlar KIRILIYORDU
-
-`cz-lead` blogunun script'i `if(!/page-id-5002/.test(document.body.className))return;`
-ile basliyordu; CSS'te de 7 adet `body.page-id-5002` kurali vardi. Dil kopyalari
-**farkli ID** aldigi icin EN/RU sayfalarinda script hic calismaz, form baglanmaz,
-enjekte edilen bolumler gelmezdi. Duzeltildi:
-
-- script kilavuzu → `if(!document.getElementById('cz-lead'))return;`
-- CSS `body.page-id-5002` → **`body.frontpage`**
-
-> Bu tema on sayfaya `home` DEGIL `frontpage` sinifi basiyor.
-
-##### TUM SAYFAYI BEYAZ YAPAN HATA — dikkat
-
-Ilk denemede CSS'i `body.frontpage, body.home` ile degistirdim. Bu **YANLIS**:
-o kurallar zaten **virgullu secici listesiydi** —
-
-```css
-body.page-id-5002 .elementor-element-85f2abf,body.page-id-5002 .elementor-element-3c0b548{display:none!important}
-```
-
-duz metin degisimi sonucu
-
-```css
-body.frontpage, body.home .elementor-element-85f2abf,body.frontpage, ...{display:none!important}
-```
-
-oldu. Listede artik **ciplak `body.frontpage`** var → `body{display:none}` →
-**butun sayfa beyaz**. Dev'de uc sayfada 14'er secici bozuldu.
-
-**Ders 1 — bir secici icinde virgullu liste ile degisim yapmayin.** Cok
-bilesenli seciciyi tek bilesikle degistirin (`body.frontpage`).
-
-**Ders 2 — VARLIK kontrolu GORUNURLUK kontrolu DEGILDIR.** HTTP 200 doneyordu,
-HTML 303 KB'di, `getElementById` her seyi buluyordu; sunucu testlerinin hepsi
-yesildi. Sayfa yine de bomboştu. Bundan sonra tarayici testinde
-`getComputedStyle(body).display` ve `getBoundingClientRect()` olculur:
-
-```js
-const bb = e => { const r = e.getBoundingClientRect(); return {w:r.width, h:r.height}; };
-// body yuksekligi > 200 ve #cz-lead yuksekligi > 100 olmali
-```
-
-Duzeltme sonrasi olculen: body 1280x8386, `#cz-lead` 1280x1066, H1 614x146.
-**Canli ETKILENMEDI** — bu degisiklik yalnizca dev'e uygulanmisti.
-
-#### Menu ve dil degistirici
-
-Yalnizca ana sayfa cevrildigi icin EN/RU'ya **ayri menu acilmadi**; ayni menu
-(171) her uc dile atandi, boylece gezinme calismaya devam ediyor. Menuye
-Polylang dil degistirici ogesi eklendi (`_pll_menu_item`, bayrak + ad, acilir
-menu kapali). **Sayfalar cevrildikce dile ozel menu acilmalidir.**
-
-#### Dogrulandi
-
-```
-/     -> 200 lang=tr-TR  H1 "Rusya'nin zorunlu urun markalamasini..."
-/en/  -> 200 lang=en-US  H1 "Russia's mandatory product labelling..."
-/ru/  -> 200 lang=ru-RU  H1 "Обязательную маркировку товаров в России..."
-```
-Her ucunde `#cz-lead` + form var; tarayicida `/ru/` icin `data-cz-bound=1`,
-buton "Отправить заявку →". Dil degistirici uc sayfada da cikiyor, 6 hreflang
-etiketi basiliyor. Dev hala aramaya kapali (`Disallow: /` + `X-Robots-Tag`).
-Canli ve fdartgallery etkilenmedi.
-
-> `lang="ru-RU"` olmasinin yan faydasi: `kod-sorgulama` araci ve `cz-lead`
-> blogu zaten `document.documentElement.lang` degerine bakip TR/RU arasinda
-> geciyor — Rusca sayfada kendiliginden Rusca calisiyor.
-
-#### Altbilgi ve widget — tema duzenini dile gore secmek
-
-Altbilgi bir `cpt_layouts` duzenidir ve tema onu `footer_style` ayarindan
-secer; ayar TEK degerdir, dil bilmez. Duzenin cevirisi olsa bile tema hep
-Turkce olani basardi.
-
-**Iki yol denendi ve OLMADI — tekrar denenmesin:**
-1. `theme_mod_footer_style` filtresi → tema `get_theme_mod()` **kullanmiyor**,
-   kendi deposundan (`qwery_storage`) okuyor.
-2. `get_footer` kancasinda depoyu degistirmek → depo dize degil, ayarin **tum
-   tanim dizisini** tutuyor (gercek deger `['val']` icinde) ve deger zaten
-   `static` degiskende onbelleklenmis oluyor.
-
-**Calisan yol:** temanin `qwery_get_custom_footer_id()` fonksiyonu
-`function_exists()` ile korunuyor. mu-plugin'ler temadan **once** yuklendigi
-icin ayni adla tanimlayinca tema kendi surumunu tanimlamiyor.
-→ `deploy/wordpress/lead-mu-plugins/fd-i18n-layouts.php`
-
-Ayni dosya, tema widget alanindaki 4 `extra_item` baglantisini de
-`widget_custom_html_content` filtresiyle **sunucu tarafinda** ceviriyor.
-Widget'i dile bolmek icindeki cz-* scriptlerini kirardi; JS enjeksiyonu da
-kural geregi kullanilmadi.
-
-#### Olculen sonuc (01.09.2026, canli)
-
-```
-/     kalan Turkce metin: 63 (dogru — Turkce sayfa)
-/en/  kalan Turkce metin:  2 → ikisi de kendi Ingilizce cevirimizde gecen
-                              "Türkiye" ulke adi; dogru kullanim
-/ru/  kalan Turkce metin:  0
-```
-Uc sayfa da tarayicida GORUNUR: body 1280x8386/7118, `#cz-lead` 1280x1066.
-Form ucu canlida: `{"stored":true,"relay":"gonderildi (302)"}`.
-Tum sayfalar 200; fdartgallery ve dev etkilenmedi.
-
-#### Kalan is (kullanici karari)
-
-Ceviri **ana sayfa + menu + altbilgi** ile sinirli. 177 ic sayfa, blog
-yazilari, magaza ve WooCommerce urunleri hala tek dilde. WooCommerce
-urunlerinin cevirisi Polylang'in **ucretli** eklentisini gerektirir.
-Hangi sayfalarin cevrilecegi icerik karari.
-
-### 6g. Basvuru formu (chestnyznak ana sayfa)
-
-**Onceki hali uc kusurluydu:** form dogrudan tarayicidan bir Google Apps Script'e
-POST ediyordu; `.catch(show)` ve `setTimeout(show,2500)` yuzunden relay coksa bile
-ziyaretciye **basari ekrani** cikiyordu; basvuru hicbir yere kaydedilmiyordu;
-`chat_id` sayfa kaynaginda **aciktı**.
-
-**Yeni akis** — `deploy/wordpress/lead-mu-plugins/fd-lead-capture.php`
-(yalnizca chestnyznak sitelerine kurulur):
-
-| Adim | |
-|---|---|
-| Uc | `POST /wp-json/fd-lead/v1/submit` |
-| 1 | **Kalici kayit** — `fd_lead` icerik tipi, panelde "Basvurular" |
-| 2 | E-posta bildirimi (`Reply-To` = basvuran) |
-| 3 | Telegram aktarimi — **sunucu tarafinda**, `chat_id` wp-config'de |
-
-Ziyaretciye "basarili" demenin **tek olcutu veritabani kaydidir**. Uc `stored`
-donmezse form acik kalir, hata kutusu ve WhatsApp yedegi cikar.
-Spam: gizli bal kupu alani + IP basina saatte 8 kayit.
-
-wp-config sabitleri (repoya yazilmaz): `FD_LEAD_RELAY_URL`, `FD_LEAD_CHAT_ID`,
-`FD_LEAD_NOTIFY_EMAIL`. **Dev'de `FD_LEAD_CHAT_ID` BOS** — dev denemeleri canli
-Telegram grubuna dusmez. Ayri bir dev grubu acilirsa tek satir degisir.
-
-> **Google Apps Script tuzagi:** basarili POST'a **302** doner ve yaniti
-> `script.googleusercontent.com`'a yonlendirir; o adres yalnizca GET aldigi icin
-> yonlendirme takip edilirse 405/400 gorunur ve mesaj gitmis olmasina ragmen
-> "basarisiz" sanilir. Bu yuzden `redirection => 0` ve **302 basari sayilir**.
-
-### 6j. Hiz — olculen durum ve yapilanlar (01.09.2026)
-
-Kullanici "basar basmaz acilsin" istedi. **Once olculdu, sonra dokunuldu.**
-
-| Olcum | Deger |
-|---|---|
-| TTFB (onbellek isabetli, sunucudan) | **26 ms** — sunucu darbogaz DEGIL |
-| HTML boyutu | **294 KB** (gzip'li gonderiliyor) |
-| Harici varlik | **40 script + 49 stylesheet = 89 istek**, 60 benzersiz dosya |
-| Protokol | **HTTP/1.1** ← asil sorun buydu |
-
-**Yapilan: HTTP/2 acildi** (`conf.d/03-http2.conf`, `http2 on;`).
-nginx 1.28.3'te `listen ... http2` **kullanimdan kalkti**; dogru yol bu direktif.
-
-Neden en buyuk kazanc: HTTP/1.1'de tarayici ayni sunucuya ~6 paralel baglanti
-acar. 89 varlik ≈ **15 tur gidis-donus**. Turkiye-Londra RTT ~60 ms oldugundan
-bu tek basina 1 saniyeden fazla bekleme demekti. HTTP/2 hepsini tek baglantida
-cogullar. Dogrulandi: `HTTP/2 200`, dort site de saglam.
-
-> **Yanlis teshis, olcumle duzeltildi:** `nginx.conf`'ta `gzip_types` satiri
-> yorumda oldugu icin "CSS/JS sikistirilmiyor" sandim. Olcunce ikisinin de
-> `content-encoding: gzip` dondugu gorildu. **Yorum satirina bakip cikarim
-> yapmayin, yaniti olcun.**
-
-**Sirada (kullanici karari):**
-- **Edge onbellegi YOK** — chestnyznak Rusya icin gri bulutta, yani Cloudflare
-  APO kullanilamiyor. Turkiye'den gelen her istek Londra'ya gidiyor.
-  fdartgallery turuncu oldugu icin onda APO bir secenek.
-- **Brotli** kurulu degil, Ubuntu deposunda `libnginx-mod-brotli` bulunamadi.
-  Metin varliklarinda gzip'e gore ~%15-20 daha iyi olurdu.
-
-### 6k. Dil kalicligi — Polylang dili URL'den okur
-
-**Sikayet:** "dil degistirip gezerken tekrar Turkceye donuyor."
-
-**Sebep basit ve kacinilmaz:** Polylang gecerli dili **URL onekinden** belirler
-(`force_lang=1`). `/en/` menusundeki bir oge `/iletisim/` derse — cunku o
-sayfanin cevirisi yoktur — onek duser ve site Turkceye doner. Menuyu
-kandirmanin yolu yok; **cozum sayfayi gercekten cevirmektir.** Denenip
-elenen iki yol:
-
-- **`pll_language` cerezi**: icerik dili her zaman kazanir; ustelik nginx
-  `fastcgi_cache` cerezi anahtara katmadigi icin cerez temelli bir dil
-  secimi zaten onbellek tarafindan ezilirdi. Olculdu: `/blog-standard/`
-  cerezle de `lang=tr-TR` donuyor.
-- **Onekli adresle cevirisiz icerik** (`/en/<turkce-slug>/`): Polylang
-  `redirect_lang=1` ile bunu 301 ile oneksiz adrese geri atar.
-
-**Yapilan (01.09.2026, once dev sonra CANLI):** menuden ulasilan HER adres
-uc dile cevrildi.
+**Polylang dili URL onekinden okur.** `/en/` icindeki bir baglanti `/iletisim/`
+derse onek duser ve site Turkceye doner. Cerez ve icerik dili **kazanmaz**
+(ustelik `fastcgi_cache` cerezi anahtara katmaz). **Tek cozum sayfayi gercekten
+cevirmektir.**
 
 | Turkce | English | Русский |
 |---|---|---|
@@ -695,873 +337,318 @@ uc dile cevrildi.
 | `/kod-sorgulama/` | `/en/code-lookup/` | `/ru/proverka-koda/` |
 | `/blog-standard/` | `/en/news/` | `/ru/novosti/` |
 | `/shop/` | `/en/solutions/` | `/ru/uslugi/` |
-| 20 blog yazisi | 20 yazi | 20 yazi |
 
-Araclar: `deploy/wordpress/i18n/08..15*.php` + yanlarindaki JSON sozlukler
-(`yazi-cevirileri/parti-1..6.json` blog metinleridir).
+Menuler: tr=171, en=372, ru=373. Araclar `deploy/wordpress/i18n/` (01→16) +
+JSON sozlukler (`sayfa-cevirileri.json`, `yazi-cevirileri/parti-1..6.json`). Olcut: `/en/` ve `/ru/` sayfalarinda **dil dusuren baglanti 0**.
 
-> **SCRIPTLERE POST ID YAZILMAZ.** Dev ve canlida ayni degiller: EN ana sayfa
-> dev'de 37686, canlida 37687. Ilk surumde ID'ler koda gomuluydu; canliya
-> alirken hepsi `page_on_front`, `pll_get_post()`, `get_nav_menu_locations()`
-> ve slug/baslik aramasindan cozulecek sekilde degistirildi. Ayni sebeple
-> `13-yazilari-cevir.php` yuku TR yazi ID'siyle anahtarlanir — o ID'ler
-> klonda AYNI kalir, cunku dev canlidan kopyalanmistir.
+> **SCRIPTLERE POST ID YAZILMAZ.** Dev ve canlida ayni degiller (EN ana sayfa
+> dev 37686, canli 37687). Her sey `page_on_front`, `pll_get_post()`,
+> `get_nav_menu_locations()` ve slug aramasindan cozulur.
 
-**Olcut:** `/en/` ve `/ru/` sayfalarindaki ic baglantilardan **dil dusuren
-sifir tane** olmali. Tarama araci sunucuda `python3 /tmp/tara2.py <dil> <yollar>`
-mantigiyla yazildi: `<head>` ve `lang-item` ogeleri disarida birakilir (dil
-degistiricinin diger dile gitmesi dogrudur), kalan her ic baglanti onekli
-olmalidir. Son olcum: 20 sayfada **en=0, ru=0**.
+> **EN/RU slug'lari TAHMIN EDILMEZ.** Bir yazida tahmin edilen yedi ic
+> baglantinin yedisi de yanlisti. `pll_get_post( $tr_id, $dil )` ile cozun.
 
-#### Magaza: urun sayfalari neden `[products]` ile listelenmiyor
+**Adres uc ayri yerde duzeltilir:** menu ogeleri (`_menu_item_url`),
+sayfa/duzen icerigi, tema widget'i (`fd-i18n-layouts.php` sunucu tarafinda cevirir).
 
-`/en/solutions/` ve `/ru/uslugi/` once `[products]` kisa koduyla yapildi ve
-urunler uc dilde de listelendi (`product` Polylang'de cevrilen tipler arasinda
-DEGIL). Ama urun baglantilari `/product/...` — oneksiz. Tiklayan ziyaretci
-Turkceye duserdi. Bu yuzden sayfalar **cevrilmis paket kartlarina** cevrildi;
-kartlarin CTA'si cevrilmis iletisim sayfasina gider. Turkce ziyaretci icin
-gercek magaza (`/shop/`) oldugu gibi durur.
+**Magaza:** `/en/solutions/` ve `/ru/uslugi/` `[products]` ile YAPILMADI — urun
+baglantilari `/product/...` oneksiz oldugu icin ziyaretci Turkceye duserdi.
+Yerine cevrilmis paket kartlari kondu. `product` tipini Polylang'de cevrilebilir
+yapmak DENENMEDI: ucretsiz surum WooCommerce entegrasyonu icermez.
 
-> `product` tipini Polylang'de cevrilebilir yapmak denenmedi: Polylang'in
-> ucretsiz surumu WooCommerce entegrasyonu icermez, sepet/kasa/vergi
-> akislarini kirma riski var. Calisan bir magazayi kirmayin.
+**Altbilgi dile gore:** temanin `qwery_get_custom_footer_id()` fonksiyonu
+mu-plugin'den (`lead-mu-plugins/fd-i18n-layouts.php`) ayni adla tanimlanarak
+degistirilir — mu-plugin'ler temadan ONCE yuklenir.
+`theme_mod_footer_style` filtresi ve `get_footer` kancasi DENENDI, ikisi de OLMADI.
 
-#### Sag alt kosedeki iki yuzen dugme
+#### TUZAK: sayfaya ve eleman kimligine civilenmis scriptler
 
-WhatsApp ve sohbet dugmeleri widget'taki `cz-wa` / `cz-contact` bloklarindan
-gelir. Gorunur metinleri sozlukten cevrilir, ama iki sey ayrica gerekti:
+Dil kopyalarinda Elementor eleman `id`'leri YENIDEN URETILIR ve sayfa ID'si
+degisir. Bu yuzden:
+- yol/sayfa kilavuzu → `document.body.classList.contains('frontpage')`
+  (bu tema on sayfaya `home` DEGIL `frontpage` basar),
+- eleman secici → kalici sinif `cz-el-<kimlik>`.
 
-- **WhatsApp hazir mesaji** — `wa.me/...?text=` icindeki Turkce cumle; sozluge
-  eklendi, artik dile gore aciliyor.
-- **Sohbet formu bir IFRAME** — kaynagi `/site-iletisim-formu/` (canvas sayfa +
-  FluentForm #10). Sayfanin ve formun EN/RU kopyalari uretildi
-  (`16-sohbet-formu-cevirisi.php`), adres cevirisi `fd_i18n_yol_esleme()`
-  haritasinda yapiliyor. Kopya sayfa `elementor_canvas` sablonunda KALMALI —
-  degilse iframe icinde menu ve altbilgi de basilir.
+> Elementor'da "CSS Classes" denetiminin adi eleman turune gore DEGISIR:
+> widget'ta `_css_classes`, section/column'da `css_classes`.
 
-> **FluentForm kopyalarken sutunlari elle saymayin.** `fluentform_forms`
-> tablosunda surume gore olmayan bir sutun (`form_meta`) yazilmaya calisildi ve
-> `wpdb->insert()` sessizce basarisiz oldu. Dogrusu kaynak satiri `SELECT *`
-> ile okuyup `id`'yi atmak, yalnizca degisen alanlari ezmek.
->
-> Bildirim ALICILARI kopyalanan meta satirlarindan aynen gelir — ceviri
-> sirasinda adres degistirmek gelen basvurulari kaybettirir (6m).
+> **Bir secici icinde virgullu liste ile duz metin degisimi YAPMAYIN.**
+> `body.page-id-5002 .a, body.page-id-5002 .b` → `body.frontpage, body.home .a,
+> body.frontpage, ...` olunca listede **ciplak `body.frontpage`** olustu →
+> `body{display:none}` → **butun sayfa beyaz**.
 
-#### Uc ayri yerde adres duzeltmek gerekti
+> **`_elementor_data` uzerinde ham `strtr` CALISMAZ** — Turkce harfler `\uXXXX`
+> bicimindedir. JSON'u coz, PHP tarafinda cevir, `wp_json_encode` ile kodla.
+> (`wp_json_encode` `/` karakterini `\/` yapar — kontrol dizesinde egik cizgi
+> kullanmayin.)
 
-1. **Menu ogeleri** (`_menu_item_url`) — 08 numarali script menuleri de baglar.
-2. **Sayfa/duzen icerigi** — ana sayfa ve altbilgi duzenlerindeki dugmeler
-   (`09-ic-baglantilari-dile-bagla.php`). Ayni script temanin DEMO sayfasina
-   giden bir hatayi da duzeltti: "Hakkimizda devamini oku" dugmesi
-   `/about-creative/` ("About - Creative") adresine gidiyordu.
-3. **Tema widget'i** (`widget_custom_html`) — icindeki cz-* scriptleri her
-   dilde ayni basildigi icin adresler `fd-i18n-layouts.php` filtresinde
-   sunucu tarafinda cevrilir.
+### 6f. Elementor / tema (chestnyznak)
 
-#### TUZAK: sayfaya ve ELEMAN KIMLIGINE civilenmis scriptler
+> **KURAL (kullanici karari):** siteye eklenen her icerik **Elementor ile
+> duzenlenebilir** olmalidir. JS enjeksiyonu, Custom HTML widget'i veya tema
+> widget alani KULLANILMAZ. Once dev, onaydan sonra canli.
 
-**Sikayet:** "en ve ru ana sayfa tr'den farkli, birebir ayni olmali."
+Sitenin gorunur bolumlerinin buyuk kismi tema widget alanindaki tek bir 57 KB'lik
+Custom HTML widget'indan **16 JS enjeksiyonuyla** uretiliyordu. `CZLEAD` bolgesi
+Elementor'a tasindi (`deploy/scripts/migrate-czlead-to-elementor.php`;
+blogun arsivi `deploy/wordpress/cz-lead-block.html`).
 
-Olculdu: Elementor YAPISI ucunde de birebir ayniydi (70 dugum, diff bos) ama
-govde TR 8386 px, EN/RU 6877 px. Fark **calisma aninda** olusuyordu, iki
-sebepten:
+**Kalan 14 enjeksiyon** hala widget'ta: `cz-hero-block`, `cz-header`, `cz-banner`,
+`cz-news`, `cz-marquee`, `cz-home`, `cz-wa`, `cz-contact`, `cz-shop`, `cz-cookie`,
+`cz-audit`, `cz-relabel`, `cz-fixlinks`, `cz-btn-brand`, `cz-urun-talep`.
 
-1. **Yol kilavuzu.** Widget'taki `cz-hero-block` ve `cz-fix2` bloklari
-   `if(p!=='/' && !/\/home\/?$/.test(p)) return;` ile basliyordu. `/en/` ve
-   `/ru/` bu testi gecemez → scriptler HIC CALISMAZ, gizlenmesi gereken
-   bolumler acik kalir.
-2. **Eleman kimligi.** `document.querySelector('.elementor-element-54fa5520')`
-   ve `[data-id="567ae5d"]` gibi seciciler. Dil kopyalari uretilirken her
-   elemanin `id` alani YENIDEN URETILIR, bu yuzden hicbir sey bulunmaz.
+**Elementor editoru 500 veriyordu** — JS yapilandirmasi tek `json_encode`
+cagrisinda 256M'yi asiyordu. Dort sitede de: FPM `memory_limit` **512M** +
+wp-config `WP_MAX_MEMORY_LIMIT` **512M** (`WP_MEMORY_LIMIT` 256M kalir).
+**Ikisi de gerekli** —
+`php_admin_value` HARD tavandir, WordPress ise kendi degerine ceker.
 
-**Duzeltme** (`11-eleman-kimliklerini-siniflandir.php`):
-- yol kilavuzu → `document.body.classList.contains('frontpage')`
-  (tema on sayfaya bu sinifi basiyor; uc dilde de var, ic sayfalarda YOK —
-  ikisi de olculdu),
-- eleman kimligi → kalici sinif `cz-el-<kimlik>`. Sinif TR sayfasindaki
-  kimlige gore adlandirilir ama uc sayfada da **ayni indeksteki** elemana
-  yazilir; script once "uc sayfa da 70 dugum, turler ayni" diye dogrular.
+> **wp-cli ile Elementor verisine yazarken `--user=<admin>` SART.** Yoksa
+> `unfiltered_html` false doner ve WordPress `<style>`, `<script>`, `<template>`
+> etiketlerini **sessizce siler**. Yazan script kayittan sonra kendini
+> dogrulamali, tutmazsa geri almalidir.
 
-> **Alt tuzak:** Elementor'da "CSS Classes" denetiminin adi eleman turune
-> gore DEGISIR — widget'ta `_css_classes`, section/column'da `css_classes`
-> (`elementor/includes/elements/section.php:1291`). Hepsine `_css_classes`
-> yazildiginda 16 dugumden yalnizca 4'unun sinifi basildi.
+- **`elementor_canvas` sablonu bos tuvaldir** (menu/logo/footer basilmaz).
+  Reklam acilis sayfalari **bilerek** canvas — onlara dokunmayin. Sohbet iframe
+  sayfalari da canvas KALMALI.
+- **Bir bileseni onarmadan once o sayfada AYNI ISI yapan baska sey var mi bakin.**
+  Sayfa #2'de olu bir CF7 blogu "onarildi" ve sayfada zaten calisan FluentForm
+  varken ikinci form olustu. Olcut: `<form>` etiketlerini saymak.
+- **Birebir dize eslesmesi UTF-8'de sessizce tutmaz** — `<div> </div>` icindeki
+  "bosluk" U+00A0 cikti. Regex (`/su`) kullanin.
 
-> **Ikinci alt tuzak:** yol kilavuzu duzeldikten sonra scriptler CEVRIMDISI
-> testte de calismaya basladi — `file://` yolunda `location.pathname` asla
-> `/` olmadigi icin onceki olcumler o bloklari hic calistirmamisti. Yani
-> "TR 8386 px" bir cevrimdisi artifaktiymis (CLAUDE.md 6e).
+### 6g. Basvuru formu (chestnyznak ana sayfa)
 
-Scriptler calisinca EN/RU'ya **Turkce** hero metinleri girdi (widget tek ve
-uc dilde ayni basiliyor). Bu yuzden widget metinleri de sunucu tarafinda
-cevrildi: `fd-i18n-layouts.php` + `fd-i18n-widget-sozluk.json` (47 metin).
+`lead-mu-plugins/fd-lead-capture.php` (chestnyznak) — uc
+`POST /wp-json/fd-lead/v1/submit`:
+1. **Kalici kayit** (`fd_lead` icerik tipi, panelde "Basvurular"),
+2. e-posta bildirimi (`Reply-To` = basvuran),
+3. Telegram aktarimi **sunucu tarafinda** (`chat_id` wp-config'de).
 
-**Son olcum:** govde TR 9826 / EN 9792 / RU 9795 px (%0,35 fark, yalnizca
-satir kaydirma). Yirmi ust bolumun yuksekligi ucunde de ayni.
+Ziyaretciye "basarili" demenin **tek olcutu veritabani kaydidir**. `stored`
+donmezse form acik kalir, hata kutusu + WhatsApp yedegi cikar. Spam: bal kupu
+alani + IP basina saatte 8 kayit.
 
-#### TUZAK: `_elementor_data` uzerinde ham strtr CALISMAZ
+wp-config sabitleri (repoya yazilmaz): `FD_LEAD_RELAY_URL`, `FD_LEAD_CHAT_ID`,
+`FD_LEAD_NOTIFY_EMAIL`, `FD_LEAD_NOTIFY_CC`. **Dev'de `FD_LEAD_CHAT_ID` BOS.**
 
-`_elementor_data` JSON'unda Turkce harfler `ı` bicimindedir. Ham dize
-uzerinde `strtr` yalnizca ASCII anahtarlari yakalar — **56 anahtardan 6'si
-esletti ve "kalan 0" yaziyordu**, cunku kalanlari da ayni ham dizede ariyordu.
-Dogru yol: JSON'u **coz**, dizeleri PHP tarafinda (gercek UTF-8) cevir,
-`wp_json_encode` ile yeniden kodla. `10-anasayfa-bloklarini-cevir.php` boyle.
+> **Google Apps Script tuzagi:** basarili POST'a **302** doner ve yaniti
+> `script.googleusercontent.com`'a yonlendirir (o adres yalnizca GET alir).
+> `redirection => 0` ve **302 basari sayilir**.
 
-Dogrulama olcutu HTTP kodu degil: sayfanin **gorunur metninde** Turkce'ye ozgu
-harf (`çğışÇĞİŞ`) iceren kelime sayilir. Olculen sonuc: `/en/` ve `/ru/` icin
-**3** (ucu de dil secicideki "Türkçe" adi — dogru), `/` icin 163.
+### 6h. Hiz ve onbellek
 
-### 6l. Eklenti sadelestirme (dev, 01.09.2026)
+**Once olcun, sonra dokunun.** Sunucu darbogaz degil (TTFB 16-26 ms); darbogaz
+**istek sayisi** ve **harici kaynak**.
 
-Kapatilanlar — dordunun de icerikte KARSILIGI YOK, yalnizca kendi secenek
-satirlarinda ve temanin kullanilmayan demo duzenlerinde geciyordu:
-`latepoint` (22 MB, **hic randevu kaydi yok**), `devvn-image-hotspot`,
-`fluent-affiliate-connector`, `fluentforms-pdf`. **24 → 20 aktif eklenti.**
+**Varlik diyeti** — iki AYRI dosya, karistirmayin:
+`deploy/wordpress/fdart-mu-plugins/fd-asset-diyet.php` (fdartgallery) ve
+`deploy/wordpress/lead-mu-plugins/fd-asset-diyet.php` (chestnyznak).
+Ikisi de:
+sayfada karsiligi olmayan dosyalari kuyruktan cikarir. Kosul saglanmiyorsa dosya
+AYNEN kalir (hata durumunda eksik degil, fazla yuklenir).
 
-**Kapatilmayanlar ve sebebi** (arama once yapildi, CLAUDE.md 6e):
-- `revslider` — 103 `trx_widget_slider` meta satiri. 30.08'de "kullanilmiyor"
-  sanilip kapatilmisti, **canli ana sayfa 2 gun bozuk kaldi**.
-- `fluentform` — altbilgideki bulten formu (`[fluentform id='2']`) uc dilin
-  altbilgi duzeninde de var; ayrica 8-13 kayitli canli formlar mevcut.
-- `contact-form-7` — Iletisim sayfasinin formu.
-- `easy-code-manager` — icinde **iki calisan hiz snippet'i** var
-  (`wp-content/fluent-snippet-storage/`): ana sayfada revslider varliklarini
-  ve magaza disinda WooCommerce varliklarini kuyruktan cikariyorlar.
+> **TUZAK: tek bagimlilik 15 dosya getiriyordu.** `cfturnstile-woo-js`
+> bagimlilik listesinde `wp-data` var → react + 12 `js/dist` dosyasi.
+> **"Scripti cikaralim" YANLISTI:** XStore her sayfaya gizli bir WooCommerce
+> giris formu basiyor, script cikarilsaydi Turnstile dogrulanmaz ve **giris
+> kirilirdi**. Dogru mudahale: script KALIR, sepet/odeme disinda handle
+> `wp-data`'siz **on kayit** edilir (`WP_Dependencies::add()` mevcut handle'i
+> EZMEZ).
 
-**Varlik diyeti** — `deploy/wordpress/lead-mu-plugins/fd-asset-diyet.php`
-mu-plugin'i, sayfada KARSILIGI OLMAYAN dosyalari kuyruktan cikarir:
-mediaelement (5 dosya, sayfada oynatici yoksa), Site Kit'in CF7 olay
-saglayicisi, WooCommerce `sourcebuster` (satin alma akisi disinda).
+> **Bir handle'i cikarmadan once `src`'sini ve KANCASININ NE ZAMAN calistigini
+> okuyun.** Turnstile `wp_enqueue_scripts`'te degil kendi eyleminde enqueue
+> ediyor — oradaki dequeue kurali ona HIC DEGMEDI.
 
-> `akismet-frontend.js` DENENDI, VAZGECILDI: ana sayfada yorum formu yok ama
-> Akismet altbilgideki FluentForm bultene bal kupu alani basiyor ve o alani
-> **bu JS dolduruyor**. Cikarilsa mesru abonelikler spam sayilirdi.
+**Fontlar** — `fd-font-hizlandirma.php`: googleapis stylesheet'leri **tek**
+istege birlestirilir, agirlik listesi 18 → 9, `fonts.googleapis.com` ve
+`fonts.gstatic.com` icin **preconnect** (gstatic'te `crossorigin` SART).
+Aile ELENMEDI — kit tipografisi sayfada kullaniliyor, aile atmak basliklari
+sistem fontuna dusururdu; bu bir **tasarim** karari.
 
-**Olculen (dev ana sayfa):** 89 → **75 istek**, 85 → 71 benzersiz dosya.
-`/shop/` ve `/cart/` bilerek etkilenmedi (Woo varliklari orada gerekli).
+`fd-font-hizlandirma.php` fdart mu-plugins altinda.
+`deploy/nginx/snippets/font-gzip.conf` — Ubuntu `mime.types`'ta `ttf`/`otf` YOK,
+nginx `application/octet-stream` veriyor ve o tur global `gzip_types`'a
+**konmamali**. Cozum: yalnizca `.ttf|.otf|.eot` eslesen location icinde gzip.
+`woff/woff2` bilerek disarida (zaten sikistirilmis).
 
-### 6m. Form bildirimleri kime gidiyor (01.09.2026, CANLI + dev)
+#### Izleme parametreli istekler (`?utm_*`)
 
-**Kullanici karari:** ekip bildirimleri **To: `info@chestnyznak.com.tr`,
-Cc: `oguzk@chestnyznak.com.tr`**. WordPress yonetici adresi
-(`admin_email = swordbros@gmail.com`) **DEGISMEZ**; panelde bekleyen
-"yonetici e-postasini info@ yap" degisikligi **iptal edildi**
-(`new_admin_email` + `adminhash` silindi).
+**Okuma ile yazma AYRILIR:** `fastcgi_cache_bypass` OKUMAYI, `fastcgi_no_cache`
+YAZMAYI kontrol eder. Izleme-only isteklerde okuma **serbest** (anahtar sorgu
+dizesiz), yazma **yasak**.
 
-Kisisel adresler (`swordali@gmail.com`, `blgnklc@gmail.com`) alicilardan
-cikarildi. Arac: `deploy/scripts/eposta-alicilari.php` (`dry` destegi var,
-yeniden calistirilabilir).
+> **"utm'i anahtardan at, hepsi ayni girdiyi paylassin" YANLIS OLURDU:** sorgu
+> dizesi HTML'e SIZIYOR (ana sayfada 19 `add-to-cart` baglantisi ve
+> `_wp_http_referer` gecerli URL uzerine kuruluyor). Sonraki ziyaretci
+> **baskasinin utm'ini** gorurdu.
 
-**Politika** (`deploy/scripts/eposta-alicilari.php`, `dry` destegi var,
-yeniden calistirilabilir; iki sitede de uygulandi):
+> **`$uri` KULLANILAMAZ** — `try_files ... /index.php?$args` sonrasi `$uri`
+> `/index.php` olur ve butun sayfalar tek girdide toplanir. Yol
+> `$request_uri`'den regex ile kesilir (`$wpc_request_path`).
 
-| Alan | Kural |
-|---|---|
-| Alici | `admin_email` disindaki her alici → To `info@`, Cc `oguzk@` |
-| Gonderen | Alan adi `chestnyznak.com.tr` DISINDA olan her gonderen → `info@` |
-| Bcc | `chestnyznak.com.tr` disindaki bcc adresleri kaldirilir |
-
-`wordpress@chestnyznak.com.tr` **dokunulmaz** — dogru alan adinda ve SPF/DKIM
-zaten bu alana kurulu.
-
-Kapsanan yerler: **9 CF7 formu** (8'i temanin demo formuydu, hepsi
-`test@fwe.com`'a gidiyordu), **FluentForm 2/3/4/6/8/9/10/11**, **WooCommerce**
-(siparis + stok bildirimi alicilari, `from_address`, `from_name`),
-`booked_email_force_sender_from`, tema iletisim widget'i ve
-**`fd-lead-capture.php`** (`FD_LEAD_NOTIFY_EMAIL` + `FD_LEAD_NOTIFY_CC`,
-wp-config'de tanimli, repoya yazilmaz).
-
-#### Iki yerde bilerek FARKLI davranildi
-
-> **Otomatik yanitlara `sendTo` olarak ekip adresi YAZILMAZ.** FluentForm 3, 4
-> ve 8'in bildirimi `sendTo.type = field` — alicisi BASVURANIN kendisidir.
-> Oraya ekip adresi yazmak musteriye giden yaniti kirar. Ekip kopyasi
-> yalnizca `cc` alanina eklendi.
-
-> **"E-postayla paylas" dugmesi bir alici ayari DEGILDIR.**
-> `trx_addons_options[share][*][url]` icinde `mailto:test@fwe.com?...`
-> duruyordu. O baglanti ZIYARETCININ posta istemcisini acar; oraya ekip
-> adresi yazmak "yaziyi paylas" dugmesini "bize e-posta gonder"e cevirirdi.
-> Dogrusu alici kismini bos birakmaktir: `mailto:?subject=...`.
-
-**Kaldirilan bcc'ler:** FluentForm 3/4'te `ali.kilic@swordbros.com`, 8'de
-`ali.kilic@swordbros.ru`. Ikili zaten `cc`'de oldugu icin kopya kaybolmuyor;
-ayri bir ic dagitim istenirse geri eklenir.
-
-**Hala demo verisi:** tema iletisim widget'inin adres ve telefon alanlari
-(Berlin adresi, +1 telefon). Widget `wp_inactive_widgets` icinde, yani
-kullanilmiyor; kullanilacaksa elle duzeltilmeli.
-
-### 6n. fdartgallery hiz calismasi (DEV, 02.09.2026)
-
-Kullanici "eklenti sadelestirme + hizlandirici isler" istedi. **Once olculdu.**
-
-| Olcum | Once | Sonra |
-|---|---|---|
-| Aktif eklenti | 17 | **13** |
-| Ana sayfa `<script src>` | 47 | **26** |
-| Ana sayfa `<link stylesheet>` | 32 | **26** |
-| Tarayicida toplam istek | 105 | **83** |
-| Google Fonts | **5 istek / 167.522 bayt** | **1 istek / 91.945 bayt** |
-| Font dosyalari (577 KB) | sikistirilmiyor | **gzip, 379.600 bayt (%34)** |
-| Autoload option | 144.623 bayt / 578 satir | 111.031 / 543 |
-| Cron olayi | 31 | 24 |
-| Redis nesne onbellegi | **KAPALI** (drop-in yok) | acik, db **4**, onek `dev_fdartgallery_com:` |
-| TTFB (onbellek isabet) | — | **16 ms**, HTML telde 37 KB |
-
-Dogrulama: dev ve **canli** ana sayfa ayni yontemle tarayicida olculdu ve
-**birebir ayni** cikti — govde 1280x6074 (ikisinde de), h1 1086x51,
-39/39 gorsel, 32 urun karti, giris formu var, Turnstile var, 6 menu baglantisi.
-
-#### Kapatilan 4 eklenti ve NEDEN (arama once yapildi — CLAUDE.md 6e)
-
-| Eklenti | Kanit |
-|---|---|
-| `mailchimp-for-woocommerce` | API anahtari YOK, icerikte 0 referans; her sayfaya 1 JS basiyordu |
-| `fluentforms-pdf` | icerikte 0 referans (chestnyznak'ta da ayni) |
-| `image-optimization` | `optimize edilmis gorsel = 0`; lisans **canli alan adina** bagli; WebP zaten sunucuda cron ile uretiliyor |
-| `updraftplus` | `updraft_service` BOS → yedek yalnizca yerel diske; **saatte bir** DB yedegi; dev'de 2,8 GB birikmis (canlida 6,9 GB) |
-
-**Kapatilmayanlar:** `revslider` yok bu sitede; `contact-form-7` **tek** yayinlanmis
-sayfada gerekli; `mc4wp` formu 8 yerde gomulu (anahtarsiz ama icerik karari);
-`members`, `iyzico-woocommerce`, `redis-cache`, `fluent-smtp`, `et-core-plugin`
-gerekli. Pasif `jetpack`/`akismet`/`mailchimp`/`pojo-accessibility` zaten kapali —
-yalnizca **jetpack'in 34 autoload satiri** `autoload=no` yapildi (24 KB) ve
-uc yetim cron olayi silindi.
-
-#### TUZAK: tek bir bagimlilik 15 dosya getiriyordu
-
-Ana sayfada `react`, `react-dom`, `react-jsx-runtime` ve 12 adet
-`wp-includes/js/dist/*` vardi. Kaynak: **`cfturnstile-woo-js`**, bagimlilik
-listesinde `wp-data` var.
-
-> **ILK COZUM YANLISTI.** "Ana sayfada WooCommerce formu yok, scripti cikaralim"
-> denildi. Olcunce goruldu ki **XStore her sayfaya gizli bir WooCommerce
-> giris/kayit penceresi basiyor** (`woocommerce-form-login` HTML'de var).
-> Script cikarilsaydi o formdaki Turnstile dogrulanmaz, **giris kirilirdi**.
-
-Dogru mudahale: script KALIR, `wp-data` bagimliligi duser. Dosya `wp.data`'yi
-zaten yalnizca **blok odeme** formunda kullaniyor ve basinda
-`!document.querySelector('.wp-block-woocommerce-checkout, .wc-block-checkout')`
-ile cikiyor. Sepet/odeme disindaki sayfalarda handle **on kayit** edilir;
-`WP_Dependencies::add()` mevcut handle'i **EZMEDIGI** icin eklentinin sonraki
-`wp_enqueue_script()` cagrisi bizim kaydimizi kullanir.
-→ `deploy/wordpress/fdart-mu-plugins/fd-asset-diyet.php`
-
-> **Kural:** bir handle'i cikarmadan once o handle'in `src`'sini ve **kancasinin
-> ne zaman calistigini** oku. Turnstile `wp_enqueue_scripts`'te degil, kendi
-> `cfturnstile_enqueue_scripts` eyleminde enqueue ediyor — bu yuzden
-> `wp_enqueue_scripts` uzerindeki dequeue kurali ona HIC DEGMEDI (ilk denemede
-> sessizce etkisiz kaldi, HTML'de dosya durmaya devam etti).
-
-#### Fontlar
-
-`deploy/wordpress/fdart-mu-plugins/fd-font-hizlandirma.php`:
-- `fonts.googleapis.com` + `fonts.gstatic.com` icin **preconnect**
-  (gstatic'te `crossorigin` SART — font dosyalari CORS ile iner, bayrak yoksa
-  tarayici ikinci baglanti acar ve preconnect bosa gider),
-- kuyruktaki **butun** googleapis stylesheet'leri **tek** istege birlestirilir
-  (v1 API `family=A:...|B:...` destekler),
-- agirlik listesi 18 → 9 (italikler dusuruldu: sitede uretilen CSS'te
-  `font-style: italic` **0 kez** geciyor).
-
-**Aile ELENMEDI, bilerek.** Olculen gercek kullanim Outfit 6704 / Poppins 61 /
-Source Sans Pro 31 / Roboto 14; Roboto ve Roboto Slab Elementor kit'inin
-varsayilanlari. Ama kit tipografisi sayfada KULLANILIYOR — aile atmak basliklari
-sistem fontuna dusururdu. Aile sadelestirmesi **tasarim** karari.
-
-`deploy/nginx/snippets/font-gzip.conf` — Ubuntu'nun `mime.types` dosyasinda
-`ttf`/`otf` YOK; nginx onlari `application/octet-stream` veriyor ve o tur global
-`gzip_types` listesinde degil (**oraya konmamali** — her tanimsiz ikili dosyanin
-torbasi). Cozum: yalnizca `.ttf|.otf|.eot` ile eslesen bir location icinde
-gzip'lemek. `woff/woff2` **bilerek disarida** — zaten sikistirilmis.
-
-> Snippet vhost'ta `include snippets/wordpress.conf;` satirindan **ONCE**
-> include edilmeli: nginx regex location'lari tanim sirasina gore dener ve
-> `wordpress.conf` icindeki genis statik blok `ttf|otf|eot`'u de kapsar.
+Kapsam yalnizca fdartgallery (`$wpc_qs_norm` map'i). `ref`, `source`, `campaign`
+BILEREK izleme sayilmaz — ortaklik kodu olabilirler.
 
 #### Yapilmayanlar ve nedeni
 
-- **`sourcebuster-js` + `wc-order-attribution` DOKUNULMADI.** Siparis kaynagi
-  izlemesi ilk temasi **giris sayfasinda** kaydeder; yalnizca sepette yuklemek
-  veriyi eksiltmez, **YANLIS** yapar (herkes "direct" gorunur). Kaldirilacaksa
-  WooCommerce ayarindan ozellik komple kapatilir — bu bir is karari.
-- **Elementor deneysel ozellikleri** (`e_optimized_markup`, `e_font_icon_svg`,
-  `e_element_cache`) acilmadi: agir bir temayla birlikte gercek render riski
-  var, kazanci ise kalan birkac kucuk CSS dosyasi. Once dev'de ayri ayri
-  denenmeli.
-- **TTF → WOFF2** cevirisi yapilmadi: `@font-face` kurallarini uretmek
-  temanin/`custom-fonts` ozelliginin isi, elle degistirmek kirilgan. gzip zaten
-  %46 verdi; woff2 ~%30 daha verirdi.
-- ~~**`?utm_...` istekleri sayfa onbellegini ATLIYOR**~~ → **02.09.2026'da
-  duzeltildi, bkz. 6q.**
+- **`sourcebuster-js` + `wc-order-attribution` DOKUNULMADI** — ilk temasi giris
+  sayfasinda kaydeder; yalnizca sepette yuklemek veriyi eksiltmez, **YANLIS**
+  yapar. Kaldirilacaksa WooCommerce ayarindan ozellik komple kapatilir.
+- **`akismet-frontend.js` DENENDI, VAZGECILDI** — Akismet altbilgideki FluentForm
+  bultene bal kupu alani basiyor ve o alani bu JS dolduruyor.
+- **Elementor deneysel ozellikleri** acilmadi (agir temayla render riski).
+- **TTF → WOFF2** yapilmadi (gzip zaten %46 verdi; `@font-face` uretimi temanin isi).
+- **Brotli** kurulu degil (Ubuntu deposunda `libnginx-mod-brotli` yok).
+
+### 6i. Icerik ve SEO temizligi (chestnyznak)
+
+**Tema demosu aramaya siziyordu.** Site haritasi **523 → 97** adres, yayindaki
+`page` 191 → 27, 370 kayit taslaga. Arac:
+`deploy/scripts/demo-icerik-temizle.php` (`dry` ve `geri-al` destekli).
+
+> **KOK SEBEP sayfalarin yayinda olmasi DEGILDI:** Yoast'ta `noindex-cpt_portfolio`,
+> `noindex-cpt_layouts`, `noindex-tribe_events`... **hepsi `false`**'ti. Tip
+> bazinda noindex olmadan yeni demo icerik ayni yerden geri doner. 21 ayar acildi.
+
+> **TUZAK: "menude var" olcut DEGILDIR.** Temanin **atanmamis** demo menuleri
+> hala kayitli (`Main Menu` 179 oge, `Developer's menu`, `Footer Menu 2/3`,
+> `Simple Menu`) ve demo sayfalara link veriyor. Ilk denemede sonuc **174 gercek
+> / 26 demo** cikti — tam tersi. Gercek olcut: **bir tema konumuna ATANMIS**
+> menuler (`get_nav_menu_locations()`). Dogru sonuc: 27 gercek, 164 demo.
+
+> **`cpt_layouts` TASLAGA CEKILMEZ** — sitenin kullanilan basligi (`Header Main`
+> #4614) ve altbilgisi (`Footer Default` #4105) o tipte. Yalnizca `noindex`.
+
+> **TUZAK (02.09.2026): menude olmayan sayfa "demo" demek DEGILDIR.**
+> `rusya-markalama-danismanlik` bir **reklam kampanyasinda** kullaniliyordu ve
+> temizlikte taslaga cekildi; kullanici bildirdi, geri alindi. Menude olmayan
+> ama isletmeye ait sayfalar (canvas sablonu, TR/RU baslik, form icerigi)
+> kapatilmadan once **kullaniciya tek tek sorulur**. Kalan liste 0. bolumde.
+
+**404 sayfasi** — `HTTP 404` ve `noindex,follow` ZATEN dogruydu; eksik olan
+metindi. `lead-mu-plugins/fd-404-cevirisi.php` + `fd-404-metinleri.json` ile uc dile cevrildi ve
+dile uygun uc faydali baglanti eklendi.
+
+> **`gettext` filtresinde `is_404()` sarti ZORUNLU** — filtre her istekte calisir,
+> sartsiz birakilirsa "Homepage" gecen HER yer degisir.
+
+> Faydali baglantilar **sablona dokunmadan** eklendi: aciklama metni
+> `wp_kses(..., 'qwery_kses_content')` icinden geciyor ve o kume `<a>`, `<span>`,
+> `<br>`'a izin veriyor. Adresler JSON'da yer tutucu, PHP'de
+> `fd_i18n_yol_esleme()` haritasindan cozuluyor. **Tema dosyasi degistirilmedi,
+> cocuk temaya kopyalanmadi** (guncellemede kaybolur / catallar).
+
+#### Site haritasi 404 donuyordu (fdartgallery)
+
+`wp-sitemap.xml` GECERLI XML donuyordu ama HTTP durumu **404** idi; `robots.txt`
+o adresi ilan ettigi icin arama motorlari haritayi reddeder.
+
+**Kok sebep:** rewrite dogru calisiyor, ama `WP::query_posts()` istegi siradan
+bir gonderi sorgusu gibi calistiriyor. Bu sitede **yayinlanmis `post` sayisi
+SIFIR** → sorgu bos → `WP::handle_404()` `status_header(404)` basiyor.
+`render_sitemaps()` sonra indeksi basip `exit` ediyor ama durumu 200'e geri
+CEKMIYOR. Yani hata "harita uretilmiyor" degil, **bos blog yuzunden istek 404
+damgasi yiyor**.
+
+**Cozum:** `fdart-mu-plugins/fd-site-haritasi-durum.php` — cekirdegin tam bu is
+icin sundugu `pre_handle_404` kancasi. Yalnizca `sitemap` sorgu degiskeni
+doluyken `true` doner. Sonuc: indeks + 8 alt harita **200**, 329 adres;
+gercek 404'ler ve `/wp-sitemap-posts-post-1.xml` (0 yazi) **404 kaliyor**.
+
+> **TUZAK: dev'deki ayni belirti BASKA BIR OLAYDI.** Dev'de de 404 goruluyordu
+> ama orada **kasitli ve dogru**: cekirdek `sitemaps_enabled()` `blog_public`'e
+> bakar, staging guard onu 0'a zorlar. Ayirt eden olcut **govde**: canlida
+> `<sitemapindex`, dev'de `<html` (tema 404 sayfasi). Iki ortamda ayni durum
+> kodunu gormek ayni sebep demek DEGILDIR.
+
+**Sayfa slug'i degisiminde WordPress 301 KURMAZ.** `wp_check_for_changed_slugs()`
+hiyerarsik tiplerde (yani `page`) erken doner. Cozum:
+`deploy/wordpress/fdart-mu-plugins/fd-eski-adresler.php` — yalnizca istek 404'e
+dustugunde calisir, sorgu dizesini korur. **Sira: once mu-plugin, sonra slug.**
+
+### 6j. Blog
+
+Surec ve uslup kurallari: `deploy/blog/README.md`. Konu kuyrugu ve yayinlanan
+yazilar: `deploy/blog/BACKLOG.md` (**tek dogruluk kaynagi**).
+
+Standart: 1200–1600 kelime, 8–11 `<h2>`, SSS bolumu, 5–8 ic baglanti (biri
+mutlaka `/kod-sorgulama/`), kapak gorseli (`deploy/blog/cover.php`), kategori
+`modern`, yazar 3, Yoast baslik ≤60 / aciklama ≤155.
+
+**Araclar** (ikisi de `dry` destekli, post ID gomulmez):
+- `deploy/blog/yazi-yayinla.php` — Turkce yaziyi yayinlar (kapak, kategori, Yoast, dil).
+- `deploy/blog/ceviri-yayinla.php` — EN/RU cevirilerini yayinlar + Polylang baglar.
+- `deploy/blog/telegram-cek.py` — genel Telegram kanalini `t.me/s/<kanal>`
+  uzerinden sayfalayarak ceker (Bot API/oturum gerekmez).
+
+**Telegram bir icerik kaynagi.** `t.me/globalznak_rusya` (@global_znak).
+Telegram yazilari 150–500 kelime — **hazir blog yazisi DEGIL**, kaynak malzemedir
+ve birlestirilir.
+
+> **ORTUSME ONCE OLCULUR.** Ilk plan 5 yaziydi; mevcut yazilarla karsilastirinca
+> ikisi elendi ("hangi urunlerde zorunlu" 4 yazida islenmis, "adim adim yol
+> haritasi" ayni yazinin bolumu). Olcmeden yazmak kendi yazilarimizla rekabet
+> eden kopya icerik uretir.
+
+> **TUZAK: wp-cli `--porcelain` bu kurulumda GUVENILIR DEGIL.** Elementor'un
+> shutdown kaydedicisi STDOUT'a deprecation uyarisi basiyor; `$(...)` onu da
+> yakaliyor ve degisken bozuluyor. Olusturma isi kabuktan degil PHP'den yapilir.
+> Kabuktan kimlik yakalamak gerekirse `| grep -oE '^[0-9]+$' | head -1` sart
+> (`wp user list --field=ID` icin de gecerli).
 
-#### CANLIYA ALINDI (02.09.2026)
+> **TUZAK: ceviri yazilarda `uncategorized` yapisiyordu.**
+> `wp_set_post_terms(..., append=true)` birakilinca WordPress'in ekleme aninda
+> atadigi varsayilan kategori kaliyor. **`append=false` sart.** Sira da onemli:
+> Polylang, **dil atandiktan sonra** atanan kategoriyi kendiliginden o dildeki
+> karsiligina esler — `pll_set_post_language()` kategoriden ONCE cagrilir.
 
-Dort parca da uygulandi. Yedek: `/var/backups/claude-2026-09-02-hiz/`
-(DB dokumu 77 MB, mu-plugins kopyasi, vhost kopyasi, eklenti listesi).
+> `/comments/feed/` her yazida 404 doner; **sitede oteden beri boyle**, bizim
+> eklediklerimize ozgu degil. Kirik baglanti taramasinda yanlis alarm vermesin.
 
-Dev'in HTML'i KOPYALANMADI — 4 eklentinin kullanilmadigi canlinin KENDI
-icerigi uzerinde yeniden tarandi (`mailchimp-for-woocommerce` API anahtari yok
-ve 0 referans; `fluentforms-pdf` 0 referans, PDF feed tablosu yok;
-`image-optimization` optimize meta 0, diskteki 6437 webp sunucu cron'undan;
-`updraftplus` `updraft_service` bos).
+### 6k. Rusya erisimi (chestnyznak)
 
-| Olcum | canli once | canli sonra | dev |
-|---|---|---|---|
-| Aktif eklenti | 17 | **13** | 13 |
-| `<script src>` | 47 | **26** | 26 |
-| stylesheet | 32 | **26** | 26 |
-| `wp-includes/js/dist/*` | 13 | **1** | 1 |
-| react/react-dom | 3 | **0** | 0 |
-| googleapis istegi | 5 | **2** | 2 |
-| `.ttf` telde | 62.044 B | **33.984 B** (gzip) | 33.984 B |
-| `woocommerce-form-login` | 2 | **2** | 2 |
-| `cf-turnstile` alani | 5 | **5** | 5 |
-| Isinmis TTFB | — | **16-19 ms** | 19-23 ms |
+**Kanitlandi:** engel Cloudflare IP araliklarina. VPN kapali, ayni telefon:
+`chestnyznak.com.tr` (turuncuyken) → `ERR_TIMED_OUT`; ayni sunucudaki
+`origin.chemiartclick.uk` (gri) → **acildi**. DNS temiz, TCP hic kurulmuyor.
 
-Dogrulama: canli ile dev'in varlik listeleri (27 benzersiz js/css) **birebir
-ayni**; 27 varligin hepsi 200/304 (tek istisna Turnstile'in kendi 302 → 200
-surum yonlendirmesi, dev'de de ayni). Yapi sayimlari da esit (urun karti,
-`<img>`, menu ogesi, `<form>`).
+Gri buluta cekildi (geri alma yedegi `scratchpad/chestnyznak-A-before.json`).
+Origin'i acmadan once nginx'te kaynak ayrimi yapildi: `cloudflare-only.conf`
+fdartgallery vhost'larinda VAR, chestnyznak'ta **YOK**.
 
-> Tarayici testi bu oturumdan KOSULAMADI: konteynerin egress proxy'si
-> Chromium'un TLS el sikismasini kesiyor (`ws_closed_mid_exchange`; curl
-> geciyor, BoringSSL gecmiyor) ve sunucuda node/chromium yok. Yerine
-> varlik listesi diff'i + her varligin HTTP durumu + yapi sayimlari
-> kullanildi.
+**Gri olduktan sonra da acilmiyor.** Geriye tek degisken alan adi.
+`chestnyznak-test.chemiartclick.uk` testi bunun icin kuruldu:
+2 acilmaz + 1 acilirsa → engel **isimde**; 2 acilirsa → yeni alan adi cozer.
 
-#### TUZAK: form referansi her zaman kisa kod degildir
+Gecici test kaynaklari (**is bitince silinecek**): `origin.chemiartclick.uk` ve
+`chestnyznak-test.chemiartclick.uk` A kayitlari, `origin-test.conf`,
+`/var/www/origin-test`, `certbot delete --cert-name origin.chemiartclick.uk`.
 
-Canliya alirken yakalandi. Sayfa #2 "Ozel Siparis Formu" formu soyle sakliyor:
+### 6l. Diger
 
-```
-<!-- wp:contact-form-7/contact-form-selector {"id":64,"hash":"8783421",...} -->
-```
-
-Gutenberg **blok yorumu** — ortada `[contact-form-7` YOK. `fd-asset-diyet`'in
-ilk deseni yalnizca kose parantezli kisa kodu ariyordu, dolayisiyla o sayfada
-CF7'yi kuyruktan cikariyordu. Desen `wp:contact-form-7|contact-form-selector`
-(ve FluentForm icin `wp:fluentfom`) ile genisletildi; ana sayfadaki kazanc
-korundu (26/26), sayfa #2 artik CF7 JS'ini yukluyor.
-
-> **Ayrica olculdu:** o sayfada form ZATEN BASILMIYOR ve bu bizden ONCE de
-> boyleydi. Kanit enqueue'dan bagimsiz: `apply_filters("the_content", ...)`
-> ciktisinda `wpcf7` **0**, blok yorumu ham metin olarak duruyor; ayni formun
-> kisa kodu elle calistirilinca **58** `wpcf7` uretiyor. Yani CF7 eklentisi ve
-> form #64 saglam, bozuk olan sayfanin saklanmis markup'i (blok yorumu `<p>`
-> icine sikismis ve sayfa Elementor ile render ediliyor). **Ayri is.**
-
-### 6o. UpdraftPlus temizligi (02.09.2026, CANLI + dev)
-
-Eklenti hem canlida hem dev'de kapali (6n). Yerel arsivler de silindi:
-
-| | once | sonra |
-|---|---|---|
-| canli `wp-content/updraft` | 6,9 GB / 98 dosya | **80 KB / 3 dosya** |
-| dev `wp-content/updraft` | 2,8 GB / 77 dosya | **72 KB / 3 dosya** |
-| disk (`/`) | 29 GB kullanimda (%40) | **19 GB (%26)** |
-
-`index.html`, `.htaccess`, `web.config` KORUNDU (dizin listelemeye karsi).
-Canlida 3 yetim cron olayi da silindi (`updraft_backup_database`,
-`updraft_backup`, `updraftplus_clean_temporary_files`); ikisinde de 0 kaldi.
-
-**SILMEDEN ONCE R2 KANITLANDI** — "gece yedegi var" demek yetmez, dogrulandi:
-
-- `snapshots/` altinda 29.08-02.09 arasi gunluk `db-*.sql.gz` + `files-*.tar.gz`
-  + `wp-config-*.php`,
-- `uploads/` artimli kopya 01.09'a kadar guncel,
-- en yeni DB dokumu R2'den INDIRILDI: `gzip -t` saglam, 76 `CREATE TABLE`,
-  acilmis 80 MB.
-
-> **`files-*.tar.gz` `wp-content/updraft`'i DISLIYOR** (`backup-site.sh` satir
-> 66-69: `uploads`, `cache`, `updraft`, `*.log`). Ilk bakista tarball icinde
-> 1549 "updraft" girdisi gorundu ve bir an "yedegin icinde" sanildi —
-> hepsi `wp-content/plugins/updraftplus/` altindaki EKLENTI KAYNAK dosyalari.
-> Dogru olcut: `tar -tzf ... | grep -c '^wp-content/updraft/'` → **0**.
-> Uploads da tarball'da yok, R2'ye ayrica artimli gidiyor.
-
-### 6p. Tema demosu aramaya sizmisti (02.09.2026, CANLI + dev)
-
-**Sikayet (Ali):** `site:chestnyznak.com.tr` aramasi tema demosunu gosteriyor.
-
-**Olculen durum:**
-
-| | Once | Sonra |
-|---|---|---|
-| Site haritasindaki adres | **523** | **97** |
-| Alt site haritasi | 16 | 6 |
-| Yayindaki `page` | 191 (27'si gercek) | **27** |
-| `cpt_portfolio` / `cpt_services` / `cpt_testimonials` / `cpt_team` | 98 / 50 / 33 / 11 | 0 |
-| `tribe_events` | 15 | 0 |
-| Yoast tip bazinda `noindex` | **hicbiri** | 21 ayar acildi |
-
-**KOK SEBEP sayfalarin yayinda olmasi DEGILDI:** Yoast'ta `noindex-cpt_portfolio`,
-`noindex-cpt_layouts`, `noindex-cpt_services`, `noindex-tribe_events`... **hepsi
-`false`**. Yalnizca sayfalari kapatmak yetmez; tip bazinda noindex olmadan yeni
-demo icerik ayni yerden geri doner.
-
-Arac: `deploy/scripts/demo-icerik-temizle.php` (`dry` ve `geri-al` destegi var,
-yeniden calistirilabilir). Degistirdigi her kimligi
-`wp-content/demo-temizlik-geri-alma.json` dosyasina yazar.
-
-#### TUZAK: "menude var" olcut DEGILDIR
-
-Ilk denemede menulerden ulasilan her sayfa "gercek" sayildi ve sonuc **174
-gercek / 26 demo** cikti — tam tersi. Sebep: temanin **atanmamis demo menuleri**
-hala kayitli (`Main Menu` **179 oge**, `Developer`s menu`, `Footer Menu 2/3`,
-`Simple Menu`, `Single Styles`) ve hepsi demo sayfalara link veriyor.
-
-> Gercek olcut: **yalnizca bir tema konumuna ATANMIS** menuler
-> (`get_nav_menu_locations()`). Bu sitede yalnizca `menu_main`/`menu_mobile`
-> (#171) ve dil kopyalari (#372 en, #373 ru) atanmis. Dogru sonuc: **27 gercek,
-> 164 demo**.
-
-#### `cpt_layouts` TASLAGA CEKILMEZ
-
-83 kayitlik bu tipin icinde sitenin **kullanilan** basligi ve altbilgisi var
-(`Header Main` #4614, `Footer Default` #4105). Taslaga cekmek siteyi kirar.
-Onlara yalnizca `noindex` uygulanir — yayinda kalirlar.
-
-#### Korunanlar (kullanici karari)
-
-`cerez-politikasi` yayinda BIRAKILDI (yasal sayfa, cerez bildiriminden baglanti
-aliyor). Reklam acilis sayfalari (`urun-talep-formu`, `lp-iletisim-formu`,
-`datamatrix-kod-etiket`) ve sohbet iframe sayfalari (`site-iletisim-formu` +
-EN/RU kopyalari) menude olmadiklari icin script'te **slug ile** korunur.
-
-#### 404 zaten CALISIYORDU — eksik olan METINDI (cevrildi)
-
-"404 aktif edilmeli" denmisti; olculdu: `HTTP 404` donuyor,
-`<meta robots content="noindex, follow">` basiyor, tema sablonu
-(`qwery/skins/default/templates/content-404.php`) menu + altbilgi + arama
-kutusu + ana sayfa baglantisiyla geliyor. Polylang dili de DOGRU algiliyor
-(`lang=tr-TR/en-US/ru-RU`) ve `home_url()` zaten `/en/`, `/ru/` veriyor.
-
-Eksik olan metindi — dordu de Ingilizceydi ve dile gore degismiyordu:
-`Page not found` (Yoast baslik), `Oops...`, `We're sorry, but something went
-wrong.`, `Homepage`.
-
-**Cozum:** `deploy/wordpress/lead-mu-plugins/fd-404-cevirisi.php` +
-`fd-404-metinleri.json`. Metinler `gettext` filtresiyle (`qwery` metin alani)
-cevriliyor, baslik `wpseo_title` ile.
-
-> **`gettext` filtresinde `is_404()` sarti ZORUNLU.** Filtre her istekte
-> calisir; sartsiz birakilirsa "Homepage" gecen HER yer degisir. Olculdu:
-> sartla birlikte `/`, `/en/`, `/shop/` sayfalarinda 404 metni gecen yer 0.
-
-**Tema dosyasi DEGISTIRILMEDI, cocuk temaya da kopyalanmadi.** Ana temayi
-degistirmek guncellemede kaybolur; sablonu cocuk temaya kopyalamak ise
-catallar ve ileride tema tarafindaki duzeltmeler gelmez.
-
-**Faydali baglantilar sablona dokunmadan eklendi:** aciklama metni
-`wp_kses( ..., 'qwery_kses_content' )` icinden geciyor ve o kural kumesi
-`<a href class style target>`, `<span>`, `<br>` etiketlerine izin veriyor
-(`qwery_kses_allowed_html`). Baglantilar JSON'da `%cozumler%`, `%kod%`,
-`%iletisim%` yer tutucusu olarak duruyor ve PHP tarafinda
-`fd_i18n_yol_esleme()` haritasindan cozuluyor — **elle adres yazilmaz**,
-yoksa dil dusuren baglanti olusur (CLAUDE.md 6k).
-
-Olculen sonuc (canli):
-
-| Dil | Baslik | Baglantilar |
-|---|---|---|
-| tr | Sayfa bulunamadi | `/shop/` `/kod-sorgulama/` `/iletisim/` |
-| en | Page not found | `/en/solutions/` `/en/code-lookup/` `/en/contact/` |
-| ru | Stranica ne naydena | `/ru/uslugi/` `/ru/proverka-koda/` `/ru/kontakty/` |
-
-Dokuz baglantinin hepsi 200; hicbiri dil dusurmuyor.
-
-#### Dogrulama
-
-Dev'de yapildi, yapisal olarak canliyla karsilastirildi, sonra canliya alindi.
-Uc dilde ana sayfa + 5 ic sayfa: **20 bolum, 76 widget, 135 menu ogesi,
-25 gorsel, 24 `cz-*` blogu, ayni H1'ler** — dev ve canli birebir ayni (aradaki
-birkac yuz bayt tam olarak `dev.` onekinin uzunlugu). 17 gercek sayfada
-66 benzersiz ic baglanti, 914 gecis: **kirik baglanti 0**. Demo adresler 404.
-fdartgallery ve dev.chestnyznak etkilenmedi.
-
-### 6q. Izleme parametreli istekler ve sayfa onbellegi (02.09.2026)
-
-**Sorun:** `00-tuning.conf`'taki 4. kural "sorgu dizesi varsa onbellegi atla"
-diyordu. Reklam, bulten ve sosyal medya trafiginin TAMAMI (`?utm_source=...`,
-`?gclid=...`, `?fbclid=...`) PHP'ye gidiyordu — yani en pahali ziyaretciler
-en yavas sayfayi aliyordu.
-
-**Once olculdu, sonra dokunuldu.** Ilk akla gelen cozum "utm'i onbellek
-anahtarindan at, hepsi ayni girdiyi paylassin" idi. **YANLIS OLURDU:**
-
-> Sorgu dizesi HTML'e SIZIYOR. Ana sayfada WooCommerce'in **19 adet**
-> `add-to-cart` baglantisi gecerli URL uzerine kuruluyor
-> (`/?utm_source=a&add-to-cart=93`), `_wp_http_referer` gizli alani da oyle.
-> Izleme'li bir yaniti duz `/` anahtarina YAZSAYDIK, sonraki ziyaretci
-> **baskasinin utm'ini** tasiyan baglantilar gorurdu — hem yanlis atif hem
-> kirli URL. (Bunu goren test: `?utm_source=a` ve `?probe=1` ciktilarini
-> normallestirip diff'lemek; fark tam da o 19 baglantida.)
-
-**Dogru kurgu — okuma ile yazmayi AYIRMAK.** nginx'te bu ikisi zaten ayri
-direktif: `fastcgi_cache_bypass` OKUMAYI, `fastcgi_no_cache` YAZMAYI kontrol
-eder. Izleme-only istekler icin:
-
-| | davranis |
-|---|---|
-| okuma | **serbest** — anahtar sorgu dizesiz, yani duz `/` girdisini okur |
-| yazma | **YASAK** — o yanit asla onbellege girmez |
-
-Sonuc: girdiyi yalnizca duz istekler doldurur, izleme'li istekler onu okur.
-utm tarayicinin adres cubugunda kalir, GA/sourcebuster `location.search`'ten
-okumaya devam eder — istemci tarafi hic etkilenmez.
-
-**Olculen:** `?utm_source=...` TTFB ~2,3 sn (PHP) → **15-25 ms** (onbellek).
-
-**Kapsam:** yalnizca `fdartgallery.com`, `www.fdartgallery.com`,
-`dev.fdartgallery.com` (`$wpc_qs_norm` map'i). chestnyznak BILEREK disarida —
-degisiklik onun icin bit bit etkisiz; test edildi: `chestnyznak.com.tr/`
-HIT, `?utm_source=a` BYPASS, yani eski davranis.
-
-**Dort site snippet'ine HIC dokunulmadi.** `fastcgi_no_cache $skip_cache
-$wpc_bypass_respcookie;` satiri oldugu gibi durur; yazma yasagi
-`$wpc_bypass_respcookie`'yi ureten map'in girdisine katilarak eklendi.
-
-**Izleme sayilan parametreler** (hepsi eslesirse "izleme", tek yabanci
-parametre varsa "diger" → eski davranis): `utm_*`, `gclid`, `gbraid`,
-`wbraid`, `dclid`, `fbclid`, `msclkid`, `ttclid`, `twclid`, `igshid`,
-`yclid`, `epik`, `mc_cid`, `mc_eid`, `_gl`, `gad_source`, `gad_campaignid`,
-`srsltid`, `s_kwcid`, `li_fat_id`, `hsa_*`, `pk_*`, `mtm_*`, `piwik_*`.
-`ref`, `source`, `campaign` BILEREK YOK — ortu ortaklik/affiliate kodu
-olabilirler ve PHP tarafinda kullanilabilirler.
-
-**Dogrulandi:**
-- zehirleme testi: onbellek bosaltildi → `?utm_source=POISON123` iki kez MISS
-  (yazilmiyor) → duz `/` girdisinde `POISON123` **0 kez**;
-- okuma: `?utm_source=`, `?gclid=`, `?fbclid=` → **HIT**, yanit duz `/` ile
-  **birebir ayni bayt**, `add-to-cart` baglantilari temiz;
-- hala atliyor: `?s=`, `?orderby=`, `?add-to-cart=`, `?utm_source=a&s=arama`,
-  bilinmeyen parametre, `/cart/`, `/checkout/`, `/my-account/`, `/wp-admin/`;
-- giris cerezi + utm → BYPASS, sepet cerezi + utm → BYPASS.
-
-> **$uri KULLANILAMAZ.** Sorgu dizesini atmak icin `$uri` cazip gorunur ama
-> `try_files ... /index.php?$args` sonrasi `$uri` **`/index.php`** olur ve
-> butun sayfalar tek onbellek girdisinde toplanirdi. Bu yuzden yol
-> `$request_uri`'den regex ile kesiliyor (`$wpc_request_path`).
-
-**Bilinen odun:** bir sayfaya SADECE izleme'li trafik gelirse girdi
-suresi dolunca (200 icin 10 dk, `inactive=60m`) kimse yenilemez ve izleme'li
-istekler PHP'ye duser. Yani en kotu durum **eski davranisin aynisi** —
-gerileme degil.
-
-### 6r. Sayfa #2 "Ozel Siparis Formu" (02.09.2026, CANLI + dev)
-
-Iki is bir arada: olu form kalintisinin kaldirilmasi + slug duzeltmesi.
-
-#### TUZAK: "bozuk" gorunen seyi ONARMADAN once yerine gecenin var mi diye bak
-
-Sayfada CF7 formu bir Gutenberg blogu olarak duruyordu ama basilmiyordu:
-klasik editor donusunde blok sinirlayicilari `<p>` icine sikismis, blok
-govdesi (`<div class="wp-block-contact-form-7-contact-form-selector">`)
-bosalmisti. Cikti inert bir HTML yorumu.
-
-**Ilk mudahale YANLISTI:** bozuk blogun yerine CF7 kisa kodu konuldu ve form
-geri geldi. Dev'de dogrularken goruldu ki sayfada **ZATEN calisan bir
-FluentForm var** (`fluentform_5` = "Ozel Siparis Formu", yayinda, **7 kayit**).
-CF7 blogu FluentForm'a gecisten kalma bir KALINTIYDI; "onarmak" sayfaya
-ikinci bir form koyuyordu. Dev'de yakalandi, canliya gitmedi.
-
-> **Kural:** bir bileseni onarmadan once o sayfada AYNI ISI yapan baska bir
-> sey var mi diye bakin. Olcut: sayfadaki `<form>` etiketlerini ve siniflarini
-> saymak. Once 4 idi (2 arama + 1 giris + 1 fluentform), "onarim" 5 yapmisti.
-
-Dogru mudahale: blok kalintisini KALDIRMAK. Sonuc canli ve dev'de birebir:
-`<form` 4, `fluentform_5` 5, `wpcf7` 0, ham blok yorumu 0, bos div 0.
-
-#### TUZAK: birebir dize eslesmesi UTF-8'de sessizce tutmaz
-
-Ilk kaldirma denemesi "kalip bulunamadi" dedi. Sebep: `<div ...> </div>`
-icindeki "bosluk" duz bosluk DEGIL, **U+00A0 kirilmaz bosluk** (baytlari
-`194 160`). Meta degerini bayt bayt dokunce gorundu. Cozum: birebir dize
-yerine regex (`/su` bayraklariyla).
-
-#### TUZAK: WordPress SAYFA slug'i degisiminde 301 KURMAZ
-
-`sample-page` → `ozel-siparis` yapildi; `_wp_old_slug` **bos kaldi** ve eski
-adres duz 404 verdi. Sebebi cekirdekte, `wp_check_for_changed_slugs()`:
-
-```php
-if ( ... || is_post_type_hierarchical( $post->post_type ) ) return;
-```
-
-`page` hiyerarsiktir → cekirdek eski-slug yonlendirmesini yalnizca yazi gibi
-hiyerarsik OLMAYAN tipler icin kurar. Sayfalarda 301'i kendiniz kurmalisiniz.
-
-Cozum: `deploy/wordpress/fdart-mu-plugins/fd-eski-adresler.php` — eski yol →
-yeni yol tablosu. Yalnizca istek **404'e dustugunde** calisir, yani hicbir
-zaman gercek bir sayfayi golgeleyemez; sorgu dizesini korur (reklam
-baglantilari utm'ini kaybetmesin). Blogun Ingilizce demo slug'lari
-duzeltilirken ayni tabloya satir eklenecek (`deploy/blog/BACKLOG.md`).
-
-**Sira onemli:** once mu-plugin kurulur, sonra slug degistirilir — aksi halde
-aradaki surede eski adres 404 verir.
-
-#### Dogrulandi
-
-- `/ozel-siparis/` 200; `/sample-page/` **301** → `/ozel-siparis/` → 200;
-  `/sample-page/?utm_source=a` → 301, **sorgu dizesi korunuyor**;
-- olmayan adresler hala 404 (tablo asiri kapsamli degil);
-- menu ogesi kendiliginden guncellendi (tip `post_type`, ID 2'ye bagli);
-- `canonical` ve cekirdek site haritasi yeni adresi gosteriyor;
-- icerikte kalan `sample-page` referansi: post_content 0, `_elementor_data` 0,
-  menu 0; Cloudflare'de iki adres purge edildi.
-
-#### Yan bulgu (AYRI IS)
-
-`wp-sitemap.xml` **404 durum koduyla** donuyor, govdesi ise gecerli XML.
-`robots.txt` o adresi ilan ediyor. Hem canlida hem dev'de ayni. Bugunku
-islerden gelmedigi mu-pluginler kapatilarak dogrulandi. 0. bolume yazildi.
-
-Yedek: `/var/backups/claude-2026-09-02-sayfa2/<site>/` (`_elementor_data` ve
-`post_content` degisiklik oncesi).
-
-<<<<<<< Updated upstream
-### 6s. Contact Form 7 kaldirildi (02.09.2026, CANLI + dev)
-
-6r'de sayfa #2'deki olu CF7 kalintisi temizlenince CF7'yi kullanan sayfa
-kalmadi. Kullanici karariyla eklenti komple kaldirildi.
-
-**KALDIRMADAN ONCE TAM TARAMA** (CLAUDE.md 6e kurali — "kullanilmiyor" demek
-icin tek bir yere bakmak yetmez):
-
-| Nerede | Canli | Dev |
-|---|---|---|
-| `post_content` (revizyon HARIC, her durum) | 0 | 0 |
-| `_elementor_data` (revizyon HARIC) | 0 | 0 |
-| `_elementor_data` (**revizyonlar**) | 57 | 58 |
-| `elementor_library` sablonlari | 0 | 0 |
-| widget alanlari / tema ayarlari | 0 | 0 |
-| `termmeta` / `usermeta` | 0 | 0 |
-
-> Butun eslesmeler REVIZYONLARDA. Revizyona dokunulmadi — gecmis kayittir,
-> silmek ayri bir istir.
-
-Dosya duzeyindeki referanslar da denetlendi ve hicbiri kirilmaz:
-XStore'un `.wpcf7-*` stilleri (olu CSS/JS), Turnstile'in CF7 entegrasyon
-dosyasi (CF7 yoksa hic calismaz), FluentForm'un **ICE AKTARMA** gocmeni
-(`ContactForm7Migrator`, yalnizca elle calistirilir), Akismet kancasi.
-
-**Yapilan sira** (post tipi yalnizca eklenti AKTIFKEN kayitli oldugu icin
-form kayitlari once silinir):
-1. 5 form disa aktarildi → `/var/backups/claude-2026-09-02-cf7/<site>/`
-   (her form icin `form-<id>.json` + `form-<id>-meta.json`; icinde `_form`,
-   `_mail`, `_mail_2`, `_messages`, `_locale` — formu yeniden kurmaya yeter),
-2. 5 `wpcf7_contact_form` kaydi silindi,
-3. eklenti kapatildi ve **dosyalari silindi**,
-4. `wpcf7` option'i silindi.
-
-> **`wp export` IKI KEZ BASARISIZ OLDU, JSON kurtardi.** Once yedek dizini
-> site kullanicisina kapaliydi; duzeltince bu kez `--skip-plugins` yuzunden
-> `wpcf7_contact_form` post tipi kayitli olmadigindan WXR uretilemedi.
-> `wp post get` / `wp post meta list` ham DB satirini okudugu icin post tipi
-> kayitli olmasa da calisti — yedek onlarla alindi ve icerigi tek tek
-> dogrulandi (5 formun hepsinde `_form` ve `_mail` var).
-
-**Sonuc:** aktif eklenti canli 13 → **12**, dev 13 → **12** (ikisi esit).
-Ana sayfada `contact-form-7|wpcf7` gecisi **0**; `/ozel-siparis/` sayfasinda
-FluentForm yerinde; butun sayfalar 200; PHP Fatal/Parse 0; isinmis TTFB
-16-18 ms; ana sayfa script sayisi 26 (degismedi).
-
-`fd-asset-diyet.php`'deki CF7 kurali BILEREK BIRAKILDI: artik hicbir seye
-denk gelmiyor ama CF7 bir gun geri kurulursa koruma yeniden devreye girer.
-=======
-### 6s. Blog: Telegram kanalindan icerik (02.09.2026, CANLI)
-
-Ali'nin "blog yazilari cok az, Telegram kanalindaki yazilar eklenebilir"
-maddesi. Kanal `t.me/globalznak_rusya` (@global_znak) herkese acik; arsivi
-`https://t.me/s/<kanal>` uzerinden sayfalanarak okunuyor — **Bot API veya
-oturum gerekmiyor**. Arac: `deploy/blog/telegram-cek.py`.
-
-Olculen: 17 mesaj (22.07–02.09.2026); 9'u blog malzemesi, 3'u kisa selamlama,
-1'i tarihe bagli haber, 1 video.
-
-#### Telegram yazisi HAZIR BLOG YAZISI DEGILDIR
-
-Telegram yazilari 150–500 kelime, blog standardi (`deploy/blog/README.md`)
-1200–1600. Kaynak malzeme olarak kullanilir ve birlestirilir.
-
-#### ORTUSME ONCE OLCULUR — plan bu yuzden degisti
-
-Ilk plan 5 yaziydi. Mevcut 20 yaziyla karsilastirinca **ikisi elendi**:
-
-| Aday | Sonuc |
-|---|---|
-| "Hangi urunlerde zorunlu" | ELENDI — 4 yazida islenmis; `rusya-zorunlu-etiketleme-chestny-znak-2026` icinde birebir ayni h2 var |
-| "Adim adim yol haritasi" | ELENDI — ayni yazinin bir bolumu |
-
-Olcmeden yazsaydim kendi yazilarimizla rekabet eden kopya icerik uretirdim.
-Olcum yontemi: `post_title + post_content` uzerinde konu kelimeleri sayilir,
-sonra en yakin rakiplerin `<h2>` basliklari okunur.
-
-Yayinlanan uc yazi (her biri uc dilde, toplam 9 kayit):
-
-| Konu | TR / EN / RU | Kaynak |
-|---|---|---|
-| Sevkiyat oncesi kontrol listesi | 38064 / 38066 / 38068 | TG #28+#33+#38 |
-| Vaka calismasi (15.000 $) | 38072 / 38074 / 38076 | TG #20 |
-| Turkiye–Rusya ticaret gercekleri | 38078 / 38080 / 38082 | TG #17 |
-
-`post-sitemap.xml`: 61 → 70 adres.
-
-#### Yeni araclar
-
-- `deploy/blog/yazi-yayinla.php` — Turkce yaziyi kapak gorseli, kategori,
-  Yoast alanlari ve dil isaretiyle yayinlar.
-- `deploy/blog/ceviri-yayinla.php` — EN/RU cevirilerini yayinlar ve Polylang
-  ile baglar.
-
-Ikisi de `dry` destekli, yeniden calistirilabilir; **post ID gomulmez** (TR
-yazi slug ile bulunur, dev ve canlida kimlikler farklidir).
-
-#### TUZAK: wp-cli `--porcelain` bu kurulumda GUVENILIR DEGIL
-
-Elementor'un shutdown kaydedicisi STDOUT'a bir deprecation uyarisi basiyor.
-`AID=$(wp media import ... --porcelain)` bu uyariyi da yakaliyor ve degisken
-`PHP: 2026-... )]` oluyor. Ilk denemede yazi ve gorsel olustu ama meta
-atanamadi. **Cozum:** olusturma islemi kabuktan degil PHP'den yapilir
-(yukaridaki iki arac). Kabuktan kimlik yakalamak gerekirse
-`| grep -oE '^[0-9]+$' | head -1` sart. Ayni tuzak `wp user list --field=ID`
-icin de gecerlidir.
-
-#### TUZAK: ceviri yazilarda `uncategorized` yapisiyordu
-
-`wp_set_post_terms( $id, $terimler, 'category', true )` — `append=true`
-birakilinca WordPress'in ekleme aninda atadigi varsayilan kategori uzerinde
-kaliyor ve yazi `modern,uncategorized` gorunuyor. **`append=false` sart.**
-
-> **Sira da onemli:** Polylang, **dil atandiktan sonra** atanan bir kategoriyi
-> kendiliginden O DILDEKI karsiligina esler (`modern` → `russia-labelling-guide`
-> → `rukovodstvo-po-markirovke`). Once kategori atanip sonra dil isaretlenirse
-> terim Turkce kalir. Aracta `pll_set_post_language()` artik kategoriden ONCE
-> cagriliyor.
-
-#### TUZAK: EN/RU slug'lari TAHMIN EDILMEZ
-
-Ilk yazida tahmin ettigim yedi ic baglantinin **yedisi de yanlisti**
-(orn. tahmin `/en/russia-customs-labelling-marking-2026/`, gercek
-`/en/labelling-before-russian-customs/`). Ceviri yazisi yazmadan once hedef
-yazilarin gercek slug'lari `pll_get_post( $tr_id, $dil )` ile cozulur.
-
-#### Dogrulama olcutu
-
-HTTP kodu yetmez. Her yazi icin: `<h2>`/`<h3>` sayisi, kapak gorseli,
-`og:image`, 3 `hreflang`, kendi dilindeki arsivde gorunme, ve **butun ic
-baglantilarin tek tek denenmesi**. Dokuz kaydin tamami icin kontrol edildi:
-gorsel, kategori, uclu ceviri baglantisi, Yoast alanlari, yazar ve durum —
-**eksik 0**.
-
-> `/comments/feed/` her yazida 404 doner; bu **bizim eklediğimiz yazilara ozgu
-> degil**, sitede oteden beri boyle (mevcut yazilarda da var). Kirik baglanti
-> taramasinda yanlis alarm vermemesi icin bilinmeli.
->>>>>>> Stashed changes
-
-### 6t. Site haritasi 404 donuyordu (02.09.2026, CANLI)
-
-`wp-sitemap.xml` govdesinde GECERLI XML donuyordu ama HTTP durumu **404** idi.
-`robots.txt` o adresi ilan ettigi icin arama motorlari haritayi reddeder.
-
-#### TUZAK: dev'deki ayni belirti BASKA BIR OLAYDI
-
-Teshise dev'de baslandi ve orada da 404 goruldu — ama dev'in 404'u **kasitli
-ve dogru**. Cekirdek `WP_Sitemaps::sitemaps_enabled()` `blog_public` secenegine
-bakar; `fd-staging-guard.php` dev'de onu 0'a zorlar, dolayisiyla cekirdek
-site haritalarini bilerek kapatir. Ayirt eden olcut **govde**: canlida
-`<sitemapindex ...>` (XML), dev'de `<html` (tema 404 sayfasi).
-
-> Iki ortamda ayni durum kodunu gormek ayni sebep demek DEGILDIR. Durum
-> koduyla yetinilmemeli (CLAUDE.md 6e); burada govdenin ilk etiketi karari
-> degistirdi.
-
-#### KOK SEBEP (canli)
-
-Gercek akis, gecici bir teshis mu-plugin'iyle `status_header` cagrilarinin
-backtrace'i kaydedilerek olculdu:
-
-1. `/wp-sitemap.xml` rewrite'i `index.php?sitemap=index` uretir (kural
-   kayitli ve dogru eslesiyor — `wp rewrite flush` GEREKMIYORDU),
-2. `WP::query_posts()` bunu **siradan bir gonderi sorgusu** gibi calistirir.
-   Cogu sitede son yazilar doner ve is biter.
-3. Bu sitede **yayinlanmis `post` sayisi SIFIR** (sayfa 19, urun 280, yazi 0).
-   Sorgu bos donunce `WP::handle_404()` `status_header(404)` basar.
-4. `template_redirect`'te `WP_Sitemaps::render_sitemaps()` indeksi basip
-   `exit` eder — durumu 200'e **geri cekmez**.
-
-Yani hata "harita uretilmiyor" degil, **bos blog yuzunden istek 404 damgasi
-yiyor**. Blogda tek bir yayinlanmis yazi olsaydi kendiliginden duzelirdi.
-Ayni sebep `/wp-sitemap-posts-post-1.xml`'in HTML 404 vermesini de aciklar:
-cekirdek `empty($url_list)` dalinda bilerek 404 basar.
-
-#### COZUM
-
-`deploy/wordpress/fdart-mu-plugins/fd-site-haritasi-durum.php` — cekirdegin
-tam bu is icin sundugu `pre_handle_404` kancasi ("short-circuit default header
-status handling"). Yalnizca `sitemap` / `sitemap-stylesheet` sorgu degiskeni
-doluyken `true` doner; `handle_404()` hicbir sey yapmadan cikar, durum 200
-kalir.
-
-**Neyi BOZMAZ (olculdu):**
-
-| Adres | Once | Sonra |
-|---|---|---|
-| `/wp-sitemap.xml` | 404 (XML) | **200** (XML) |
-| `/wp-sitemap-posts-page-1.xml` | 404 | **200** |
-| `/wp-sitemap-index.xsl` | 200 | 200 |
-| `/wp-sitemap-posts-post-1.xml` (0 yazi) | 404 | **404** — dogru |
-| `/var-olmayan-adres/` | 404 | **404** — gercek 404'ler etkilenmedi |
-| `/`, `/shop/` | 200 | 200 |
-| dev'in butun harita adresleri | 404 | **404** — staging korumasi kazaniyor |
-
-Indeks + 8 alt harita, toplam **329 adres**: sayfa 19, staticblocks 1,
-urun 280, brand 1, product_cat 24, pa_boy 1, pa_en 1, kullanici 2.
-`/ozel-siparis/` haritada yerinde (6r). Cloudflare uzerinden de 200.
-
-> **Yan bulgu:** fdartgallery'de yayinlanmis blog yazisi **0**. `page_for_posts`
-> tanimli (#62) ama icerik yok. Blog acilirsa bu mu-plugin gereksizlesir —
-> zarari da olmaz.
-
-### 6h. Diger
-
-- **`rsync --exclude 'database/'` her seviyedeki `database` dizinini atlar.**
+- **`rsync --exclude 'database/'` her seviyedeki `database` dizinini atlar** —
   Elementor Pro'nun `submissions/database` klasoru eksik kalip site fatal verdi.
   Kaliplar `/database/` seklinde koke sabitlenir.
-- **Yedegin tablo oneki `wp_` olmayabilir.** `deploy-site.sh` onegi DB'den okur.
+- **Yedegin tablo oneki `wp_` olmayabilir** — `deploy-site.sh` onegi DB'den okur.
 - **Cloudflare Universal SSL yalnizca TEK seviye alt alan adi kapsar.**
-  `dev.chestnyznak.chemiartclick.uk` iki seviye oldugu icin TLS handshake hatasi
-  verdi. **Kural: yeni alt alan adlari tek seviye olsun.**
-- **`clone-site.sh` sonrasi `chown`** hemen rsync'in ardindan gelir; yoksa hedef
-  kullanici `wp-config.php`'yi okuyamaz ve tum wp-cli adimlari duser.
-- **Klonda `object-cache.php` ve `advanced-cache.php` drop-in'leri silinir.**
-  Tanimsiz drop-in varsayilan veritabanina baglanip **eski** `siteurl`'u servis etti.
-- **SPF tek kayit olmak zorunda.** Ikinci bir SPF kaydi ikisini de gecersiz kilar
-  (`permerror`). Email Routing eklenirken mevcut kayit **guncellendi**, yenisi eklenmedi.
-- **Cloudflare Email Routing bir adresi tek hedefe yonlendirir.** Coklu dagitim
-  icin Email Worker gerekti (`deploy/cloudflare/email-worker.js`).
-- **`wp-super-cache` aktif ama etkisiz** (drop-in yok, `WP_CACHE` tanimsiz).
-  Etkinlestirilirse nginx sayfa onbellegiyle cakisir — **aktif etmeyin**.
-- **`webmail.chestnyznak.com.tr` duzeltildi (01.09.2026).** Bizim IP'ye bakiyordu
-  ama vhost yoktu; istek ilk 443 bloguna dusup WordPress kanonik yonlendirmesiyle
-  **magazaya** gidiyordu. Simdi kendi Let's Encrypt sertifikasiyla
-  `https://mail.timeweb.com/` adresine 301. Kayit **griye** cekildi (Rusya).
-  **CNAME yapilmadi**, cunku timeweb `*.timeweb.com` sertifikasi sunuyor ve
-  tarayici uyari verirdi. Vhost: `deploy/nginx/sites-available/webmail.chestnyznak.com.tr.conf`
-  — icine `cloudflare-only.conf` EKLENMEZ.
-  > `mail.chestnyznak.com.tr` (CNAME → `mail.timeweb.com`) **bilerek
-  > DOKUNULMADI**: ayni sertifika uyusmazligi orada da var, ama bu ad bir posta
-  > istemcisinde (IMAP/SMTP sunucusu olarak) kullaniliyor olabilir; degistirmek
-  > calisan bir kurulumu kirar. Webmail icin dogru adres artik `webmail.` olani.
-- **`elementor_canvas` sablonu bos tuvaldir** (menu/logo/footer basilmaz).
-  `kod-sorgulama` bu yuzden siteden kopuk aciliyordu → `elementor_header_footer`
-  yapildi. Reklam acilis sayfalari (`urun-talep-formu`, `lp-iletisim-formu`,
-  `datamatrix-kod-etiket`) **bilerek** canvas — onlara dokunmayin.
-- **WebP: Accept pazarligi (Vary) kullanilmadi.** Zone Free planda; Free'de
-  `Vary: Accept` donen gorseller edge'de BYPASS olur. Ayri `.webp` URL yontemi
-  secildi. Bedeli: cok eski tarayicilar gorselleri goremez (~%2-3).
+  Kural: yeni alt alan adlari tek seviye olsun.
+- **`clone-site.sh` sonrasi `chown` hemen gelir**; yoksa hedef kullanici
+  `wp-config.php`'yi okuyamaz ve tum wp-cli adimlari duser.
+- **Klonda `object-cache.php` ve `advanced-cache.php` drop-in'leri silinir** —
+  tanimsiz drop-in varsayilan veritabanina baglanip **eski** `siteurl`'u servis etti.
+- **SPF tek kayit olmak zorunda** — ikinci kayit ikisini de gecersiz kilar.
+  Coklu dagitim icin Email Worker (`deploy/cloudflare/email-worker.js`).
+- **`wp-super-cache` aktif ama etkisiz** (drop-in yok, `WP_CACHE` tanimsiz). Etkinlestirilirse nginx
+  sayfa onbellegiyle cakisir — **aktif etmeyin**.
+- **WebP: Accept pazarligi (Vary) kullanilmadi** — Free planda `Vary: Accept`
+  donen gorseller edge'de BYPASS olur. Ayri `.webp` URL yontemi secildi.
+- **`webmail.chestnyznak.com.tr`** kendi sertifikasiyla `https://mail.timeweb.com/`
+  adresine 301; kayit **gri**. `cloudflare-only.conf` EKLENMEZ.
+  Vhost: `deploy/nginx/sites-available/webmail.chestnyznak.com.tr.conf`.
+  > `mail.chestnyznak.com.tr` **bilerek dokunulmadi** — posta istemcisinde
+  > sunucu adi olarak kullaniliyor olabilir.
+- **`wp export` post tipi kayitli degilse calismaz** (`--skip-plugins` ile).
+  `wp post get` / `wp post meta list` ham DB satirini okur, o zaman da calisir.
 
 ---
 
@@ -1569,25 +656,20 @@ urun 280, brand 1, product_cat 24, pa_boy 1, pa_en 1, kullanici 2.
 
 - Tum gelistirme `claude/ovhcloud-vps-multisite-0eb3xj` dalinda; izinsiz baska
   dala push yok, izinsiz PR yok.
-- **Sirlar asla commit edilmez**: token, DB sifresi, `wp-config.php`, `.ini`.
+- **Sirlar asla commit edilmez**: token, DB sifresi, private key, `wp-config.php`.
 - **Once dev, sonra canli.** Canliya alirken dev'in HTML'i **kopyalanmaz** —
-  icinde dev adresleri olur; ayni donusum canlinin kendi icerigi uzerinde
-  calistirilir ve cikti denetlenir (dev URL sayisi 0 olmali).
+  ayni donusum canlinin kendi icerigi uzerinde calistirilir, cikti denetlenir.
 - Canliyi etkileyen her islemden (DNS, guvenlik duvari, sertifika, veri
-  degisikligi) **once yedek**, mumkunse `--dry-run`, sonra kullanici onayi.
+  degisikligi) **once yedek**, mumkunse `dry`, sonra kullanici onayi.
+- **Icerik kapatmadan once kullaniciya sorun.** Menude olmaması bir sayfanin
+  kullanilmadigi anlamina gelmez — reklam kampanyalari menusuz sayfalara trafik
+  gonderir (6i).
 - `deploy-site.sh` `rsync --delete` kullanir → repo eksikken calistirmayin.
-  Mevcut `wp-config.php`'yi ezmez.
-- **UC DIL KURALI (chestnyznak).** Siteye eklenen her yeni icerik — blog yazisi,
-  sayfa, menu ogesi, hero blogu, buton metni — **Turkce + English + Русский**
-  olarak eklenir. Tek dilde birakilan icerik eksik istir.
-  - Yeni yazi/sayfa: Turkcesi yayinlanir, sonra `pll_set_post_language()` ile
-    dili isaretlenir, EN ve RU kopyalari acilir, `pll_save_post_translations()`
-    ile uc kayit birbirine baglanir.
-  - Menuye oge eklenirken **her uc menuye** eklenir (tr=171, en=372, ru=373).
-  - Elementor blogu eklenirken metinler uc sayfada ayri ayri cevrilir; ortak
-    olan CSS/JS `cz-lead-assets` widget'inda tutulur, **sayfa kimligine bagli
-    kilavuz yazilmaz** (bkz. 6i).
-  - Ceviri sozlugu: `deploy/wordpress/i18n/sayfa-cevirileri.json`
-- Degisiklikten sonra **dogrula**: HTTP kodu yetmez, icerigi kontrol edin.
-- Bu dosyayi guncel tut: yeni tuzagi 6. bolume, biten isi 5'e, bekleyeni 0'a
-  yaz. Uzun anlatiyi commit mesajina birak.
+- **UC DIL KURALI (chestnyznak).** Eklenen her yeni icerik — blog yazisi, sayfa,
+  menu ogesi, buton metni — **Turkce + English + Русский** olarak eklenir.
+  Yeni yazi: Turkcesi yayinlanir, `pll_set_post_language()` ile dili isaretlenir,
+  EN/RU kopyalari acilir, `pll_save_post_translations()` ile uc kayit baglanir.
+  Menuye oge eklenirken **her uc menuye** (tr=171, en=372, ru=373).
+- **Degisiklikten sonra dogrula: HTTP kodu yetmez** (6a).
+- **Bu dosyayi guncel tut ve KISA tut**: yeni tuzagi 6'ya, biten isi 5'e,
+  bekleyeni 0'a yaz. Uzun anlatiyi commit mesajina birak.
