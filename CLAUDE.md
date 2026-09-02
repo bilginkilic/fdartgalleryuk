@@ -26,8 +26,24 @@ Sunucu kurulumu, performans, guvenlik ve yedekleme bitti.
 
 - **Cloudflare APO** (~5 $/ay): HTML'i edge'de onbellekler. Turkiye'deki ziyaretci
   icin en buyuk tek kazanc; su an `cf-cache-status: DYNAMIC`.
-- **fdartgallery eklenti sadelestirme**: iki form + iki mailchimp eklentisi;
-  `elementor-pro` + `pro-elements` cakismasi.
+- **fdartgallery hiz calismasi CANLIYA ALINSIN MI** — dev'de bitti ve olculdu (6n).
+  Canliya gidecek dort parca: 4 eklentinin kapatilmasi, iki mu-plugin
+  (`fd-asset-diyet`, `fd-font-hizlandirma`), font gzip snippet'i, Redis nesne
+  onbellegi (canlida ZATEN acik). Olculen: 105 → 83 istek, 47 → 26 script.
+- **UpdraftPlus yerel yedekleri** — `wp-content/updraft` altinda **canli 6,9 GB +
+  dev 2,8 GB**. `updraft_service` BOS, yani yedek yalnizca AYNI DISKTE duruyor;
+  gercek yedek zaten gece R2'ye gidiyor. Dev'de eklenti kapatildi (dosyalara
+  DOKUNULMADI). Canlida hala **saatte bir** DB yedegi aliniyor. Silinsin mi,
+  eklenti canlida da kapansin mi — kullanici karari.
+- **fdartgallery iki mailchimp eklentisi de BAGLANTISIZ** (olculdu: ikisinde de
+  API anahtari yok). `mailchimp-for-woocommerce` dev'de kapatildi (icerikte
+  karsiligi yok). `mc4wp` ACIK BIRAKILDI: tek formu **8 yerde gomulu** ama
+  anahtar olmadigi icin calismiyor — form kaldirilsin mi yoksa hesap baglansin
+  mi bir icerik karari.
+- **fdartgallery iki form eklentisi**: FluentForm gercek kullanimda (58 kayit),
+  CF7 yalnizca **tek yayinlanmis sayfada** (#2 "Ozel Siparis Formu"); geri kalan
+  butun `[contact-form-7]` izleri revizyonlarda. O sayfa FluentForm'a tasinirsa
+  CF7 komple kaldirilabilir.
 - **Blogun en eski 4 yazisi**: slug'lari hala Ingilizce demo slug'i. Duzeltmek
   adresi kirar → 301 gerekir. Ayrinti `deploy/blog/BACKLOG.md`.
 - **chestnyznak kalan 14 JS enjeksiyonu** Elementor'a tasinsin mi (6f).
@@ -201,7 +217,8 @@ sitesi eklerken o map'e bir satir eklenir.
 | Sunucu | nginx + PHP 8.5-FPM + MariaDB + Redis + certbot + ufw + fail2ban + wp-cli |
 | Sayfa onbellegi | nginx `fastcgi_cache`; ana sayfa 0.90 sn → **0.006 sn** |
 | WebP | fdartgallery 6394 dosya, chestnyznak 5820; orijinaller korunuyor, gece cron |
-| Redis | site basina izole (db indeksi + anahtar oneki) |
+| Redis | site basina izole (db indeksi + anahtar oneki): canli fd=3, dev fd=4, chestnyznak=8 |
+| fdartgallery hizi (DEV) | 17 → 13 eklenti, 47 → 26 script, 5 → 1 font istegi, fontlar gzip'li (6n) |
 | Yedekleme | Cloudflare R2, gece 04:15, 30 gun; uploads artimli (`copy`, `sync` DEGIL) |
 | Sertifikalar | Let's Encrypt, otomatik yenileme |
 | MariaDB | `root@localhost` parolasizdi → `unix_socket` + yedek parola |
@@ -819,6 +836,111 @@ ayri bir ic dagitim istenirse geri eklenir.
 **Hala demo verisi:** tema iletisim widget'inin adres ve telefon alanlari
 (Berlin adresi, +1 telefon). Widget `wp_inactive_widgets` icinde, yani
 kullanilmiyor; kullanilacaksa elle duzeltilmeli.
+
+### 6n. fdartgallery hiz calismasi (DEV, 02.09.2026)
+
+Kullanici "eklenti sadelestirme + hizlandirici isler" istedi. **Once olculdu.**
+
+| Olcum | Once | Sonra |
+|---|---|---|
+| Aktif eklenti | 17 | **13** |
+| Ana sayfa `<script src>` | 47 | **26** |
+| Ana sayfa `<link stylesheet>` | 32 | **26** |
+| Tarayicida toplam istek | 105 | **83** |
+| Google Fonts | **5 istek / 167.522 bayt** | **1 istek / 91.945 bayt** |
+| Font dosyalari (577 KB) | sikistirilmiyor | **gzip, 379.600 bayt (%34)** |
+| Autoload option | 144.623 bayt / 578 satir | 111.031 / 543 |
+| Cron olayi | 31 | 24 |
+| Redis nesne onbellegi | **KAPALI** (drop-in yok) | acik, db **4**, onek `dev_fdartgallery_com:` |
+| TTFB (onbellek isabet) | — | **16 ms**, HTML telde 37 KB |
+
+Dogrulama: dev ve **canli** ana sayfa ayni yontemle tarayicida olculdu ve
+**birebir ayni** cikti — govde 1280x6074 (ikisinde de), h1 1086x51,
+39/39 gorsel, 32 urun karti, giris formu var, Turnstile var, 6 menu baglantisi.
+
+#### Kapatilan 4 eklenti ve NEDEN (arama once yapildi — CLAUDE.md 6e)
+
+| Eklenti | Kanit |
+|---|---|
+| `mailchimp-for-woocommerce` | API anahtari YOK, icerikte 0 referans; her sayfaya 1 JS basiyordu |
+| `fluentforms-pdf` | icerikte 0 referans (chestnyznak'ta da ayni) |
+| `image-optimization` | `optimize edilmis gorsel = 0`; lisans **canli alan adina** bagli; WebP zaten sunucuda cron ile uretiliyor |
+| `updraftplus` | `updraft_service` BOS → yedek yalnizca yerel diske; **saatte bir** DB yedegi; dev'de 2,8 GB birikmis (canlida 6,9 GB) |
+
+**Kapatilmayanlar:** `revslider` yok bu sitede; `contact-form-7` **tek** yayinlanmis
+sayfada gerekli; `mc4wp` formu 8 yerde gomulu (anahtarsiz ama icerik karari);
+`members`, `iyzico-woocommerce`, `redis-cache`, `fluent-smtp`, `et-core-plugin`
+gerekli. Pasif `jetpack`/`akismet`/`mailchimp`/`pojo-accessibility` zaten kapali —
+yalnizca **jetpack'in 34 autoload satiri** `autoload=no` yapildi (24 KB) ve
+uc yetim cron olayi silindi.
+
+#### TUZAK: tek bir bagimlilik 15 dosya getiriyordu
+
+Ana sayfada `react`, `react-dom`, `react-jsx-runtime` ve 12 adet
+`wp-includes/js/dist/*` vardi. Kaynak: **`cfturnstile-woo-js`**, bagimlilik
+listesinde `wp-data` var.
+
+> **ILK COZUM YANLISTI.** "Ana sayfada WooCommerce formu yok, scripti cikaralim"
+> denildi. Olcunce goruldu ki **XStore her sayfaya gizli bir WooCommerce
+> giris/kayit penceresi basiyor** (`woocommerce-form-login` HTML'de var).
+> Script cikarilsaydi o formdaki Turnstile dogrulanmaz, **giris kirilirdi**.
+
+Dogru mudahale: script KALIR, `wp-data` bagimliligi duser. Dosya `wp.data`'yi
+zaten yalnizca **blok odeme** formunda kullaniyor ve basinda
+`!document.querySelector('.wp-block-woocommerce-checkout, .wc-block-checkout')`
+ile cikiyor. Sepet/odeme disindaki sayfalarda handle **on kayit** edilir;
+`WP_Dependencies::add()` mevcut handle'i **EZMEDIGI** icin eklentinin sonraki
+`wp_enqueue_script()` cagrisi bizim kaydimizi kullanir.
+→ `deploy/wordpress/fdart-mu-plugins/fd-asset-diyet.php`
+
+> **Kural:** bir handle'i cikarmadan once o handle'in `src`'sini ve **kancasinin
+> ne zaman calistigini** oku. Turnstile `wp_enqueue_scripts`'te degil, kendi
+> `cfturnstile_enqueue_scripts` eyleminde enqueue ediyor — bu yuzden
+> `wp_enqueue_scripts` uzerindeki dequeue kurali ona HIC DEGMEDI (ilk denemede
+> sessizce etkisiz kaldi, HTML'de dosya durmaya devam etti).
+
+#### Fontlar
+
+`deploy/wordpress/fdart-mu-plugins/fd-font-hizlandirma.php`:
+- `fonts.googleapis.com` + `fonts.gstatic.com` icin **preconnect**
+  (gstatic'te `crossorigin` SART — font dosyalari CORS ile iner, bayrak yoksa
+  tarayici ikinci baglanti acar ve preconnect bosa gider),
+- kuyruktaki **butun** googleapis stylesheet'leri **tek** istege birlestirilir
+  (v1 API `family=A:...|B:...` destekler),
+- agirlik listesi 18 → 9 (italikler dusuruldu: sitede uretilen CSS'te
+  `font-style: italic` **0 kez** geciyor).
+
+**Aile ELENMEDI, bilerek.** Olculen gercek kullanim Outfit 6704 / Poppins 61 /
+Source Sans Pro 31 / Roboto 14; Roboto ve Roboto Slab Elementor kit'inin
+varsayilanlari. Ama kit tipografisi sayfada KULLANILIYOR — aile atmak basliklari
+sistem fontuna dusururdu. Aile sadelestirmesi **tasarim** karari.
+
+`deploy/nginx/snippets/font-gzip.conf` — Ubuntu'nun `mime.types` dosyasinda
+`ttf`/`otf` YOK; nginx onlari `application/octet-stream` veriyor ve o tur global
+`gzip_types` listesinde degil (**oraya konmamali** — her tanimsiz ikili dosyanin
+torbasi). Cozum: yalnizca `.ttf|.otf|.eot` ile eslesen bir location icinde
+gzip'lemek. `woff/woff2` **bilerek disarida** — zaten sikistirilmis.
+
+> Snippet vhost'ta `include snippets/wordpress.conf;` satirindan **ONCE**
+> include edilmeli: nginx regex location'lari tanim sirasina gore dener ve
+> `wordpress.conf` icindeki genis statik blok `ttf|otf|eot`'u de kapsar.
+
+#### Yapilmayanlar ve nedeni
+
+- **`sourcebuster-js` + `wc-order-attribution` DOKUNULMADI.** Siparis kaynagi
+  izlemesi ilk temasi **giris sayfasinda** kaydeder; yalnizca sepette yuklemek
+  veriyi eksiltmez, **YANLIS** yapar (herkes "direct" gorunur). Kaldirilacaksa
+  WooCommerce ayarindan ozellik komple kapatilir — bu bir is karari.
+- **Elementor deneysel ozellikleri** (`e_optimized_markup`, `e_font_icon_svg`,
+  `e_element_cache`) acilmadi: agir bir temayla birlikte gercek render riski
+  var, kazanci ise kalan birkac kucuk CSS dosyasi. Once dev'de ayri ayri
+  denenmeli.
+- **TTF → WOFF2** cevirisi yapilmadi: `@font-face` kurallarini uretmek
+  temanin/`custom-fonts` ozelliginin isi, elle degistirmek kirilgan. gzip zaten
+  %46 verdi; woff2 ~%30 daha verirdi.
+- **`?utm_...` gibi sorgu dizeli istekler sayfa onbellegini ATLIYOR**
+  (`00-tuning.conf` icindeki `$wpc_bypass_qs`). Reklam ve bulten trafiginin
+  tamami PHP'ye gidiyor. Duzeltmek global bir nginx degisikligi — ayri is.
 
 ### 6h. Diger
 
