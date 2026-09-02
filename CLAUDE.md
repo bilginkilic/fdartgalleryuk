@@ -71,7 +71,7 @@ Mail kayitlari (Brevo DKIM, DMARC, SPF, Email Routing MX) **degistirilmez**.
 | Site haritasi | `wp-sitemap*.xml` 404 yerine **200**; indeks + 8 alt harita, 329 adres (4) |
 | Turnstile | giris/kayit/form/WooCommerce |
 | E-posta | Brevo API + DKIM/SPF/DMARC — calisiyor |
-| WebP | 6394 dosya; orijinaller korunur, gece cron |
+| WebP | 6437 dosya (02.09.2026 olculdu, `/etc/cron.d/webp-fdartgallery_com` ile gece artar); orijinaller korunur |
 
 **mu-plugin envanteri** — `deploy/wordpress/fdart-mu-plugins/` (yalnizca bu site):
 
@@ -209,7 +209,7 @@ once 3. bolumdeki gizli giris formu uyarisini okuyun.
 | Yol | Ne yapar |
 |---|---|
 | `deploy/nginx/` | vhost'lar, `snippets/`, `templates/`, `conf.d/` |
-| `deploy/scripts/` | `clone-site.sh`, `deploy-site.sh`, `update-cloudflare-ips.sh`, `demo-icerik-temizle.php`, `eposta-alicilari.php`, `migrate-czlead-to-elementor.php` |
+| `deploy/scripts/` | **21 script — asagida tam liste** |
 | `deploy/wordpress/fdart-mu-plugins/` | **fdartgallery** mu-plugin'leri |
 | `deploy/wordpress/lead-mu-plugins/` | **chestnyznak** mu-plugin'leri |
 | `deploy/wordpress/i18n/` | chestnyznak uc dil scriptleri (01→16) + JSON sozlukler |
@@ -217,6 +217,20 @@ once 3. bolumdeki gizli giris formu uyarisini okuyun.
 | `deploy/cloudflare/` | `email-worker.js` |
 
 Sunucuda ayni depo `/opt/fdartgalleryuk/` altinda.
+
+**`deploy/scripts/` tam envanteri.** Genel dosya `deploy/scripts`'ten hic soz
+etmiyor — burasi bu scriptlerin TEK listesi, eksik birakmayin.
+
+| Grup | Dosyalar |
+|---|---|
+| Site yasam dongusu | `add-site.sh`, `clone-site.sh`, `deploy-site.sh` |
+| **Yedekleme** | `backup-site.sh` (gece 04:15 → R2, `/etc/cron.d/backup-<slug>`), `setup-backup.sh` |
+| Sunucu kurulum / sertlestirme | `setup-server.sh`, `setup-redis.sh`, `setup-fail2ban.sh`, `setup-named-tunnel.sh`, `harden-ssh.sh`, `harden-mysql.sh` |
+| Cloudflare / DNS | `cloudflare-dns.sh`, `update-cloudflare-ips.sh` |
+| Bakim | `purge-cache.sh` (nginx + istege bagli Cloudflare), `convert-webp.sh` |
+| Oturum erisimi | `claude-access.sh` (gecici anahtar + quick tunnel; adlandirilmis tunel calisirken GEREKMEZ) |
+| wp-config yamalari | `wpconfig-redis.py`, `wpconfig-bildirim-sabitleri.py` |
+| Tek seferlik / icerik | `demo-icerik-temizle.php`, `eposta-alicilari.php`, `migrate-czlead-to-elementor.php` (son ikisi chestnyznak) |
 
 > chestnyznak araclarini **calistirmadan once** o sitenin kurallarini okuyun
 > (`chestnyznakuk/CLAUDE.md`): uc dil kurali, Elementor kurali, icerik kapatma
