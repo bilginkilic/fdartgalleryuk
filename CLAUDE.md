@@ -26,11 +26,6 @@ Sunucu kurulumu, performans, guvenlik ve yedekleme bitti.
 
 - **Cloudflare APO** (~5 $/ay): HTML'i edge'de onbellekler. Turkiye'deki ziyaretci
   icin en buyuk tek kazanc; su an `cf-cache-status: DYNAMIC`.
-- **UpdraftPlus yerel yedekleri** — `wp-content/updraft` altinda **canli 6,9 GB +
-  dev 2,8 GB**. `updraft_service` BOS, yani yedek yalnizca AYNI DISKTE duruyor;
-  gercek yedek zaten gece R2'ye gidiyor. Dev'de eklenti kapatildi (dosyalara
-  DOKUNULMADI). Canlida hala **saatte bir** DB yedegi aliniyor. Silinsin mi,
-  eklenti canlida da kapansin mi — kullanici karari.
 - **fdartgallery iki mailchimp eklentisi de BAGLANTISIZ** (olculdu: ikisinde de
   API anahtari yok). `mailchimp-for-woocommerce` dev'de kapatildi (icerikte
   karsiligi yok). `mc4wp` ACIK BIRAKILDI: tek formu **8 yerde gomulu** ama
@@ -223,6 +218,7 @@ sitesi eklerken o map'e bir satir eklenir.
 | fdartgallery hizi (DEV) | 17 → 13 eklenti, 47 → 26 script, 5 → 1 font istegi, fontlar gzip'li (6n) |
 | fdartgallery hizi (**CANLI**) | 02.09.2026 alindi: 47 → 26 script, 32 → 26 stylesheet, react+12 `js/dist` dosyasi dustu, `.ttf` 62.044 → 33.984 bayt, isinmis TTFB 16-19 ms (6n) |
 | Yedekleme | Cloudflare R2, gece 04:15, 30 gun; uploads artimli (`copy`, `sync` DEGIL) |
+| UpdraftPlus | 02.09.2026 komple kaldirildi: eklenti kapali, yerel arsivler silindi (canli 6,88 GB + dev 2,77 GB), yetim cron olaylari temizlendi; disk %40 → **%26** (6o) |
 | Sertifikalar | Let's Encrypt, otomatik yenileme |
 | MariaDB | `root@localhost` parolasizdi → `unix_socket` + yedek parola |
 | fail2ban | 3 jail; hem Cloudflare edge hem yerel nftables bani |
@@ -1060,6 +1056,35 @@ korundu (26/26), sayfa #2 artik CF7 JS'ini yukluyor.
 > kisa kodu elle calistirilinca **58** `wpcf7` uretiyor. Yani CF7 eklentisi ve
 > form #64 saglam, bozuk olan sayfanin saklanmis markup'i (blok yorumu `<p>`
 > icine sikismis ve sayfa Elementor ile render ediliyor). **Ayri is.**
+
+### 6o. UpdraftPlus temizligi (02.09.2026, CANLI + dev)
+
+Eklenti hem canlida hem dev'de kapali (6n). Yerel arsivler de silindi:
+
+| | once | sonra |
+|---|---|---|
+| canli `wp-content/updraft` | 6,9 GB / 98 dosya | **80 KB / 3 dosya** |
+| dev `wp-content/updraft` | 2,8 GB / 77 dosya | **72 KB / 3 dosya** |
+| disk (`/`) | 29 GB kullanimda (%40) | **19 GB (%26)** |
+
+`index.html`, `.htaccess`, `web.config` KORUNDU (dizin listelemeye karsi).
+Canlida 3 yetim cron olayi da silindi (`updraft_backup_database`,
+`updraft_backup`, `updraftplus_clean_temporary_files`); ikisinde de 0 kaldi.
+
+**SILMEDEN ONCE R2 KANITLANDI** — "gece yedegi var" demek yetmez, dogrulandi:
+
+- `snapshots/` altinda 29.08-02.09 arasi gunluk `db-*.sql.gz` + `files-*.tar.gz`
+  + `wp-config-*.php`,
+- `uploads/` artimli kopya 01.09'a kadar guncel,
+- en yeni DB dokumu R2'den INDIRILDI: `gzip -t` saglam, 76 `CREATE TABLE`,
+  acilmis 80 MB.
+
+> **`files-*.tar.gz` `wp-content/updraft`'i DISLIYOR** (`backup-site.sh` satir
+> 66-69: `uploads`, `cache`, `updraft`, `*.log`). Ilk bakista tarball icinde
+> 1549 "updraft" girdisi gorundu ve bir an "yedegin icinde" sanildi —
+> hepsi `wp-content/plugins/updraftplus/` altindaki EKLENTI KAYNAK dosyalari.
+> Dogru olcut: `tar -tzf ... | grep -c '^wp-content/updraft/'` → **0**.
+> Uploads da tarball'da yok, R2'ye ayrica artimli gidiyor.
 
 ### 6h. Diger
 
