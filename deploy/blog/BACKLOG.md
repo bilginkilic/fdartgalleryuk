@@ -13,7 +13,7 @@ Detayli sure ve uslup kurallari: `deploy/blog/README.md`
 
 - [x] Rusya’da EDO (Elektronik Belge Akisi) — Chestny Znak devir bildiriminin sarti — *01.09.2026, ID 37684*
 - [x] Rusya’ya sevkiyat oncesi kontrol listesi — tiri sinirda durduran hatalar — *02.09.2026, TR 38064 / EN 38066 / RU 38068* (kaynak: Telegram #28+#33+#38)
-- [ ] **Vaka: sevkiyat oncesi tek kod kontrolu 15.000 dolarlik zarari nasil onledi** — *kaynak: Telegram #20; blogda hic vaka calismasi yok, en ayirt edici icerik*
+- [x] Vaka: sevkiyat oncesi tek kod kontrolu 15.000 dolarlik zarari nasil onledi — *02.09.2026, TR 38072 / EN 38074 / RU 38076* (kaynak: Telegram #20; blogun ilk vaka calismasi)
 - [ ] **Turkiye–Rusya ticareti: uretici icin ticaret gercekleri** — *kaynak: Telegram #17; blogda karsiligi yok*
 - [ ] Rusya’ya ayakkabi ihracatinda Chestny Znak (en eski zorunlu kategori, 6401-6405)
 - [ ] Kozmetik ve ev kimyasallarinda markalama — 2025-2026 kademeli takvim
