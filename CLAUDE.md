@@ -242,12 +242,10 @@ konuldu. **7/7 SENT**, hepsi `info@fdsanatmerkezi.com`; konu satirindaki
 
 Yedek: `/var/backups/claude-2026-09-03-ff-bildirim/notifications-oncesi.tsv`.
 
-Form #2 "Subscription Form" bildirimi de **acildi** (kullanici karari).
-Konusu bozuktu — `{inputs.names}` diyordu ama formda **yalnizca `email` alani
-var**; `Konu: {form_title} | {inputs.email} - Yeni Abone` olarak duzeltildi.
-**Uctan uca test EDILEMEDI:** formun hic kaydi yok ve asagidaki haritada
-gorulecegi gibi hicbir sayfaya gomulu degil. Yapisi kanitlanmis alti besleme
-ile ayni; gomuldugu anda calisir. Form #3 yayinda degil.
+Form #2 "Subscription Form" bildirimi de **acildi** (kullanici karari) ve
+form **altbilgiye kondu** (asagida). Konusu bozuktu — `{inputs.names}` diyordu
+ama formda **yalnizca `email` alani var**; `Konu: {form_title} | {inputs.email}
+- Yeni Abone` olarak duzeltildi. Form #3 yayinda degil.
 
 ### Hangi form hangi sayfada (03.09.2026, basilan HTML'den)
 
@@ -261,6 +259,41 @@ ile ayni; gomuldugu anda calisir. Form #3 yayinda degil.
 | `/heykel-ders-talep-formu/` | `fluentform_12` Heykel Kurs |
 | `/resim-workshop-satin-al/` | `fluentform_7` Resim Workshop |
 | `/heykel-workshop-satin-al/` | `fluentform_15` Heykel Workshop |
+
+### Altbilgideki bulten formu (03.09.2026)
+
+Altbilgi bir **Elementor sablonu**: `elementor_library` **#1041**
+("Elementor Footer #194", tip `footer`). Widget alanlari (`footer-1`,
+`prefooter`, telif altnotu) **BOS** — tema onlari kullanmiyor, aramayin.
+
+Eklenen: uc sutunlu bolum ile telif satiri **ARASINA** tam genislikte bir
+serit — baslik "Bültenimize abone olun" + `fluent-form-widget` (`form_list`
+= `"2"`). Mevcut hicbir elemana dokunulmadi; container `_element_id` =
+**`fd-bulten-seridi`**, geri almak o tek elemani silmek demek.
+
+> **Veri yapisi bir seviye daha derin.** `_elementor_data`'nin koku
+> `j[0]` (container) ve onun altinda TEK bir sarmalayici var; uc sutunlu
+> bolum ile telif satiri `j[0]['elements'][0]['elements']` altinda. Ilk
+> denemede `j[0]['elements']`'e yazilmak istendi, kuru calistirma
+> "1 bolum var" deyip yakaladi.
+
+Form metinleri Turkcelestirildi (`fluentform_forms.form_fields`):
+placeholder `Your Email Address` → **`E-posta adresiniz`**, buton
+`Subscribe` → **`Abone Ol`** (uc yerde: alan, ozel buton, `submitButton`).
+
+**Dogrulandi:** dev'de kuruldu ve basilan HTML'den denetlendi, sonra canliya
+alindi. Canli ile dev **birebir**: `fluentform_2` 5, `Bültenimize` 1,
+`<img>` 31, `menu-item` 123, `<form>` 4, `elementor-widget` 172. Butun
+sayfalar 200, PHP Fatal 0. Turnstile formun ICINDE (`cf-turnstile` 4,
+gecerli `data-sitekey`) — yani koruma calisiyor.
+
+> **Uctan uca gonderim testi KABUKTAN YAPILAMAZ:** `cfturnstile_fluent=1`,
+> yani FluentForm gonderimleri Turnstile istiyor ve script'in token'i yok.
+> Bildirim yolu ayrica kanitlandi (ayni sablondan kurulan 7 beslemenin
+> 7'si SENT); geriye kalan tek adim tarayicidan gercek bir abonelik.
+
+Yedek: `/var/backups/claude-2026-09-03-altbilgi/` (sablon #1041 ve form #2
+alanlari, canli + dev, degisiklik oncesi).
 
 > **Formu DB'den aramaya calismayin.** Elementor widget'i `fluent-form-widget`
 > ve form id'sini kacisli JSON icinde tutuyor; `"formId"` / `"form_id"` regex'i
