@@ -28,17 +28,18 @@ push et, dur ve haber ver. Kullanici daima `root`. Site kullanicisi
 
 ## 0. SU AN NE KALDI
 
-Site yayinda; kurulum, performans, guvenlik, yedekleme, site haritasi, formlar
-ve e-posta bitti. **Sunucu tarafinda yapilacak is kalmadi** — kalan iki madde
-tema/PHP tarafinda ve **kullanici onayi bekliyor**:
+Site yayinda; kurulum, performans, guvenlik, yedekleme, site haritasi, formlar,
+e-posta ve onbellek bitti. **Sunucu tarafinda yapilacak is kalmadi.**
 
-- **Mobil LCP ~10,5 sn (puan ~41).** TTFB 52 ms oldugu icin sebep bekleme degil
-  **sayfa agirligi**: 252 KB HTML, 46 `<script>`, 29 stylesheet,
-  `elementor-all-widgets.min.js` tek basina 134 KB (sikistirilmis), `preload` **0**.
-  Ilk adim LCP gorseline `preload` + `fetchpriority`.
-- **`/cart/` 2,7 sn · `/my-account/` 2,6 sn · `/checkout/` 1,8 sn.** Origin'de de
-  ayni → **PHP**, ag degil. Bu sayfalar dogasi geregi onbelleklenemez (oyle
-  kalmali), o yuzden ne APO ne nginx yardim eder. Dogrudan satisa deguyor.
+Kalan tek performans maddesi **temada** ve **kod isi degil, tasarim isi**:
+
+- **Mobil LCP ~12 sn, puan ~40.** Sebep **JavaScript**, gorsel degil — olculdu
+  (Lighthouse ana is dagilimi): `Script Evaluation` **5.669 ms**,
+  `Style & Layout` **4.120 ms**, TBT 1.251 ms, TTI 13,9 sn. JS'in **7.411 ms**'i
+  belgenin kendisine (sayfadaki satir ici script'ler), **5.086 ms**'i jQuery'ye
+  yaziliyor. Render'i engelleyenler: `elementor-all-widgets.min.css` (52 KB),
+  `woocommerce-all.min.css` (39 KB), jQuery. Cozum XStore/Elementor widget
+  yukunu azaltmak — **kullanici karari**.
 - **Blogun en eski 4 yazisi** hala Ingilizce demo slug'inda; 301 ister, tablo
   hazir (`fd-eski-adresler.php`). Ayrinti `deploy/blog/BACKLOG.md`.
 
@@ -72,6 +73,7 @@ Mail kayitlari (Brevo DKIM, DMARC, SPF, Email Routing MX) **degistirilmez**.
 | Kenar onbellegi | **Cloudflare APO acik** 03.09.2026; otomatik purge olculdu ve calisiyor (3) |
 | Reklam/bulten trafigi | `?utm_*`/`gclid`/`fbclid` onbellekten okuyor; TTFB ~2,3 sn → 15-25 ms (3) |
 | Eklentiler | **17 → 12**, canli = dev. Kapatilan 4: `mailchimp-for-woocommerce`, `fluentforms-pdf`, `image-optimization`, `updraftplus`. Kaldirilan 2: **CF7** (formlar FluentForm'da), **`mc4wp`** (hicbir sayfada basilmiyordu). Eklenen 1: `cloudflare` |
+| PHP / OPcache | **sunucu geneli** ayar 03.09.2026: sepet 2,9 sn → **0,95 sn**, hesabim 2,7 → 0,87, odeme 1,8 → 0,42 (3) |
 | Site haritasi | `wp-sitemap*.xml` 404 → **200**; indeks + 8 alt harita, 329 adres (4) |
 | Formlar / e-posta | FluentForm besleme onarimi, butun ekip bildirimleri tek adrese, altbilgi bulten formu (5) |
 | Turnstile | giris/kayit/form/WooCommerce |
@@ -119,6 +121,88 @@ arkada HIT veriyor — hicbir istek PHP'ye dusmuyor.
 > XStore + Elementor'un 46 script / 29 stylesheet'i. Sunucuyu daha da
 > hizlandirmak bu sayiyi **degistirmez**. Istisna sepet/odeme: orada gercekten
 > PHP yavas (0. bolum).
+
+### OPcache — sepet/odeme yavasliginin sebebiydi (03.09.2026)
+
+`/cart/` 2,9 sn suruyordu. Profil (gecici mu-plugin, `?fdprofil=`) sucluyu net
+gosterdi: **veritabani %1** (21 sorgu, 14 ms). Zaman PHP'nin her istekte
+**3.240 dosyayi yeniden derlemesinde** gidiyordu.
+
+```
+opcache: bellek 128/128 MB DOLU · isabet %22 · kacirma 106.213
+TOPLAM 2.761–3.330 ms · bellek tepe 186 MB
+```
+
+OPcache sunucuda **hic yapilandirilmamisti** — tamamen PHP varsayilani (128 MB,
+10.000 dosya, 8 MB interned). Kutuda **4 WordPress sitesi** var, her biri ~3.240
+dosya yukluyor.
+
+> **TUZAK: OPcache dolunca sessizce devre disi kalir.** Yeni script kabul etmez
+> ve **tahliye de yapmaz** — hangi sitenin dosyalari once girdiyse onlar kalir.
+> Kalanlar her istekte yeniden derlenir ve **her isci onlari kendi belleginde
+> tutar**. Canli ile dev arasindaki fark tam olarak buydu: ayni kod, ayni 12
+> eklenti, ayni veri; canli 2,9 sn / tepe **186 MB**, dev 1,2 sn / tepe **38 MB**.
+> `memory_get_peak_usage()` arasindaki bu ucurum OPcache doldugunun imzasidir.
+
+Cozum `/etc/php/8.5/fpm/conf.d/99-opcache-tuning.ini` (**sunucu geneli** —
+`opcache.memory_consumption` `PHP_INI_SYSTEM`, havuz basina ayarlanamaz; tek
+php-fpm ana sureci var, dolayisiyla dort siteyi birden etkiler; kullanici onayi
+alindi):
+
+```ini
+opcache.memory_consumption = 768   ; once 512 denendi, 509/512 ile doldu
+opcache.interned_strings_buffer = 32
+opcache.max_accelerated_files = 50000
+opcache.validate_timestamps = 1    ; deploy sonrasi elle reload gerekmesin
+opcache.revalidate_freq = 2
+```
+
+Sonuc — ayni yontemle olculdu:
+
+| | once | sonra |
+|---|---|---|
+| `/cart/` | 2,9–3,2 sn | **0,94–0,97 sn** |
+| `/my-account/` | 2,6–2,9 sn | **0,74–0,95 sn** |
+| `/checkout/` | 1,7–2,0 sn | **0,40–0,48 sn** |
+| tepe bellek | 186 MB | **34 MB** |
+| OPcache isabet | %22 | **%89** (508/768 MB, 15.8k script) |
+
+Ana sayfa 17–21 ms, chestnyznak ikilisi 17–24 ms, dort site de 200. Kenar
+davranisi degismedi (`/` HIT, `/cart/` ve `/my-account/` DYNAMIC).
+
+Kalan ~0,95 sn hala PHP (DB %1) — sonraki kazanc 3.240 dosyayi azaltmaktan,
+yani tema yukunden gecer.
+
+> `/checkout/` bos sepetle **302 → `/cart/`** doner; bu WooCommerce'in normal
+> davranisi, hata degil.
+
+### LCP on yukleme DENENDI, ISE YARAMADI (03.09.2026)
+
+Hero gorseli (`5.jpg.webp`, 287 KB) Elementor tarafindan satir ici
+`style="background-image: url(...)"` ile HTML'in **74.856. karakterinde**
+basiliyor; `</head>` 25.246'da bitiyor. CSS arka planlari on tarayiciya
+gorunmez, yani tarayici gorseli cok gec kesfediyor. Mantikli bir hedefti.
+
+`fd-lcp-onyukleme.php` yazildi (on sayfanin `_elementor_data`'sindan ilk
+`background_image` okunur, transient'te tutulur, `<head>`'e
+`<link rel=preload as=image fetchpriority=high>` basar). Dev'de dogrulandi:
+etiket 737. karakterde, adres 200.
+
+**Olcum (Observatory / me-west1, mobil):**
+
+| | once | preload ile |
+|---|---|---|
+| LCP | 12.211 ms | 12.309 ms |
+| Puan | 48 | 39 |
+
+**Fark yok.** Cunku darbogaz gorsel indirmek degil, JS calistirmak (0. bolum).
+Olculebilir kazanc olmadigi ve 287 KB'i yuksek oncelikle cekmenin bedeli
+oldugu icin **geri alindi**; dosya depoda da tutulmadi.
+
+> **Ders: "preload 0" bir belirti, tanı degil.** Once LCP elemaninin ne oldugunu
+> ve neyin bekledigini olcun. Lighthouse `mainthread-work-breakdown` ve
+> `bootup-time` denetimleri bunu dogrudan soyluyor; rapor JSON'una
+> `speed_api/.../tests/<id>` cevabindaki `jsonReportUrl` ile ulasilir.
 
 ### Varlik diyeti
 
