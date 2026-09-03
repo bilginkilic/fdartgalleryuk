@@ -33,21 +33,19 @@ e-posta ve onbellek bitti. **Sunucu tarafinda yapilacak is kalmadi.**
 
 Kalan tek performans maddesi **temada** ve **kod isi degil, tasarim isi**:
 
-**Mobil LCP 10,8 sn (puan 39).** Masaustu iyi (puan 81). Sebep tarayicidaki is:
-Style & Layout 4,3 sn, jQuery 4,8 sn, sayfa 3.358 KB / 111 istek. Tam dokum ve
-denenip **ise yaramayan** uc mudahale 3. bolumde. Kalan secenekler, olculen
-kazanc ve riskiyle — **hepsi kullanici karari**:
+**Mobil LCP 10,9 sn (puan 37-40).** Masaustu iyi ve daha da iyilesti
+(**puan 85**, LCP 1,99 sn). Mobildeki sebep tarayicidaki is: Style & Layout
+4,3 sn, jQuery 4,8 sn, sayfa 3.159 KB. Tam dokum ve denenip **ise yaramayan**
+mudahaleler 3. bolumde. Kalan secenekler, olculen kazanc ve riskiyle —
+**hepsi kullanici karari**:
 
-1. **Urun gorseli boyutu (~590 KB, tasarim degismez).** `sizes` niteligi
-   `100vw` diyor, gorsel 954x1000 inip 299x314 gosteriliyor. `woocommerce_thumbnail`
-   de 1000x1000. Duzeltmesi bir mu-plugin filtresi (+ istege bagli kucuk resim
-   yeniden uretimi). **En iyi kazanc/risk oranı.**
-2. **Slayt 3 → 1 (~330 KB).** Ikinci ve ucuncu slayt gorseli iniyor ama
-   goruntulenmiyor. Icerik karari.
-3. **Turnstile ~1 MB.** Dogru cozum: gizli giris formunun widget'ini sayfa
+1. **Slayt 3 → 1 (~330 KB).** Ana sayfanin en agir uc dosyasi slayt gorselleri
+   (`5.jpg.webp` 287 KB, `6` 197 KB, `7` 132 KB); yalnizca birincisi goruluyor,
+   digerleri yine de iniyor. Icerik karari.
+2. **Turnstile ~1 MB.** Dogru cozum: gizli giris formunun widget'ini sayfa
    acilisinda degil, **giris penceresi acilinca** render etmek. Ozel is; yanlis
    yapilirsa **giris kirilir** (3. bolumdeki tuzaklara bakin).
-4. **Ana sayfadaki widget sayisi** (33 container / 60 widget, 2 urun listesi).
+3. **Ana sayfadaki widget sayisi** (33 container / 60 widget, 2 urun listesi).
    Asil `Style & Layout` maliyeti burada. Tasarim karari.
 - **Blogun en eski 4 yazisi** hala Ingilizce demo slug'inda; 301 ister, tablo
   hazir (`fd-eski-adresler.php`). Ayrinti `deploy/blog/BACKLOG.md`.
@@ -86,6 +84,9 @@ Mail kayitlari (Brevo DKIM, DMARC, SPF, Email Routing MX) **degistirilmez**.
 | Site haritasi | `wp-sitemap*.xml` 404 → **200**; indeks + 8 alt harita, 329 adres (4) |
 | Formlar / e-posta | FluentForm besleme onarimi, butun ekip bildirimleri tek adrese, altbilgi bulten formu (5) |
 | Turnstile | giris/kayit/form/WooCommerce |
+| Urun gorselleri | `woocommerce_thumbnail` 1000 → **600**: gorsel basina 112 → 45 KB, `/shop/` ~2.128 → **662 KB** (3) |
+| Cerez bildirimi | onbellekli sayfada kapanmiyordu, duzeltildi; onay omru 3 gun → 365 (3) |
+| Site preloader | tema ayarindan **kapatildi** (3) |
 | WebP | 6437 dosya (02.09.2026; `/etc/cron.d/webp-fdartgallery_com` gece artirir); orijinaller korunur |
 
 **mu-plugin'ler** — `deploy/wordpress/fdart-mu-plugins/` (yalnizca bu site):
@@ -95,6 +96,8 @@ Mail kayitlari (Brevo DKIM, DMARC, SPF, Email Routing MX) **degistirilmez**.
 | `fd-asset-diyet.php` | sayfada karsiligi olmayan CSS/JS'i kuyruktan cikarir (3) |
 | `fd-font-hizlandirma.php` | googleapis isteklerini tek istege indirir, preconnect (3) |
 | `fd-eski-adresler.php` | slug degisimi icin 301 tablosu (4) |
+| `fd-cerez-bildirimi.php` | cerez bildirimini onbellekli sayfada da kapatir (3) |
+| `fd-urun-gorsel-srcset.php` | srcset'ten artik `..._preview` (1000x1000) adayini eler (3) |
 | `fd-site-haritasi-durum.php` | `wp-sitemap*.xml` 200 dondurur (4) |
 
 Butun sitelerde ortak olanlar (`mu-plugins/`, `staging-mu-plugins/`) genel
@@ -300,6 +303,73 @@ Sira: secenek → `wp cache flush` → `wp media regenerate --image_size=woocomm
 JPEG'e duser, kazanc yanar) → nginx + kenar onbellegi temizligi.
 
 Yedek (degisiklik oncesi secenekler): `/var/backups/claude-2026-09-03-gorsel/`.
+
+> **IKINCI TUZAK: boyut kuculdu ama tarayici hala 1000x1000 indiriyordu.**
+> `srcset`'te eski temadan kalan bir **artik** aday duruyordu:
+> `woocommerce_thumbnail_preview` (1000x1000). Bu boyut artik ne temada ne
+> eklentide kayitli — yalnizca ek verisinde duruyor ve ayni en-boy oraninda
+> oldugu icin `wp_calculate_image_srcset()` onu da aday yapiyor. `.webp`
+> kopyasi da olmadigi icin **en agir dosya (153 KB)** seciliyordu.
+> `fd-urun-gorsel-srcset.php` bu adayi listeden cikariyor (dosyalar diskte kalir).
+>
+> `sizes` duzeltmesi burada da tek basina yetmezdi: tarayici gerekenden
+> **kucuk** olani secmez — slot 299 CSS px, DPR 2 ile 598 px gerekiyor; 618 px
+> gerektiginde 600w'yi atlayip 1000w'ye cikardi.
+
+**Sonuc (canli, 03.09.2026):**
+
+| | once | sonra |
+|---|---|---|
+| urun kucuk resmi | 954x1000, **112 KB** | 600x600, **45 KB** |
+| `/shop/` urun gorselleri (19 adet) | ~2.128 KB | **662 KB** |
+| ana sayfa toplam | 3.358 KB | **3.159 KB** |
+| masaustu puan / LCP | 81 / 2.306 ms | **85 / 1.992 ms** |
+| mobil puan / LCP | 39 / 10.800 ms | 37 / 10.888 ms (degismedi) |
+
+Mobil degismedi cunku orada darbogaz JS (0. bolum). Kazanc **indirilen veride**
+ve asil `/shop/` ve kategori sayfalarinda: ~1,4 MB.
+
+Kirpma artik gercekten 1:1 — eskiden ayar 1:1 diyordu ama genislik kaynak
+gorsellerden buyuk oldugu icin hic uygulanamiyor, boy 1000'e sabitleniyordu
+(954x1000, 927x1000, 879x1000...). Izgara artik duzgun kare. **Bu gorunur bir
+degisiklik**, kullanici onayiyla yapildi.
+
+Yeniden uretimde 670 ekin 652'si yenilendi; **basarisiz 18'in tamami SVG**
+(ImageMagick rasterleyemiyor, raster kucuk resim de gerekmez).
+
+Eski `954x1000` kucuk resimlerin `.jpeg` dosyalari `wp media regenerate`
+tarafindan silindi ama **`.jpeg.webp` kardeslerini WordPress bilmiyor**, diskte
+oksuz kaldilar (~70 MB). Zararsiz — hicbir yerde referans verilmiyor.
+
+### Site preloader kapatildi (03.09.2026)
+
+`site_preloader` tema ayari **1 → 0** (`set_theme_mod`, `etheme_get_option`
+`get_theme_mod`'u okuyor). Body sinifi `et-preloader-on` → `et-preloader-off`,
+overlay HTML'i hic basilmiyor. Tema JS'i overlay'i **500 ms sonra** kaldiriyordu;
+o sure artik yok. Geri almak: `set_theme_mod('site_preloader', 1)`.
+Yedek: `/var/backups/claude-2026-09-03-gorsel/preloader-oncesi.txt`.
+
+### Cerez bildirimi onbellekte takiliyordu (03.09.2026)
+
+Kullanici bildirdi: "Tamam. Hazirim" tiklaniyor, bildirim her sayfada geri
+geliyor.
+
+> **TUZAK: XStore cerez bildirimini SUNUCUDA karar veriyor** —
+> `xstore/framework/features/gdpr.php:39`, `$_COOKIE['etheme_cookies']` kontrolu.
+> Sayfa hem nginx `fastcgi_cache` hem APO tarafindan onbelleklendigi icin
+> onbellege giren kopya **her zaman** bildirimi iceriyor. Temanin JS'i yalnizca
+> TIKLAMADA kaldiriyor, acilista cerezi **kontrol etmiyor**. Ikinci sebep: onay
+> cerezinin omru `et_cookies_notice_cache` = **3 gun**.
+
+`fd-cerez-bildirimi.php`: karar tarayiciya tasindi — `wp_head`'in en basinda
+(552. karakter, `</head>` 25.432'de) stil + kucuk script, cerez varsa `<html>`'e
+isaret konuyor ve bildirim hic boyanmiyor. Cerez omru filtreyle **365 gun**;
+tema ayarina dokunulmadi.
+
+> iOS Safari, JS ile yazilan cerezleri **7 gunle** sinirlar (ITP). Sunucudan
+> `Set-Cookie` ile yazmak bunu asardi ama sayfayi onbelleklenemez yapardi —
+> takas iyi degil.
+
 
 ### Varlik diyeti
 
