@@ -35,23 +35,7 @@ Site yayinda. Kurulum, performans, guvenlik, yedekleme ve site haritasi bitti.
 
 - **Cloudflare APO** (~5 $/ay) — fdartgallery turuncu bulutta, secenek.
   Su an `cf-cache-status: DYNAMIC`.
-- **FORM BILDIRIMLERININ COGU ATESLENMIYOR** (03.09.2026 olculdu). Kayit
-  geliyor ama kimseye e-posta cikmiyor. Kanit — log doneminde (25.08 sonrasi)
-  gelen 6 kayittan yalnizca form #5'inki e-posta uretti:
 
-  | Kayit | Form | Tarih | E-posta |
-  |---|---|---|---|
-  | #55, #57, #58 | #9 Iletisim kuralim | 29-30.08 | **yok** |
-  | #56 | #5 Ozel Siparis | 29.08 | var |
-  | #59 | #12 Heykel Kurs | 01.09 | **yok** |
-  | #60 | #8 Resim Kurs | 01.09 | **yok** |
-
-  #59 ve #60, Brevo anahtarinin duzeldigi 30.08 17:00'den SONRA — yani sebep
-  gonderim altyapisi degil. DB'de form #7, #8, #9'un `notifications` meta'si
-  **satir satir parcalanmis** (her alan ayri satir, sonuncusu `false`);
-  #6, #12, #15'te ise `notifications` meta'si HIC YOK. Bildirim beslemelerinin
-  yeniden kurulmasi gerekiyor — **kullanici karari, dokunulmadi.**
-  En cok etkilenen: "Iletisim kuralim" (27 kayit) kimseye haber vermiyor.
 - **Blogun en eski 4 yazisi** hala Ingilizce demo slug'inda. Duzeltmek 301 ister;
   tablo hazir (`fd-eski-adresler.php`). Ayrinti `deploy/blog/BACKLOG.md`.
 
@@ -217,6 +201,49 @@ Kullanici karari: **butun EKIP bildirimleri `info@fdsanatmerkezi.com`**.
 | FluentForm #5 "Ozel Siparis Formu" bildirimi | `info@fdsanatmerkezi.com` |
 
 Yedek: `/var/backups/claude-2026-09-03-eposta/`.
+
+### Form bildirimleri yeniden kuruldu (03.09.2026)
+
+**Sorun:** kayit geliyordu, kimseye e-posta cikmiyordu. Kanit: log doneminde
+(25.08 sonrasi) gelen 6 kayittan yalnizca form #5'inki e-posta uretti; #59 ve
+#60 Brevo anahtarinin duzeldigi 30.08 17:00'den SONRA geldigi halde sessizdi —
+yani sebep gonderim altyapisi degildi.
+
+**Kok sebep:** `fluentform_form_meta`'da form #7, #8, #9'un `notifications`
+kaydi **satir satir parcalanmisti** — tek JSON nesnesi yerine her alan ayri bir
+satir (`name`, `sendTo`, `subject`… ve sonuncusu `false`). Form #6, #12, #15'te
+ise `notifications` kaydi **hic yoktu**. FluentForm bu satirlari besleme olarak
+okuyamiyor, sessizce hicbir sey gondermiyordu.
+
+**Cozum:** parcalanmis 30 satir silindi, her forma **tek saglikli besleme**
+kuruldu (calisan form #5 sablonu), alici `info@fdsanatmerkezi.com`.
+
+| Form | Kayit | Durum |
+|---|---|---|
+| #5 Ozel Siparis | 7 | zaten saglikliydi, dokunulmadi |
+| #6 Duvara Resim | 2 | besleme yoktu → kuruldu |
+| #7 Resim Workshop | 7 | parcalanmisti → yeniden kuruldu |
+| #8 Resim Kurs | 11 | parcalanmisti → yeniden kuruldu |
+| #9 Iletisim kuralim | **27** | parcalanmisti → yeniden kuruldu |
+| #12 Heykel Kurs | 2 | besleme yoktu → kuruldu |
+| #15 Heykel Workshop | 3 | besleme yoktu → kuruldu |
+
+> **`feed_trigger_event` BILEREK KONULMADI.** Form #5'in beslemesinde
+> `payment_success` yaziyor ve yine de calisiyor: `EmailNotificationActions::notify()`
+> bu alani YALNIZCA `$form->has_payment` ve sayfada `payment_method` alani
+> varken dikkate alir. Odemesiz formlarda inert; birakmak ileride sessiz
+> kirilma riskidir.
+
+**Dogrulama — uretim yolu, sahte `wp_mail` degil.** Her form icin mevcut son
+kayit alinip `ShortCodeParser::parse()` → `EmailNotification::notify()`
+calistirildi (submission kancasinin yaptigi isin aynisi), konuya `[TEST]` onegi
+konuldu. **7/7 SENT**, hepsi `info@fdsanatmerkezi.com`; konu satirindaki
+`{inputs.your-name}` gercek kayitlardan dogru cozuldu.
+
+Yedek: `/var/backups/claude-2026-09-03-ff-bildirim/notifications-oncesi.tsv`.
+
+> Form #2 "Subscription Form" bildirimi **KAPALI birakildi** (0 kayit, bulten
+> abonelik formu). Form #3 yayinda degil.
 
 **BILEREK DOKUNULMAYANLAR:**
 
