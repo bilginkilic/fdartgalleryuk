@@ -35,6 +35,23 @@ Site yayinda. Kurulum, performans, guvenlik, yedekleme ve site haritasi bitti.
 
 - **Cloudflare APO** (~5 $/ay) — fdartgallery turuncu bulutta, secenek.
   Su an `cf-cache-status: DYNAMIC`.
+- **FORM BILDIRIMLERININ COGU ATESLENMIYOR** (03.09.2026 olculdu). Kayit
+  geliyor ama kimseye e-posta cikmiyor. Kanit — log doneminde (25.08 sonrasi)
+  gelen 6 kayittan yalnizca form #5'inki e-posta uretti:
+
+  | Kayit | Form | Tarih | E-posta |
+  |---|---|---|---|
+  | #55, #57, #58 | #9 Iletisim kuralim | 29-30.08 | **yok** |
+  | #56 | #5 Ozel Siparis | 29.08 | var |
+  | #59 | #12 Heykel Kurs | 01.09 | **yok** |
+  | #60 | #8 Resim Kurs | 01.09 | **yok** |
+
+  #59 ve #60, Brevo anahtarinin duzeldigi 30.08 17:00'den SONRA — yani sebep
+  gonderim altyapisi degil. DB'de form #7, #8, #9'un `notifications` meta'si
+  **satir satir parcalanmis** (her alan ayri satir, sonuncusu `false`);
+  #6, #12, #15'te ise `notifications` meta'si HIC YOK. Bildirim beslemelerinin
+  yeniden kurulmasi gerekiyor — **kullanici karari, dokunulmadi.**
+  En cok etkilenen: "Iletisim kuralim" (27 kayit) kimseye haber vermiyor.
 - **Blogun en eski 4 yazisi** hala Ingilizce demo slug'inda. Duzeltmek 301 ister;
   tablo hazir (`fd-eski-adresler.php`). Ayrinti `deploy/blog/BACKLOG.md`.
 
@@ -187,6 +204,50 @@ FluentSMTP tuzaklari **genel dosyanin 6d bolumunde**.
 
 **Turnstile** giris, kayit, form ve WooCommerce akislarinda aktif — kaldirmadan
 once 3. bolumdeki gizli giris formu uyarisini okuyun.
+
+### Bildirimler kime gidiyor (03.09.2026)
+
+Kullanici karari: **butun EKIP bildirimleri `info@fdsanatmerkezi.com`**.
+
+| Nokta | Alici |
+|---|---|
+| WooCommerce `new_order`, `cancelled_order`, `failed_order` | `info@fdsanatmerkezi.com` |
+| `admin_payment_gateway_enabled`, stok uyarisi | `info@fdsanatmerkezi.com` |
+| WordPress `admin_email` | `info@fdsanatmerkezi.com` |
+| FluentForm #5 "Ozel Siparis Formu" bildirimi | `info@fdsanatmerkezi.com` |
+
+Yedek: `/var/backups/claude-2026-09-03-eposta/`.
+
+**BILEREK DOKUNULMAYANLAR:**
+
+- **Musteriye giden WooCommerce e-postalari** — alicisi musterinin kendisi;
+  yonlendirmek siparis onayini musteriden calar.
+- **`woocommerce_paypal_settings` → `receiver_email`** (`swordbros@gmail.com`)
+  — bu bir **odeme hesabi**, bildirim alicisi degil. Degistirmek odemeyi kirar.
+- **`woocommerce_email_from_address`** — GONDEREN alani, alici degil.
+- **FluentForm `sendTo.type = field`** olan bildirimler — alici basvuranin
+  kendisidir (otomatik yanit).
+
+Ayrica yarim kalmis bir `new_admin_email` degisikligi (`blgnklc@gmail.com`,
+`adminhash` ile onay bekliyordu) iptal edildi.
+
+> **GONDEREN ayardaki adres DEGILDIR.** WooCommerce ayari
+> `info@fdsanatmerkezi.com` diyor ama FluentSMTP gonderirken
+> `info@fdartgallery.com`'a ceviriyor — ve bu DOGRU: SPF/DKIM/DMARC o alan
+> adina kurulu. Ayardaki adresten gitseydi Brevo dogrulanmamis gonderen diye
+> reddederdi. Panelde gorduğunuz adres yaniltici, log'daki `from` gercek.
+
+> **TUZAK: `WC_Email_New_Order::trigger()` ayni siparis icin IKINCI KEZ
+> gondermez.** Siparise `_new_order_email_sent` meta'si koyar. Test ederken
+> ilk tetikleme calisir, ikincisi sessizce hicbir sey yapmaz ve "e-posta
+> bozuk" sanilir. Baska bir siparisle test edin; bitince bayragi
+> `false`'a geri cekin.
+
+**Test yontemi:** sahte `wp_mail` atmayin — gercek yolu tetikleyin
+(`WC()->mailer()->get_emails()['WC_Email_New_Order']->trigger($id, $order)`),
+konuya `[TEST]` onegi koyun ve sonucu FluentSMTP log tablosundan
+(`..._fsmpt_email_logs`) okuyun. 03.09.2026: siparis #3508 ile denendi,
+**SENT**, `to = info@fdsanatmerkezi.com`.
 
 ---
 
