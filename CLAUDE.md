@@ -33,13 +33,22 @@ e-posta ve onbellek bitti. **Sunucu tarafinda yapilacak is kalmadi.**
 
 Kalan tek performans maddesi **temada** ve **kod isi degil, tasarim isi**:
 
-- **Mobil LCP ~12 sn, puan ~40.** Sebep **JavaScript**, gorsel degil — olculdu
-  (Lighthouse ana is dagilimi): `Script Evaluation` **5.669 ms**,
-  `Style & Layout` **4.120 ms**, TBT 1.251 ms, TTI 13,9 sn. JS'in **7.411 ms**'i
-  belgenin kendisine (sayfadaki satir ici script'ler), **5.086 ms**'i jQuery'ye
-  yaziliyor. Render'i engelleyenler: `elementor-all-widgets.min.css` (52 KB),
-  `woocommerce-all.min.css` (39 KB), jQuery. Cozum XStore/Elementor widget
-  yukunu azaltmak — **kullanici karari**.
+**Mobil LCP 10,8 sn (puan 39).** Masaustu iyi (puan 81). Sebep tarayicidaki is:
+Style & Layout 4,3 sn, jQuery 4,8 sn, sayfa 3.358 KB / 111 istek. Tam dokum ve
+denenip **ise yaramayan** uc mudahale 3. bolumde. Kalan secenekler, olculen
+kazanc ve riskiyle — **hepsi kullanici karari**:
+
+1. **Urun gorseli boyutu (~590 KB, tasarim degismez).** `sizes` niteligi
+   `100vw` diyor, gorsel 954x1000 inip 299x314 gosteriliyor. `woocommerce_thumbnail`
+   de 1000x1000. Duzeltmesi bir mu-plugin filtresi (+ istege bagli kucuk resim
+   yeniden uretimi). **En iyi kazanc/risk oranı.**
+2. **Slayt 3 → 1 (~330 KB).** Ikinci ve ucuncu slayt gorseli iniyor ama
+   goruntulenmiyor. Icerik karari.
+3. **Turnstile ~1 MB.** Dogru cozum: gizli giris formunun widget'ini sayfa
+   acilisinda degil, **giris penceresi acilinca** render etmek. Ozel is; yanlis
+   yapilirsa **giris kirilir** (3. bolumdeki tuzaklara bakin).
+4. **Ana sayfadaki widget sayisi** (33 container / 60 widget, 2 urun listesi).
+   Asil `Style & Layout` maliyeti burada. Tasarim karari.
 - **Blogun en eski 4 yazisi** hala Ingilizce demo slug'inda; 301 ister, tablo
   hazir (`fd-eski-adresler.php`). Ayrinti `deploy/blog/BACKLOG.md`.
 
@@ -203,6 +212,65 @@ oldugu icin **geri alindi**; dosya depoda da tutulmadi.
 > ve neyin bekledigini olcun. Lighthouse `mainthread-work-breakdown` ve
 > `bootup-time` denetimleri bunu dogrudan soyluyor; rapor JSON'una
 > `speed_api/.../tests/<id>` cevabindaki `jsonReportUrl` ile ulasilir.
+
+### Mobil LCP — nereye gidiyor (03.09.2026 tam olcum)
+
+Masaustu **sorun degil** (puan 81, LCP 2,3 sn). Sorun yalnizca mobilde:
+puan 39, FCP 3,0 sn, **LCP 10,8 sn**, TBT 1,25 sn, TTI 13,3 sn.
+TTFB 58 ms — yani bekleme degil, **tarayicida is**.
+
+Ana is dagilimi (Lighthouse, mobil emulasyon):
+
+| | ms |
+|---|---|
+| Style & Layout | **4.333** |
+| Other | 3.251 |
+| Script Evaluation | 1.766 |
+| jQuery (bootup toplami) | **4.819** |
+
+Sayfa **3.358 KB**, 111 istek:
+
+| tip | istek | KB |
+|---|---|---|
+| Gorsel | 19 | **1.332** |
+| XHR (Turnstile) | 3 | **769** |
+| Script | 39 | 397 |
+| Document (Turnstile) | 4 | 314 |
+| Font | 11 | 251 |
+| Stylesheet | 28 | 199 |
+
+Israf kalemleri:
+
+- **Turnstile ~1 MB / 15+ istek.** Sayfada IKI widget var: XStore'un her sayfaya
+  bastigi **gizli WooCommerce giris formu** (`-woo-login-`) ve altbilgi bulteni
+  (`-fluent-`).
+- `elementor-all-widgets.min.js` 135 KB, **%82 kullanilmiyor**.
+- CSS: `woocommerce-all.min.css` **%99**, `elementor-all-widgets.min.css` %92,
+  `xstore.min.css` %90 kullanilmiyor.
+- Slayt 3 gorsel = **616 KB**, yalnizca birincisi gorunuyor.
+- Urun gorselleri **954x1000 inip 299x314 gosteriliyor** — `sizes` niteligi
+  `(max-width: 954px) 100vw, 954px`, yani tarayiciya "ekrani kaplayacak" deniyor.
+  WooCommerce kucuk resmi de **1000x1000**. Lighthouse tahmini kazanc 589 KB.
+
+**Denenen ve OLCULEN mudahaleler — ucu de yetmedi:**
+
+| deneme | mobil LCP | sonuc |
+|---|---|---|
+| hero gorseline `preload` | 12.211 → 12.309 ms | fark yok, geri alindi |
+| Turnstile widget'i 2 → 1 | 12.309 → 11.767 ms | −0,5 sn ama **girisin korumasi da gidiyor**, kabul edilemez |
+| `cfturnstile_appearance = interaction-only` | 12.233 ms | LCP'ye etkisi yok (TBT 1.220 → 750) |
+
+> **TUZAK: `cfturnstile_woo_login = 0` giris sayfasini da korumasiz birakir.**
+> Dev'de olculdu: `/my-account/` uzerindeki `cf-turnstile-woo-` alani da kayboldu,
+> geriye yalnizca altbilgi formununki kaldi. Ayar sayfa bazli degil.
+
+> **TUZAK: `appearance` yalnizca GORUNURLUGU degistirir, calismayi ertelemez.**
+> `interaction-only` ile de Turnstile 20 istek / 1.071 KB cekmeye devam etti.
+
+Dev'de yapilan butun deneme ayarlari geri alindi; **canliya hic dokunulmadi**
+(`cfturnstile_woo_login = 1`, `appearance = always`).
+
+Kalan gercek secenekler tema/icerik kararidir — 0. bolume bakin.
 
 ### Varlik diyeti
 
