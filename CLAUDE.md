@@ -272,6 +272,35 @@ Dev'de yapilan butun deneme ayarlari geri alindi; **canliya hic dokunulmadi**
 
 Kalan gercek secenekler tema/icerik kararidir — 0. bolume bakin.
 
+### Urun gorseli boyutu (03.09.2026)
+
+`woocommerce_thumbnail` **1000x1000** uretiliyordu. Gercekte gosterilen olcu:
+**mobilde 299x314, masaustunde 165x165**. Urun detay sayfasinin kendi gorseli
+(`woocommerce_single`) bile yalnizca **600** genisliginde — yani izgara kucuk
+resmi detay gorselinden buyuktu.
+
+> **`sizes` niteligini duzeltmek TEK BASINA ISE YARAMAZ.** Once oyle planlandi,
+> sonra `srcset`'e bakildi: yalnizca **iki aday** var — `954w` ve `1w`. Cunku
+> `wp_calculate_image_srcset()` yalnizca **ayni en-boy oranindaki** boyutlari
+> aday yapar; `600x841`, `768x1076`, `300x300` hepsi farkli oranda. Kirpilmis
+> `woocommerce_thumbnail`'in kucuk kardesi yok. Tarayiciya daha kucugunu sec
+> desen de secebilecegi bir sey yok. Cozum boyutun kendisini kucultmek.
+
+Yeni deger **600** (`woocommerce_thumbnail_image_width`): mobil 299 CSS px x DPR 2
+= 598, masaustunde zaten fazlasiyla yeterli.
+
+> **TUZAK: `wc_get_image_size()` NESNE ONBELLEGINDEN okur.** Secenek 600 yapildi,
+> fonksiyon hala `1000x1000` donuyordu ve ortada filtre yoktu. Redis kalici
+> nesne onbellegi eski degeri tutuyor. **Boyutu degistirdikten sonra
+> `wp cache flush` sart**, yoksa yeniden uretim eski olcuyle calisir (ilk
+> denemede tam bunu yapti, 3 dosya bosuna uretildi).
+
+Sira: secenek → `wp cache flush` → `wp media regenerate --image_size=woocommerce_thumbnail`
+→ `convert-webp.sh` (yeni dosyalarin `.webp` kopyasi yoksa `fd-webp-rewrite`
+JPEG'e duser, kazanc yanar) → nginx + kenar onbellegi temizligi.
+
+Yedek (degisiklik oncesi secenekler): `/var/backups/claude-2026-09-03-gorsel/`.
+
 ### Varlik diyeti
 
 `fdart-mu-plugins/fd-asset-diyet.php` — sayfada karsiligi olmayan dosyalari
