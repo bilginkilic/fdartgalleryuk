@@ -33,9 +33,6 @@ Site yayinda. Kurulum, performans, guvenlik, yedekleme ve site haritasi bitti.
 
 ### Karar bekleyenler
 
-- **Cloudflare APO** (~5 $/ay) — fdartgallery turuncu bulutta, secenek.
-  Su an `cf-cache-status: DYNAMIC`.
-
 - **Blogun en eski 4 yazisi** hala Ingilizce demo slug'inda. Duzeltmek 301 ister;
   tablo hazir (`fd-eski-adresler.php`). Ayrinti `deploy/blog/BACKLOG.md`.
 
@@ -67,11 +64,12 @@ Mail kayitlari (Brevo DKIM, DMARC, SPF, Email Routing MX) **degistirilmez**.
 | Alan | Durum |
 |---|---|
 | Hiz | **canli + dev**: 47 → 26 script, 32 → 26 stylesheet, react+12 `js/dist` dustu, `.ttf` gzip, isinmis TTFB 15-19 ms (3) |
-| Eklenti sadelestirmesi | **17 → 11**, canli ve dev esit. Kapatilan 4: `mailchimp-for-woocommerce`, `fluentforms-pdf`, `image-optimization`, `updraftplus`. Komple kaldirilan 2: **Contact Form 7** (formlar FluentForm'da) ve **`mc4wp`** (hicbir sayfada basilmiyordu) |
+| Eklenti sadelestirmesi | **17 → 12** (`cloudflare` eklendi), canli ve dev esit. Kapatilan 4: `mailchimp-for-woocommerce`, `fluentforms-pdf`, `image-optimization`, `updraftplus`. Komple kaldirilan 2: **Contact Form 7** (formlar FluentForm'da) ve **`mc4wp`** (hicbir sayfada basilmiyordu) |
 | Reklam/bulten trafigi | `?utm_*`/`gclid`/`fbclid` artik onbellekten okuyor; TTFB ~2,3 sn → **15-25 ms** (3) |
 | Site haritasi | `wp-sitemap*.xml` 404 yerine **200**; indeks + 8 alt harita, 329 adres (4) |
 | Turnstile | giris/kayit/form/WooCommerce |
 | E-posta | Brevo API + DKIM/SPF/DMARC — calisiyor |
+| Kenar onbellegi | **Cloudflare APO acik** (03.09.2026): HTML kenarda; sepet/odeme/hesap yollari kural setiyle disarida; `cloudflare` eklentisi 4.14.4 ile otomatik purge **olculdu ve calisiyor** (3) |
 | WebP | 6437 dosya (02.09.2026 olculdu, `/etc/cron.d/webp-fdartgallery_com` ile gece artar); orijinaller korunur |
 
 **mu-plugin envanteri** — `deploy/wordpress/fdart-mu-plugins/` (yalnizca bu site):
@@ -138,6 +136,50 @@ dizesiz), yazma **yasak**.
 
 Kapsam **yalnizca fdartgallery** (`$wpc_qs_norm` map'i). `ref`, `source`,
 `campaign` BILEREK izleme sayilmaz — ortaklik kodu olabilirler.
+
+### Cloudflare APO (acik, 03.09.2026)
+
+HTML **Cloudflare kenarinda** onbelleklenir; istek PHP'ye, hatta sunucuya bile
+gelmez. Kapsam `["fdartgallery.com","www.fdartgallery.com"]`, `wp_plugin: true`.
+Zone: `fa3f51825d634f23741ff5fbf2ae8b1a`. Origin'deki `fastcgi_cache` yerine
+GECMEZ, onunun katmanidir — kenar MISS olunca arkada nginx HIT verir.
+
+**Kenarda ASLA onbelleklenmeyecek yollar** — `http_request_cache_settings`
+kural seti `3d4413e240434bedae771766a8502d8e`: `/cart`, `/checkout`,
+`/my-account`, `/sepet`, `/odeme`, `/hesabim`, `/siparis`, `/wc-api`.
+Dogrulandi: uclu de `DYNAMIC`. `wordpress_logged_in` / `woocommerce_items_in_cart`
+cerezi varsa APO zaten kendisi atlar.
+
+`dev.fdartgallery.com` kapsam disinda ve **oyle kalmali** (`DYNAMIC`).
+
+**Otomatik purge — `cloudflare` eklentisi 4.14.4.** Kancasi
+`transition_post_status`; icerik kaydedilince ilgili URL'ler kenardan silinir.
+
+> **TUZAK: APO'yu API'den acinca eklenti purge ETMEZ, hata da VERMEZ.**
+> `Hooks::purgeCacheByRelevantURLs()` iki kapidan gecer, ikisi de sessizce
+> `return` eder:
+> 1. `isAutomaticPlatformOptimizationEnabled()` — WP secenegi
+>    `automatic_platform_optimization` (`['value' => 'on']`). API'den acinca bu
+>    secenek **yazilmaz**, cunku onu eklentinin kendi ekrani yazar.
+> 2. `getDomainList()` — secenek `cloudflare_cached_domain_name`. Bos ise
+>    144-146. satirda `return`. **Asil sebep buydu.**
+>
+> Ikisi de yazildi. `dev`'de `cloudflare_cached_domain_name` **YOK** ve olmamali
+> — dev'in canlinin zone'unu purge etmesi istenmez.
+
+Uctan uca olculdu (kontrol URL'siyle): `/ozel-siparis/` `/` `/blog/` HIT'e
+isitildi, 20 sn sonra hala HIT; sayfa #2 kaydedildi; **8 sn icinde ucu de MISS**,
+listede olmayan `/shop/` **HIT kaldi**. Yani purge dogru URL kumesini vuruyor.
+
+Bir sayfa kaydi 26, bir urun kaydi 34 URL purge eder: kendi adresi, `/`,
+`/blog/`, besleme adresleri, yazar arsivi, urunde ayrica `/shop/` ve urun
+kategorisi. (Yarisi gereksiz `http://` kopyasi — zararsiz.)
+
+> Her kayitta `GET /pagerules?status=active` **400** doner (token'da Page Rules
+> okuma izni yok). **Zararsiz:** donen `false` yalnizca besleme adreslerini
+> listeden eler, APO acik oldugu icin ikinci filtre zaten atlanir. Purge calisir.
+
+Elle purge gerekirse: zone purge API'sinde `purge_everything`.
 
 ### Yapilmayanlar ve nedeni
 
