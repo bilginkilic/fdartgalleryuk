@@ -289,11 +289,37 @@ gecerli `data-sitekey`) — yani koruma calisiyor.
 
 > **Uctan uca gonderim testi KABUKTAN YAPILAMAZ:** `cfturnstile_fluent=1`,
 > yani FluentForm gonderimleri Turnstile istiyor ve script'in token'i yok.
-> Bildirim yolu ayrica kanitlandi (ayni sablondan kurulan 7 beslemenin
-> 7'si SENT); geriye kalan tek adim tarayicidan gercek bir abonelik.
+> Zinciri kapatmanin tek yolu tarayicidan gercek bir gonderim.
+
+**ZINCIR KAPANDI — kullanici tarayicidan abone oldu (03.09.2026 09:00:44):**
+
+```
+kayit#61  2026-09-03 09:00:44  form #2  eposta=blgnklc@gmail.com
+          kaynak: https://fdartgallery.com/          (altbilgi)
+log #46   2026-09-03 09:00:44  SENT  to=info@fdsanatmerkezi.com
+          konu: "Konu: Subscription Form | blgnklc@gmail.com - Yeni Abone"
+```
+
+**Ayni saniye** — kuyruk/gecikme yok. Bu tek gonderim su dordunu birden
+kanitladi: altbilgideki form gorunuyor ve gonderilebiliyor, Turnstile gercek
+tarayicida engel olmuyor, kayit DB'ye dusuyor, bildirim aliciya gidiyor.
+Konudaki `{inputs.email}` de dogru cozuldu (eski `{inputs.names}` bos
+basacakti).
+
+Test kaydi sonradan silindi; bildirim log satiri (#46) **kanit olarak
+birakildi**.
 
 Yedek: `/var/backups/claude-2026-09-03-altbilgi/` (sablon #1041 ve form #2
 alanlari, canli + dev, degisiklik oncesi).
+
+> **FluentForm kaydini HAM SQL ile SILMEYIN.** Kayit dort tabloya yayilir.
+> Test aboneligi silinirken olculdu: `submissions` 1, `entry_details` 1,
+> **`submission_meta` 2**, **`logs` 1**. Yalnizca `submissions`'tan silmek
+> uc yetim satir birakirdi. Dogru yol eklentinin kendi servisidir —
+> `SubmissionService::deleteEntries($ids, $formId)` → `Submission::remove()`;
+> dosya eklerini de temizler ve `fluentform/after_deleting_submissions`
+> kancasini calistirir. Silme sonrasi dordu de 0 dogrulandi.
+> Yedek: `/var/backups/claude-2026-09-03-abone-kaydi/`.
 
 > **Formu DB'den aramaya calismayin.** Elementor widget'i `fluent-form-widget`
 > ve form id'sini kacisli JSON icinde tutuyor; `"formId"` / `"form_id"` regex'i
