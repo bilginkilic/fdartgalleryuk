@@ -242,8 +242,31 @@ konuldu. **7/7 SENT**, hepsi `info@fdsanatmerkezi.com`; konu satirindaki
 
 Yedek: `/var/backups/claude-2026-09-03-ff-bildirim/notifications-oncesi.tsv`.
 
-> Form #2 "Subscription Form" bildirimi **KAPALI birakildi** (0 kayit, bulten
-> abonelik formu). Form #3 yayinda degil.
+Form #2 "Subscription Form" bildirimi de **acildi** (kullanici karari).
+Konusu bozuktu — `{inputs.names}` diyordu ama formda **yalnizca `email` alani
+var**; `Konu: {form_title} | {inputs.email} - Yeni Abone` olarak duzeltildi.
+**Uctan uca test EDILEMEDI:** formun hic kaydi yok ve asagidaki haritada
+gorulecegi gibi hicbir sayfaya gomulu degil. Yapisi kanitlanmis alti besleme
+ile ayni; gomuldugu anda calisir. Form #3 yayinda degil.
+
+### Hangi form hangi sayfada (03.09.2026, basilan HTML'den)
+
+| Sayfa | Form |
+|---|---|
+| `/ozel-siparis/` (#2) | `fluentform_5` Ozel Siparis |
+| `/contact-us/` (#69) | `fluentform_9` Iletisim kuralim |
+| `/elementor-1424/` | `fluentform_7` Resim Workshop |
+| `/elementor-1441/` | `fluentform_6` Duvara Resim |
+| `/resim-kursu-satin-al/` | `fluentform_8` Resim Kurs |
+| `/heykel-ders-talep-formu/` | `fluentform_12` Heykel Kurs |
+| `/resim-workshop-satin-al/` | `fluentform_7` Resim Workshop |
+| `/heykel-workshop-satin-al/` | `fluentform_15` Heykel Workshop |
+
+> **Formu DB'den aramaya calismayin.** Elementor widget'i `fluent-form-widget`
+> ve form id'sini kacisli JSON icinde tutuyor; `"formId"` / `"form_id"` regex'i
+> **bos doner** (uc kez denendi, uc kez yanlis sonuc verdi). Iki guvenilir yol:
+> basilan HTML'de `id="fluentform_N"` aramak, ya da
+> `fluentform_submissions.source_url` sutununu gruplamak.
 
 **BILEREK DOKUNULMAYANLAR:**
 
