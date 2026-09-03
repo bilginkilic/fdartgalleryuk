@@ -87,6 +87,7 @@ Mail kayitlari (Brevo DKIM, DMARC, SPF, Email Routing MX) **degistirilmez**.
 | Urun gorselleri | `woocommerce_thumbnail` 1000 → **600**: gorsel basina 112 → 45 KB, `/shop/` ~2.128 → **662 KB** (3) |
 | Cerez bildirimi | onbellekli sayfada kapanmiyordu, duzeltildi; onay omru 3 gun → 365 (3) |
 | Site preloader | tema ayarindan **kapatildi** (3) |
+| Odeme sayfasi | Elementor widget'indaki sabit Ingilizce etiketler Turkcelestirildi, 61 alan (3) |
 | WebP | 6437 dosya (02.09.2026; `/etc/cron.d/webp-fdartgallery_com` gece artirir); orijinaller korunur |
 
 **mu-plugin'ler** — `deploy/wordpress/fdart-mu-plugins/` (yalnizca bu site):
@@ -370,6 +371,53 @@ tema ayarina dokunulmadi.
 > `Set-Cookie` ile yazmak bunu asardi ama sayfayi onbelleklenemez yapardi —
 > takas iyi degil.
 
+
+### Odeme sayfasi Turkcelestirildi (03.09.2026)
+
+Kullanici bildirdi: odeme adiminda "First Name", "Last Name", "Company Name",
+"Have a coupon? Click here to enter" Ingilizce cikiyordu — sayfanin geri kalani
+Turkce oldugu halde.
+
+> **TUZAK: WooCommerce cevirisi CALISIYORDU.** `get_locale()` `tr_TR`,
+> `woocommerce-tr_TR.mo` 1,1 MB, `__('First name','woocommerce')` → `Ad`,
+> `WC()->countries->get_address_fields('TR','billing_')` → `Ad`, `Soyad`,
+> `Firma adı`. Yani ceviriyi aramak yanlis iz. Ipucu **buyuk harflerdeydi**:
+> cekirdek "First name" yazar, ekranda "First **N**ame" goruluyordu — **baska
+> bir dize**.
+
+**Kok sebep:** odeme sayfasi (**id 448**) Elementor ile kurulmus ve XStore'un
+`woocommerce-checkout-etheme_page` widget'i kullaniliyor. Etiketler widget'in
+kendi ayarlarinda, `_elementor_data` icinde **sabit Ingilizce** duruyordu:
+
+```json
+"billing_details_form_fields":[
+  {"field_key":"billing_first_name","field_label":"First Name",
+   "label":"First Name","placeholder":"First Name","_id":"76f4b3a"}, ...]
+```
+
+Iki tekrarlayici (`billing_details_form_fields` 10 alan,
+`shipping_details_form_fields` 8 alan) + yedi bolum basligi.
+
+**Cozum** — `deploy/scripts` disinda tek seferlik script; etiketler
+**WooCommerce'in kendi tr_TR cevirisinden** okundu (sayfanin geri kalaniyla ayni
+sozcukler olsun diye), 61 alan degistirildi. `--user=fdsanat` ile calistirildi
+(Elementor yazma kurali), JSON geri okunup dogrulandi, Elementor onbellegi
+temizlendi.
+
+**Dogrulama gercek sepetle yapildi:** `curl` ile cerez kavanozu acilip
+`?add-to-cart=<id>` cagrildi, sonra `/checkout/` ayni cerezle cekildi — bos
+sepette sayfa `/cart/`'a 302 dondugu icin baska turlu goruntulenemiyor.
+Sonuc: **Ingilizce kalinti 0**, `billing_first_name` / `shipping_first_name` /
+`place_order` / `iyzico` alanlari yerinde, durum 200.
+
+Yedek: `/var/backups/claude-2026-09-03-odeme/` (canli + dev, `_elementor_data`
+ve `post_content`).
+
+> Sayfanin `post_content`'inde Elementor'un eski **render kopyasi** duruyor:
+> Ingilizce etiketler ve gecmis bir denemeden kalan `value="bilgin"` gibi
+> degerler var. On yuz bunu KULLANMIYOR (`_elementor_data`'dan render ediliyor);
+> bilerek dokunulmadi — silinirse Elementor bir gun render edemezse sayfa bos
+> kalir.
 
 ### Varlik diyeti
 
