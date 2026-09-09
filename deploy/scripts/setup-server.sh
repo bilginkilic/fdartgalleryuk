@@ -53,6 +53,13 @@ for opt in imagick opcache; do
     fi
 done
 
+echo "==> OPcache ayari"
+# SART, "iyilestirme" degil: PHP varsayilani 128 MB dort WordPress'i almiyor,
+# onbellek dolunca derlenemeyen dosyalar HER ISTEKTE yeniden derleniyor
+# (fdartgallery /cart/: 2,9 sn). Ayrinti dosyanin kendi basliginda.
+install -m 0644 "${REPO_DIR}/deploy/php-fpm/99-opcache-tuning.ini" \
+        "/etc/php/${PHP_VERSION}/fpm/conf.d/99-opcache-tuning.ini"
+
 echo "==> Dizinler"
 mkdir -p /var/www/letsencrypt /var/cache/nginx/fastcgi /var/log/php /etc/nginx/snippets
 chown -R www-data:www-data /var/cache/nginx /var/log/php

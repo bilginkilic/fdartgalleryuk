@@ -162,13 +162,27 @@ Cozum `/etc/php/8.5/fpm/conf.d/99-opcache-tuning.ini` (**sunucu geneli** —
 php-fpm ana sureci var, dolayisiyla dort siteyi birden etkiler; kullanici onayi
 alindi):
 
+Dosyanin kaynagi artik **depoda**: `deploy/php-fpm/99-opcache-tuning.ini`,
+`setup-server.sh` kurar. (09.09.2026'ya kadar yalnizca sunucuda duruyordu —
+sunucu sifirdan kurulsa ayar kaybolur ve `/cart/` 2,9 sn'ye geri donerdi.)
+
 ```ini
 opcache.memory_consumption = 768   ; once 512 denendi, 509/512 ile doldu
-opcache.interned_strings_buffer = 32
+opcache.interned_strings_buffer = 64
 opcache.max_accelerated_files = 50000
 opcache.validate_timestamps = 1    ; deploy sonrasi elle reload gerekmesin
 opcache.revalidate_freq = 2
 ```
+
+> **`interned_strings_buffer` AYRI bir tampondur; dolarsa sessizce etkisiz
+> kalir** ve `memory_consumption`'i buyutmek onu buyutmez. 09.09.2026'da olculdu:
+> 32 MB'in **16 bayti** bostu (326k dize). Dolu tamponda yeni dizeler
+> paylasilmaz, her script kendi kopyasini tutar. 32 → **64**; olcumden sonra
+> 33,6/64 MB, 30 MB bos.
+
+> **Ayar degistirince reload SART ve reload OPcache'i SIFIRLAR.** Reload sonrasi
+> ilk istek 3–4 sn surer, sonrakiler normale doner — hata degil, isinma.
+> Once `php-fpm8.5 -t`, sonra `systemctl reload php8.5-fpm`.
 
 Sonuc — ayni yontemle olculdu:
 
@@ -706,6 +720,7 @@ kanit olarak birakildi.
 | `deploy/wordpress/i18n/` | chestnyznak uc dil scriptleri (01→16) + JSON sozlukler |
 | `deploy/blog/` | `yazi-yayinla.php`, `ceviri-yayinla.php`, `telegram-cek.py`, `cover.php`, `README.md`, `BACKLOG.md` |
 | `deploy/cloudflare/` | `email-worker.js` |
+| `deploy/php-fpm/` | `99-opcache-tuning.ini` (OPcache — `setup-server.sh` kurar, bkz. 3), `pool.conf.template` |
 
 Sunucuda ayni depo `/opt/fdartgalleryuk/` altinda.
 
