@@ -658,7 +658,8 @@ calistirildi, konuya `[TEST]` onegi konuldu. **7/7 SENT**, hepsi
 ### Altbilgi telif satiri (20.09.2026)
 
 `Copyright © SWORD BROS. design` → `Copyright © [ChemiArtClick] design`,
-baglanti `https://www.chemiartclick.uk/#iletisim` (kullanici karari).
+baglanti `https://www.chemiartclick.uk/#iletisim`, **yeni sekmede**
+(`target="_blank" rel="noopener"`) — kullanici karari.
 
 Yer: **ayni altbilgi sablonu `elementor_library` #1041**, telif satirindaki
 metin widget'i `36bc9cc7`, ayar anahtari `settings.editor`. Widget'in kendi
