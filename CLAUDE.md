@@ -39,13 +39,10 @@ Kalan tek performans maddesi **temada** ve **kod isi degil, tasarim isi**:
 mudahaleler 3. bolumde. Kalan secenekler, olculen kazanc ve riskiyle —
 **hepsi kullanici karari**:
 
-1. **Slayt 3 → 1 (~330 KB).** Ana sayfanin en agir uc dosyasi slayt gorselleri
-   (`5.jpg.webp` 287 KB, `6` 197 KB, `7` 132 KB); yalnizca birincisi goruluyor,
-   digerleri yine de iniyor. Icerik karari.
-2. **Turnstile ~1 MB.** Dogru cozum: gizli giris formunun widget'ini sayfa
+1. **Turnstile ~1 MB.** Dogru cozum: gizli giris formunun widget'ini sayfa
    acilisinda degil, **giris penceresi acilinca** render etmek. Ozel is; yanlis
    yapilirsa **giris kirilir** (3. bolumdeki tuzaklara bakin).
-3. **Ana sayfadaki widget sayisi** (33 container / 60 widget, 2 urun listesi).
+2. **Ana sayfadaki widget sayisi** (33 container / 60 widget, 2 urun listesi).
    Asil `Style & Layout` maliyeti burada. Tasarim karari.
 - **Blogun en eski 4 yazisi** hala Ingilizce demo slug'inda; 301 ister, tablo
   hazir (`fd-eski-adresler.php`). Ayrinti `deploy/blog/BACKLOG.md`.
@@ -432,6 +429,33 @@ ve `post_content`).
 > degerler var. On yuz bunu KULLANMIYOR (`_elementor_data`'dan render ediliyor);
 > bilerek dokunulmadi — silinirse Elementor bir gun render edemezse sayfa bos
 > kalir.
+
+### Ana sayfa slaydi 3 → 1 (20.09.2026)
+
+On sayfa (#60) `etheme_slides` widget'i `d3dd29a`: uc slayttan yalnizca birincisi
+goruluyordu, digerlerinin gorselleri yine de iniyordu (`6.jpg.webp` 197 KB,
+`7.jpg.webp` 132 KB = **~330 KB**). Kullanici karariyla ilk slayt birakildi.
+
+Kaldirilan iki slaydin metinleri (`Türkiyenin ilk öğrenci…`, `Size özel kurumsal
+çözümler`) ve gorselleri **silinmedi** — slaytlar JSON olarak yedeklendi,
+gorseller diskte duruyor. Geri almak: yedekteki diziyi `settings.slides` sonuna
+eklemek.
+
+Dogrulandi (canli + dev, render edilen HTML): hero blogunda **1** `swiper-slide`,
+`duplicate` 0, ok butonu 0 — yani tek slaytta Swiper klon uretmiyor ve gereksiz
+ok cikmiyor. `6.jpg`/`7.jpg` sayfada hic gecmiyor. Yapisal sayimlar degismedi
+(31 `<img>`, 172 `elementor-widget`, 123 `menu-item`, 4 `<form>`), bes sayfa 200.
+
+> **TUZAK: `open_basedir` yuzunden PHP `/var/backups`'a yazamaz.** Script
+> kaldirilan slaytlari oraya yedeklemeye calisti, `file_put_contents` **sessizce**
+> basarisiz oldu ve `filesize()` bos dondu — "yedek alindi" satiri yine de
+> basildi. FPM havuzunda `open_basedir` yalnizca site dizini + `/tmp` +
+> `/usr/share/php`. PHP'den yedek alacaksaniz `/tmp`'ye yazip **kabuktan** tasiyin,
+> ya da yedegi bastan kabuktan alin. (Bu sefer degisiklik oncesi tam
+> `_elementor_data` yedegi kabuktan alinmisti, kayip olmadi.)
+
+Yedek: `/var/backups/claude-2026-09-20-slayt/` — `<site>-60-oncesi.json` (tam) ve
+`<site>-kaldirilan-slaytlar.json` (yalnizca iki slayt).
 
 ### Varlik diyeti
 
