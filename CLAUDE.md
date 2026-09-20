@@ -39,10 +39,19 @@ Kalan tek performans maddesi **temada** ve **kod isi degil, tasarim isi**:
 mudahaleler 3. bolumde. Kalan secenekler, olculen kazanc ve riskiyle —
 **hepsi kullanici karari**:
 
-1. **Turnstile ~1 MB.** Dogru cozum: gizli giris formunun widget'ini sayfa
+1. **Elementor arka plani orijinali cekiyor (~290 KB).** `post-60.css` icindeki
+   `.elementor-motion-effects-layer` arka plani
+   `IMG_20190825_174201-scaled.jpg.webp` = **348 KB**. Oysa `_elementor_data`'da
+   kayitli olan **duzenlenmis** surum: `...-scaled-e1772389794946.jpg`, webp'si
+   **57 KB**. Elementor CSS'i uretirken eki **id**'den cozup "full" boyutu
+   aliyor; duzenlenmis turev degil, orijinal `-scaled` dosyasi geliyor.
+   Su an sayfanin **en agir tek dosyasi** bu. Duzeltme: widget'in
+   `background_image` ayarini duzenlenmis eke isaret eden **yeni bir ek** olarak
+   secmek ya da CSS uretimini `full` yerine uygun boyuta yonlendirmek.
+2. **Turnstile ~1 MB.** Dogru cozum: gizli giris formunun widget'ini sayfa
    acilisinda degil, **giris penceresi acilinca** render etmek. Ozel is; yanlis
    yapilirsa **giris kirilir** (3. bolumdeki tuzaklara bakin).
-2. **Ana sayfadaki widget sayisi** (33 container / 60 widget, 2 urun listesi).
+3. **Ana sayfadaki widget sayisi** (33 container / 60 widget, 2 urun listesi).
    Asil `Style & Layout` maliyeti burada. Tasarim karari.
 - **Blogun en eski 4 yazisi** hala Ingilizce demo slug'inda; 301 ister, tablo
   hazir (`fd-eski-adresler.php`). Ayrinti `deploy/blog/BACKLOG.md`.
