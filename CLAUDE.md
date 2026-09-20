@@ -655,6 +655,25 @@ calistirildi, konuya `[TEST]` onegi konuldu. **7/7 SENT**, hepsi
 > basilan HTML'de `id="fluentform_N"`, ya da
 > `fluentform_submissions.source_url` sutununu gruplamak.
 
+### Altbilgi telif satiri (20.09.2026)
+
+`Copyright © SWORD BROS. design` → `Copyright © [ChemiArtClick] design`,
+baglanti `https://www.chemiartclick.uk/#iletisim` (kullanici karari).
+
+Yer: **ayni altbilgi sablonu `elementor_library` #1041**, telif satirindaki
+metin widget'i `36bc9cc7`, ayar anahtari `settings.editor`. Widget'in kendi
+`custom_css`'inde zaten `selector a { color: white }` ve mavi hover var — oraya
+baglanti konmasi bastan dusunulmus.
+
+Dogrulandi: dev ve canlida render edilen HTML'de baglanti yerinde,
+`SWORD BROS` kalintisi 0, yapisal sayimlar degismedi (31 `<img>`, 172
+`elementor-widget`), bes sayfa 200, hedef adres 200.
+
+> `grep -i sword` render edilen sayfada 8 eslesme doner — hepsi
+> "pas**sword**" icindeki alt dize. Kalinti sanip pesine dusmeyin.
+
+Yedek: `/var/backups/claude-2026-09-20-altbilgi/`.
+
 ### Altbilgideki bulten formu (03.09.2026)
 
 Altbilgi bir **Elementor sablonu**: `elementor_library` **#1041** ("Elementor
