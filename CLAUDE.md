@@ -481,11 +481,34 @@ buton baglandi**.
 > ucretsiz kargo, kolay iade, kredi karti/havale).
 
 Fiyat verisi (23.09.2026): 293 yayinda urun, en pahalisi
-`'Kandilin Gölgesinde'` **55.000 TRY** (#3791). Hero metni tek bir esere degil
-**seckiye** baglandi — hero 550 px yuksekliginde tam genislik bir serit ve
-widget'ta **karartma/overlay ayari YOK**, yani tek bir tablo arka plan yapilirsa
-kare eserler (2560x2560) ortadan yatay dilimlenir ve yazi okunmayabilir.
-Tek eser vurgusu istenirse once o serit tasarlanmali.
+`'Kandilin Gölgesinde'` **55.000 TRY** (#3791).
+
+**Arka plan: karartma + `'Alplerde'` (23.09.2026).** Hero 550 px yuksekliginde
+tam genislik bir serit; tablo koymadan once karartma sart.
+
+> **Karartma ayari VAR ama slayt basinadir, widget'ta degil:** repeater alani
+> `background_overlay` (switcher) + `background_overlay_color`
+> (varsayilan `rgba(0,0,0,0.5)`) + `background_overlay_blend_mode`.
+> Widget'in ust duzey ayarlarinda arandigi icin "yok" sanilmisti. Tasiyici CSS
+> temada hazir: `etheme-slides.css` icinde
+> `.etheme-background-overlay { position:absolute; inset:0; z-index:0 }` —
+> rengi Elementor'un secici kurali basiyor, yani **renk ayarlanmazsa katman
+> gorunmez**. `rgba(0,0,0,0.45)` konuldu.
+
+Arka plan `5.jpg` (**287 KB**) yerine `'Alplerde'` (#2697, ek #2698,
+1600x1106, webp **122 KB**) — yatay oldugu icin seritte dilimlenmiyor.
+Ayni anda **~165 KB** daha hafif.
+
+> **Slayt arka plani `size` ayarini DINLEMIYOR.** `size` = `1536x1536` yazildi
+> ama widget render'i `background_image['url']`'i dogrudan basiyor; cikan dosya
+> `full` (122 KB), `1536x1536` (102 KB) degil. Fark kucuk oldugu icin
+> birakildi. (Container arka planlari BASKA calisir — orada `size` etkili,
+> yukaridaki Elementor arka plan bolumune bakin.)
+
+> **Depoya `.webp` adresi YAZILMAZ.** `wp_get_attachment_image_url()` cagrisi
+> `fd-webp-rewrite`'tan gecip `.webp` doner; o hali kaydedilirse donusum
+> icerige gomulmus olur. Kanonik `.jpeg` adresi yazilir, donusum render aninda
+> yapilir. (Ilk denemede gomuldu, fark edilip duzeltildi.)
 
 ### Elementor arka plani `full` cekiyordu (23.09.2026)
 
