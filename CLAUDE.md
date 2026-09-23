@@ -581,6 +581,51 @@ Acik kalanlar:
 
 Yedek: `/var/backups/claude-2026-09-23-hero5/`.
 
+### Urun kartlari "magaza" gorunumune cevrildi (23.09.2026)
+
+Kullanici bildirdi: ana sayfadaki urunler "emanet gibi" duruyor.
+
+> **TUZAK: "Sepete Ekle" butonu HTML'de ZATEN VARDI** (18 adet, "Sepete ekle"
+> metniyle) — CSS onu hover'a sakliyordu. Yani eksik olan buton degil, butonun
+> **gorunurlugu**. Kart markup'ini grep'leyip "var" demek yaniltir.
+
+**Iki ayri yerden yonetiliyor, ikisini de acmak gerekti:**
+
+1. **Tema ayarlari** (magaza, kategori, urun sayfalari):
+   `product_view` `mask2` → `default` (butonlar hover'a saklanmiyor),
+   `sale_icon` → 1, `sale_percentage` → 1, `quick_view` → 1,
+   `sale_icon_text` `Sale` → **`İndirim`**.
+2. **Elementor widget ayarlari** (ana sayfa izgarasi + indirim karuseli) —
+   tema ayari bunlara ISLEMIYOR. Widget'ta iki ayri set var: kartta **sabit**
+   gorunenler ve **hover**'da gorunenler.
+   `product_button` (sabit sepete-ekle) ve `product_sale_label` **kapaliydi**;
+   buton yalnizca `product_hover_button` setinde aciikti. Ikisi acildi,
+   `cols` 6 → **4** (kartlar buyudu).
+
+Render'dan olculen (canli ana sayfa):
+
+| | once | sonra |
+|---|---|---|
+| `add_to_cart_button` | 18 | **36** |
+| "Sepete ekle" | 18 | **54** |
+| indirim rozeti | **0** | **12** |
+| hizli bakis | 0 | **18** |
+| izgara sutunu | 6 | **4** (`post-60.css` → `--cols:4`) |
+
+Rozet metni: `İndirim 20%`, `İndirim 24%`…
+
+> Rozet bicimi temanin ceviri dizesinde sabit: `'{sales_text} %s'`. Turkce
+> `xstore-tr_TR.mo` kurulu olmadigi icin "%20 İndirim" sirasina cevrilemiyor;
+> metin `İndirim` yapilip "İndirim 20%" kabul edildi.
+
+> Ana sayfa izgarasinin kart hover'i hala `mask3` (`etheme-product-hover-mask3`)
+> — widget'in kendi `hover_effect` ayari, tema `product_view`'undan BAGIMSIZ.
+> Sabit buton eklendigi icin dokunulmadi; kalabalik gelirse `hover_effect`
+> `default` yapilir.
+
+Yedek (degisiklik oncesi tema ayarlari):
+`{"product_view":"mask2","sale_icon":false,"sale_percentage":null,"quick_view":0,"sale_icon_text":null}`
+
 ### Varlik diyeti
 
 `fdart-mu-plugins/fd-asset-diyet.php` — sayfada karsiligi olmayan dosyalari
