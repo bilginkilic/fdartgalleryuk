@@ -626,6 +626,62 @@ Rozet metni: `İndirim 20%`, `İndirim 24%`…
 Yedek (degisiklik oncesi tema ayarlari):
 `{"product_view":"mask2","sale_icon":false,"sale_percentage":null,"quick_view":0,"sale_icon_text":null}`
 
+### Magaza filtreleri (23.09.2026)
+
+> **TUZAK: filtreler ZATEN KURULUYDU, sadece hicbir yerde gorunmuyordu.**
+> `shop-sidebar` widget alaninda uc filtre duruyordu
+> (`etheme_product_categories_filter`, `etheme_product_status_filter`,
+> `et_price_filter`) ve `ajax_product_filter` tema ayari `true` idi. Ama magaza
+> ve kategori sayfalari **Elementor sablonlariyla** uretiliyor (12 adet
+> `product_archive` sablonu) ve bu sablonlar temanin kenar cubugunu tamamen
+> atliyor. Yani eksik olan filtre degil, filtrenin **yerlestirilmesi**.
+
+Magaza arsiv sablonu **#1841 "satistaki eserler"** (kosul: `include/product_archive`)
+icine `etheme_sidebar_horizontal` widget'i eklendi — arac cubugunun (siralama,
+grid/liste, sayfa basina) **ustune**, icerik sutununun tam genisligine, ic
+bolum (`isInner`) olarak. Mobil ve tablette **cekmece**
+(`sidebar_off_canvas_on`), acma dugmesi "Filtreler".
+
+> **Widget basliklari ve AJAX widget bazindadir.** Ucunde de `ajax = 0` idi;
+> tema ayari `ajax_product_filter` acik olsa bile her filtre tiklamasi TAM
+> SAYFA yeniliyordu. Ucu de `1` yapildi. Basliklar da Ingilizceydi:
+> `Category` → **Kategori**, `Product Status` → **Durum**, `Price` → **Fiyat**.
+
+**Filtre parametreleri** (widget'in kendi urettigi adresler):
+`?filter_cat=<slug>`, `?sale_status=1`, `?stock_status=in_stock|out_of_stock`,
+`?min_price=&max_price=`.
+
+Canlida veriyle dogrulandi:
+
+| istek | sonuc | beklenen |
+|---|---|---|
+| filtresiz | 15 | sayfa basina 15 |
+| `?sale_status=1` | **11** | indirimli urun 11 |
+| `?filter_cat=soyut-tuvaller-oil` | **3** | kategoride 3 |
+| `?min_price=40000` | **2** | 55.000 + 40.000 |
+| `?filter_cat=oil&min_price=20000` | 5 | birlesik calisiyor |
+
+> **TUZAK: genis fiyat araligiyla test ETMEYIN.** Ilk denemede `0-5.000` ve
+> `20.000+` denendi, ikisi de **15** dondu ve "filtre calismiyor" sanildi —
+> oysa iki aralikta da 15'ten fazla urun var, sayfa basina 15 gosteriliyor.
+> Dogru test, sonucu 15'in ALTINDA kalan dar bir aralik.
+
+**Onbellek etkisi olculdu, sorun yok:** `/shop/` nginx **HIT**,
+`/shop/?filter_cat=oil` nginx **BYPASS** / kenar **DYNAMIC**. Filtreli istekler
+onbellege girmiyor, filtresiz magaza sayfasi hizli kaliyor.
+
+**Maliyet:** HTML +12 KB, **+5 script**, stylesheet degismedi.
+
+**Hangi filtreler mumkun — veriye bagli:** fiyat (900-55.000 TRY; 82/139/48/24
+dagilim), teknik ve konu kategorileri, indirimde/stokta. **Olcu, renk, yon,
+cerceve MUMKUN DEGIL**: "Boy"/"En" ozelliklerinde 1'er terim var ve 293 urunun
+yalnizca **8**'inde ozel ozellik tanimli. Bu bir veri girisi isi.
+
+**Kalan:** 11 kategori sablonunda (`akrilk alt kat`, `sulu boya alt kat`,
+`son x soyut`…) ayni eksik duruyor; ayni ekleme onlara da yapilmali.
+
+Yedek: `/var/backups/claude-2026-09-23-filtre/`.
+
 ### Varlik diyeti
 
 `fdart-mu-plugins/fd-asset-diyet.php` — sayfada karsiligi olmayan dosyalari
