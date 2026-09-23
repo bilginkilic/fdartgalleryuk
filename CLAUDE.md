@@ -39,19 +39,10 @@ Kalan tek performans maddesi **temada** ve **kod isi degil, tasarim isi**:
 mudahaleler 3. bolumde. Kalan secenekler, olculen kazanc ve riskiyle —
 **hepsi kullanici karari**:
 
-1. **Elementor arka plani orijinali cekiyor (~290 KB).** `post-60.css` icindeki
-   `.elementor-motion-effects-layer` arka plani
-   `IMG_20190825_174201-scaled.jpg.webp` = **348 KB**. Oysa `_elementor_data`'da
-   kayitli olan **duzenlenmis** surum: `...-scaled-e1772389794946.jpg`, webp'si
-   **57 KB**. Elementor CSS'i uretirken eki **id**'den cozup "full" boyutu
-   aliyor; duzenlenmis turev degil, orijinal `-scaled` dosyasi geliyor.
-   Su an sayfanin **en agir tek dosyasi** bu. Duzeltme: widget'in
-   `background_image` ayarini duzenlenmis eke isaret eden **yeni bir ek** olarak
-   secmek ya da CSS uretimini `full` yerine uygun boyuta yonlendirmek.
-2. **Turnstile ~1 MB.** Dogru cozum: gizli giris formunun widget'ini sayfa
+1. **Turnstile ~1 MB.** Dogru cozum: gizli giris formunun widget'ini sayfa
    acilisinda degil, **giris penceresi acilinca** render etmek. Ozel is; yanlis
    yapilirsa **giris kirilir** (3. bolumdeki tuzaklara bakin).
-3. **Ana sayfadaki widget sayisi** (33 container / 60 widget, 2 urun listesi).
+2. **Ana sayfadaki widget sayisi** (33 container / 60 widget, 2 urun listesi).
    Asil `Style & Layout` maliyeti burada. Tasarim karari.
 - **Blogun en eski 4 yazisi** hala Ingilizce demo slug'inda; 301 ister, tablo
   hazir (`fd-eski-adresler.php`). Ayrinti `deploy/blog/BACKLOG.md`.
@@ -465,6 +456,56 @@ ok cikmiyor. `6.jpg`/`7.jpg` sayfada hic gecmiyor. Yapisal sayimlar degismedi
 
 Yedek: `/var/backups/claude-2026-09-20-slayt/` — `<site>-60-oncesi.json` (tam) ve
 `<site>-kaldirilan-slaytlar.json` (yalnizca iki slayt).
+
+### Hero metni ve CTA (23.09.2026)
+
+On sayfa hero slaydinin metinleri satis odakli yeniden yazildi ve **calismayan
+buton baglandi**.
+
+| alan | once | sonra |
+|---|---|---|
+| ust baslik | Sürekli yenileniyor kaçırmayın! | Koleksiyonluk Seçki |
+| baslik | **%45 indirim Fırsat Eserleri** | Her biri tek, elle yapılmış özgün tablolar |
+| aciklama | Daha fazla görüntülemek için mutlaka takip edin | %100 orijinal · Ücretsiz kargo · Kolay iade · Kredi kartına ödeme |
+| buton | Devamını Oku | Seçkin Eserleri Gör |
+| baglanti | **YOKTU** | `/shop/?orderby=price-desc` |
+
+> **Buton hic baglantisiz basiliyordu.** Slayt 1'in ayarlarinda `link` anahtari
+> yoktu; render edilen HTML'de slayt blogunda **sifir** `<a>` vardi. Yani hero'nun
+> tek cagri butonu hicbir yere gitmiyordu. Simdi magazayi **pahalidan ucuza**
+> siralayan adrese gidiyor (`orderby=price-desc`, 200 doner).
+
+> **"%45 indirim" iddiasinin karsiligi yoktu.** Olculdu: indirimli urun 11,
+> en yuksek indirim **%24**. Iddia kaldirildi; yerine dogrulanabilir sozler
+> kondu (sitenin ust seridinde ve eski slaytta zaten yazan: %100 orijinal,
+> ucretsiz kargo, kolay iade, kredi karti/havale).
+
+Fiyat verisi (23.09.2026): 293 yayinda urun, en pahalisi
+`'Kandilin Gölgesinde'` **55.000 TRY** (#3791). Hero metni tek bir esere degil
+**seckiye** baglandi — hero 550 px yuksekliginde tam genislik bir serit ve
+widget'ta **karartma/overlay ayari YOK**, yani tek bir tablo arka plan yapilirsa
+kare eserler (2560x2560) ortadan yatay dilimlenir ve yazi okunmayabilir.
+Tek eser vurgusu istenirse once o serit tasarlanmali.
+
+### Elementor arka plani `full` cekiyordu (23.09.2026)
+
+`post-60.css` icindeki `.elementor-motion-effects-layer` (container `b676c1b`)
+arka plani **348 KB** `IMG_20190825_174201-scaled.jpg.webp` indiriyordu.
+
+> **TUZAK: `background_image.size` bos birakilirsa Elementor `full` kullanir.**
+> Bu ek bir kez WordPress icinde **duzenlenmis**: kayitli adres
+> `...-scaled-e1772389794946.jpg` (500x667) ama `full` **duzenleme oncesi**
+> `-scaled.jpg` dosyasina cozuluyor. Yani ayarda gordugunuz adres ile CSS'e yazilan
+> adres AYNI DEGIL — `post-60.css`'e bakmadan anlasilmaz.
+
+`size` = `1536x1536` yapildi → CSS artik `IMG_20190825_174201-1152x1536.jpg.webp`
+**180 KB** cekiyor, **~168 KB** kazanc. 1152 px genislik tam sayfa arka plan icin
+yeterli; kayitli 500x667 turev (57 KB) kullanilsa buyutulup bulaniklasirdi.
+
+Ana sayfadaki diger uc arka plan tarandi, onlar zaten kendi dosyasini cekiyor
+(58-81 KB) — sorun yalnizca duzenlenmis ekte.
+
+Yedek: `/var/backups/claude-2026-09-23-hero/`.
 
 ### Varlik diyeti
 
