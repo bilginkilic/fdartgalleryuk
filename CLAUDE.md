@@ -530,6 +530,57 @@ Ana sayfadaki diger uc arka plan tarandi, onlar zaten kendi dosyasini cekiyor
 
 Yedek: `/var/backups/claude-2026-09-23-hero/`.
 
+### Hero artik bir kesif seridi — 8 slayt (23.09.2026)
+
+Amac: "Tate etkisi" — her slayt bir eseri ya da bir bolumu sunar, **slaydin
+tamami** o adrese baglanir.
+
+| # | tur | baslik | adres | gorsel/boyut |
+|---|---|---|---|---|
+| 1 | bolum | Her biri tek, elle yapılmış özgün tablolar | `/shop/?orderby=price-desc` | Alplerde `1536` 100 KB |
+| 2 | eser | Sonbahar Hasadı · 25.000 ₺ | urun sayfasi | `large` 35 KB |
+| 3 | bolum | Aklınızdaki eseri sizin için yapalım | `/ozel-siparis/` | Paris `large` 79 KB |
+| 4 | eser | Yelkenli · 19.000 ₺ | urun sayfasi | `large` 63 KB |
+| 5 | bolum | Resim ve heykel kursları | `/resim-kursu-satin-al/` | Bir Mola `large` 56 KB |
+| 6 | eser | Köprü · 13.000 ₺ | urun sayfasi | `medium_large` 60 KB |
+| 7 | bolum | Duvarınıza uygun eseri birlikte seçelim | `/elementor-1441/` | Sonbahar `medium_large` 71 KB |
+| 8 | bolum | İndirimdeki eserler | `/indirimdekiler/` | `medium_large` 83 KB |
+
+**Gorsel boyutu elde OLCULEREK secilir**, sabit yazilmaz: webp agirligi esigi
+(slayt 1 icin 120 KB, digerleri 90 KB) asarsa bir kucuk boyuta iner. Betik
+`1536x1536 → large → medium_large` sirasini dener. Toplam 546 KB.
+
+> **Slayt 2+ gorselleri acilista INMIYOR.** Widget `lazyload` acik; olculdu —
+> 8 slaytin yalnizca **2**'sinin gorseli agda gorundu (100 + 34 KB). Bu yuzden
+> slayt eklemek sayfa agirligini neredeyse hic artirmiyor: tek slaytta
+> **3.123 KB**, 5 slaytta **2.944 KB**, 8 slaytta **2.916 KB**.
+
+> **`link_click` bos birakilirsa slaydin TAMAMI baglanti olur** — render kodu
+> `if ('button' === $slide['link_click'])` diye bakiyor, NULL else dalina
+> dusuyor. Sansa birakmamak icin acikca `'slide'` yazildi.
+
+**Maliyet — mobil TBT:** 1.019 ms (1 slayt) → 1.518 (5) → **1.712** (8).
+Masaustu etkilenmedi (puan 85, LCP 1,94 sn). Sayfa agirligi da artmadi.
+Yani bedel **bayt degil, Swiper'in ana is parcasindaki yuku**. Mobil puan
+zaten JS'e bagli (35-42 bandinda dalgaliyor). Slayt azaltmak istenirse
+bedel buradan geri alinir.
+
+> **Kurator metinleri eserin BASLIGI + teknigi + konu kategorisinden yazildi.**
+> Eserler gorulemedigi icin gorsel icerige dair iddia YOK. Bir satir esere
+> uymuyorsa metin degistirilir, veri degil.
+
+**Yeni sayfa: `/indirimdekiler/` (#3864)** — WooCommerce'in hazir bir "indirimde"
+arsivi YOK. Sayfa `[products on_sale="true" limit="24" columns="4"
+orderby="price" order="DESC"]` ile kuruldu; 11 urun basiyor, 200 doner.
+
+Acik kalanlar:
+- **Kurslar icin tek bir merkez sayfa yok.** Slayt `/resim-kursu-satin-al/`'a
+  gidiyor; heykel dersi, resim/heykel workshop ayri sayfalarda.
+- **`/elementor-1441/`, `/elementor-1424/`, `/elementor-3510/`** yayinda ama
+  slug'lari varsayilan kalmis. Duzeltmek 301 ister (`fd-eski-adresler.php`).
+
+Yedek: `/var/backups/claude-2026-09-23-hero5/`.
+
 ### Varlik diyeti
 
 `fdart-mu-plugins/fd-asset-diyet.php` — sayfada karsiligi olmayan dosyalari
