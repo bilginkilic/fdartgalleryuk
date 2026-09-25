@@ -677,10 +677,23 @@ dagilim), teknik ve konu kategorileri, indirimde/stokta. **Olcu, renk, yon,
 cerceve MUMKUN DEGIL**: "Boy"/"En" ozelliklerinde 1'er terim var ve 293 urunun
 yalnizca **8**'inde ozel ozellik tanimli. Bu bir veri girisi isi.
 
-**Kalan:** 11 kategori sablonunda (`akrilk alt kat`, `sulu boya alt kat`,
-`son x soyut`…) ayni eksik duruyor; ayni ekleme onlara da yapilmali.
+**Kategori sablonlari da yapildi (25.09.2026).** 11 degil **9** sablon vardi:
+#2522, #2511, #2495, #2359, #2350, #2346, #2335, #2297, #1817. Dokuzuna da
+ayni filtre cubugu eklendi (once dev, olculdu, sonra canli).
 
-Yedek: `/var/backups/claude-2026-09-23-filtre/`.
+> **TUZAK: urun izgarasini tutan kok konteyner ROW yonunde (gap 80px).**
+> Filtreyi o konteynerin ICINE koymak onu izgaranin YANINA sikistirir, ustune
+> degil. Ilk script tam bunu yapiyordu; kuru calismada yakalandi. Dogrusu:
+> filtre, urun konteynerinin **hemen oncesine**, ayni genislikte
+> (`boxed_width: 1059px`) ayri bir **column** konteyner olarak eklenir.
+>
+> Not: yol sabit degil — urun widget'i kimi sablonda kok[1]'de, kimisinde
+> kok[2]'de. Script `woocommerce-etheme_archive_products` widget'ini iceren
+> kok elemani arayarak bulur, sabit indis kullanmaz.
+
+Yedek: `/var/backups/claude-2026-09-23-filtre/` (#1841),
+`/var/backups/claude-2026-09-25-kategori-filtre/` (9 kategori sablonu,
+dev + canli oncesi).
 
 ### Varlik diyeti
 
