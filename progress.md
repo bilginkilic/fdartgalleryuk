@@ -84,3 +84,35 @@ Onbellege GIREMEYEN sayfalar (09.09.2026, OPcache isinirken olculdu):
 
 > Altyapi bekleyenleri (kalan 4 site, SSH parolasi, `VPS_SSH_PRIVATE_KEY`, PTR,
 > sunucu maliyeti) **`ovgcloudukmultisite/progress.md`** icinde.
+
+## 27.09.2026 — Kategori filtre paneli varsayilan kapali (CANLI)
+
+`fd-kategori-filtresi-kapali.php` (mu-plugin, dev + canli). Yatay filtre
+cubugunda yalnizca **Kategori** paneli kapali basliyor; Durum ve Fiyat acik.
+
+Neden temanin ayariyla degil: XStore'da panel BAZINDA acik/kapali ayari **yok**.
+`widgets_toggle_action_opened` uc paneli birden kapatiyor, `enabled_default` tum
+cubugu gizliyor — masaustunde acma dugmesi `display:none` oldugu icin filtreler
+tamamen **erisilemez** hale gelirdi. Cozum: temanin kendi toggle'ini
+(`.widget-title` tiklamasi) programatik tetiklemek.
+
+Olculen: kategori sayfalarinda cubuk **478 -> 140 px**, urun izgarasi
+**338 px yukari** (y=1121 -> y=783). Tiklayinca aciliyor, tekrar tiklayinca
+kapaniyor. Mobil degismedi.
+
+> **TUZAK: 8 saniyelik guvenlik agi gozlemciyi de kapatiyordu.**
+> Ilk surumde MutationObserver 8 sn sonra `disconnect()` ediliyordu. Kategori
+> sayfalarinda cubuk yukarida oldugu icin sorun gorunmedi — ama **/shop/**
+> sayfasinda cubuk y~1454'te ve panelleri ancak gorus alanina girince
+> yukleniyor. O an gozlemci coktan kapanmisti: degisiklik /shop/'ta **hic etki
+> etmiyordu ve bu HTML'e bakarak fark edilmiyordu** (script sayfada, isaret
+> sayimi 1 donuyor). Ancak tarayicida KAYDIRARAK olcunce ortaya cikti.
+> Duzeltme: 8 sn artik yalnizca icerigi gosterir; gozlemci basariya kadar
+> (en fazla 5 dk) acik kalir.
+
+> **TUZAK: `/shop/` HTML'indeki `widget-has-toggle` eslesmeleri sahte.**
+> Filtre panelleri AJAX ile geliyor; sunucudan gelen HTML'de yalnizca
+> kacirilmis JSON yuku (`et-element-args`) var. `grep` ile sayarsaniz "var"
+> gorunur ama DOM'da yoktur. Ayni tuzak `widget-title` icin de gecerli.
+
+Yedek: `/var/backups/claude-2026-09-27-kategori-paneli/`.

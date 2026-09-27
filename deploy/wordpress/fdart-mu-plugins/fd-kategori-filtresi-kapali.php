@@ -13,8 +13,15 @@
  *
  * Paneller AJAX ile geliyor, bu yuzden MutationObserver gerekiyor.
  *
- * GUVENLIK AGI: script 8 saniyede is goremezse icerik yine de gosterilir.
+ * GUVENLIK AGI: script 8 saniyede is goremezse icerik yine de GOSTERILIR.
  * Bozuk bir script filtreyi kalici olarak gizlememeli.
+ *
+ * TUZAK (27.09.2026): ilk surumde gozlemci 8 saniyede KAPATILIYORDU. Kategori
+ * sayfalarinda cubuk yukarida oldugu icin sorun cikmadi, ama /shop/ sayfasinda
+ * cubuk y~1454'te ve panelleri ancak gorus alanina girince yukleniyor — o an
+ * gozlemci coktan kapanmis oluyordu ve degisiklik /shop/'ta HIC etki etmiyordu.
+ * Artik 8 saniye yalnizca icerigi GOSTERIR; gozlemci basariya kadar (en fazla
+ * 5 dakika) acik kalir.
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -32,20 +39,24 @@ html:not(.fd-kat-hazir) .etheme_widget_cats_filter > *:not(.widget-title) { opac
 (function () {
 	var bitti = false, gozlemci = null;
 
-	function hazir() {
-		bitti = true;
+	function goster() {                            // opaklik korumasini kaldir
 		document.documentElement.classList.add('fd-kat-hazir');
+	}
+
+	function dur() {
+		bitti = true;
+		goster();
 		if (gozlemci) { gozlemci.disconnect(); gozlemci = null; }
 	}
 
 	function dene() {
 		if (bitti) { return; }
 		var w = document.querySelector('.etheme_widget_cats_filter.widget-has-toggle');
-		if (!w) { return; }                       // AJAX daha gelmemis
+		if (!w) { return; }                        // panel henuz DOM'da yok
 		var baslik = w.querySelector('.widget-title');
 		if (!baslik) { return; }
 		if (!w.classList.contains('widget-toggled')) { baslik.click(); }
-		hazir();
+		dur();
 	}
 
 	function basla() {
@@ -53,7 +64,11 @@ html:not(.fd-kat-hazir) .etheme_widget_cats_filter > *:not(.widget-title) { opac
 		if (bitti) { return; }
 		gozlemci = new MutationObserver(dene);
 		gozlemci.observe(document.body, { childList: true, subtree: true });
-		setTimeout(function () { if (!bitti) { hazir(); } }, 8000);   // guvenlik agi
+		// 8 sn: icerigi goster ama IZLEMEYE DEVAM ET — panel gec gelebilir
+		// (/shop/'ta cubuk sayfanin cok asagisinda, gorus alanina girince yukleniyor)
+		setTimeout(goster, 8000);
+		// 5 dk: artik gelmeyecek, gozlemciyi birak
+		setTimeout(function () { if (!bitti) { dur(); } }, 300000);
 	}
 
 	if (document.readyState === 'loading') {
