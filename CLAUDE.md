@@ -1002,6 +1002,7 @@ kanit olarak birakildi.
 | `deploy/wordpress/i18n/` | chestnyznak uc dil scriptleri (01→16) + JSON sozlukler |
 | `deploy/blog/` | `yazi-yayinla.php`, `ceviri-yayinla.php`, `telegram-cek.py`, `cover.php`, `README.md`, `BACKLOG.md` |
 | `deploy/cloudflare/` | `email-worker.js` |
+| `deploy/scripts/claude/` | **Claude oturum araclari — 9 arac + README.** Once `deploy/scripts/claude/README.md` okuyun. |
 | `deploy/php-fpm/` | `99-opcache-tuning.ini` (OPcache — `setup-server.sh` kurar, bkz. 3), `pool.conf.template` |
 
 Sunucuda ayni depo `/opt/fdartgalleryuk/` altinda.
@@ -1043,6 +1044,12 @@ Ortak kurallarin tamami **genel dosyanin 7. bolumunde**. Bu depoya ozgu:
   yazip **canlida** yapin.
 - Canliyi etkileyen her islemden **once yedek**, mumkunse kuru calistirma, sonra
   **kullanici onayi**.
+- **Tekrar eden is icin once `deploy/scripts/claude/` bakin, sifirdan yazmayin.**
+  SSH (`ssh-vps.sh`), base64 aktarim (`gonder.sh`), gorunurluk olcumu
+  (`sayfa-olc.py`), origin denetimi (`sayfa-denetle.sh`), CF purge
+  (`cf-purge.php`), Elementor tarama (`elementor-tara.php`) hazir. Bunlar
+  `/tmp` altinda yazilip konteyner yeniden basladiginda kayboluyordu —
+  25.09.2026'da oldu, `sayfa-olc.py`'yi ikinci kez yazmak yarim saat aldi.
 - `deploy-site.sh` `rsync --delete` kullanir → depo eksikken calistirmayin.
 - **Degisiklikten sonra dogrula: HTTP kodu yetmez** (genel dosya 6a).
 - **Bu dosyayi fdartgallery'e ozel tut.** Ortak tuzagi genel depoya, chestnyznak'a
