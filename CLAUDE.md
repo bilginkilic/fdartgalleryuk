@@ -26,55 +26,17 @@ push et, dur ve haber ver. Kullanici daima `root`. Site kullanicisi
 
 ---
 
-## 0. SU AN NE KALDI
+## 0. Bekleyen isler → **`progress.md`**
 
-Site yayinda; kurulum, performans, guvenlik, yedekleme, site haritasi, formlar,
-e-posta ve onbellek bitti. **Sunucu tarafinda yapilacak is kalmadi.**
+Bu dosya **anayasa**: degismeyen kural, yerlesim ve tuzak. Bekleyen isler, acik
+kararlar, son olcumler ve **bu dosyayi bolme plani** `progress.md`'de (bu depoda)
+— **oturum basinda ikisini birden okuyun**. Altyapi bekleyenleri
+`ovgcloudukmultisite/progress.md`'de.
 
-Kalan tek performans maddesi **temada** ve **kod isi degil, tasarim isi**:
-
-**Mobil LCP 10,9 sn (puan 37-40).** Masaustu iyi ve daha da iyilesti
-(**puan 85**, LCP 1,99 sn). Mobildeki sebep tarayicidaki is: Style & Layout
-4,3 sn, jQuery 4,8 sn, sayfa 3.159 KB. Tam dokum ve denenip **ise yaramayan**
-mudahaleler 3. bolumde. Kalan secenekler, olculen kazanc ve riskiyle —
-**hepsi kullanici karari**:
-
-1. **Turnstile ~1 MB.** Dogru cozum: gizli giris formunun widget'ini sayfa
-   acilisinda degil, **giris penceresi acilinca** render etmek. Ozel is; yanlis
-   yapilirsa **giris kirilir** (3. bolumdeki tuzaklara bakin).
-2. **Ana sayfadaki widget sayisi** (33 container / 60 widget, 2 urun listesi).
-   Asil `Style & Layout` maliyeti burada. Tasarim karari.
-- **Blogun en eski 4 yazisi** hala Ingilizce demo slug'inda; 301 ister, tablo
-  hazir (`fd-eski-adresler.php`). Ayrinti `deploy/blog/BACKLOG.md`.
-
-### Bu dosyayi bolmek — sonraki oturumun ilk isi (kullanici onayladi 27.09.2026)
-
-**Bu dosya 1.049 satir; 691'i tek bolumde (§3).** Genel dosyayla birlikte her
-oturumun basinda **1.540 satir** yukleniyor. Bu oturumda bir kez sikistirmaya
-girildi. Onerilen bolme:
-
-| Dosya | Icerik |
-|---|---|
-| `CLAUDE.md` | ~150 satir: site, yollar, komutlar, **tuzak listesi**, calisma kurallari, baglantilar |
-| `docs/hiz.md` | §3 (OPcache, APO, LCP, gorsel boyutlari) |
-| `docs/elementor.md` | slaytlar, hero, urun kartlari, filtreler, sablon yapisi |
-| `docs/formlar.md` | §5 |
-
-> **Tuzaklar bolunmez.** OPcache, `open_basedir` yedek tuzagi, SSH heredoc,
-> "genis fiyat araligiyla test etme", "row konteyner" — bunlarin **tek satirlik
-> ozeti CLAUDE.md'de kalir**, detayi `docs/`'a gider. Yanlis yerden bolunurse
-> bir tuzak kaybolur ve bu ancak bir sey kirildiginda fark edilir.
->
-> Once **plan cikarin**, boldukten sonra her `docs/` dosyasinin CLAUDE.md'den
-> baglantili oldugunu ve hicbir tuzagin dusmedigini **sayarak** dogrulayin.
-
-Sirasi gelince yapilacak digerleri (27.09.2026 degerlendirmesi):
-`.claude/commands/` (`/canliya-al`, `/olc`, `/saglik`), pahali kararlar icin
-kisa ADR dosyalari (Elementor arsiv sablonlari, fastcgi_cache kurallari, APO,
-iyzico), oturum basina tek konu + "belgele ve temizle".
-
-Altyapi bekleyenleri (kalan 4 sitenin arsivi, SSH parola girisi,
-`VPS_SSH_PRIVATE_KEY`, PTR) **genel dosyanin 0. bolumunde**.
+Karar **gerekceleri** `ovgcloudukmultisite/adr/` altinda, numarali. CLAUDE.md
+"ne yapilir"i soyler, ADR "neden boyle secildi"yi. Bu siteyi ilgilendirenler:
+`0002` onbellek, `0003` OPcache, `0004` APO/gri bulut, `0010` urun gorseli 600,
+`0011` mobil LCP — **denenip birakilanlar** (yeniden denemeyin).
 
 ---
 
@@ -158,56 +120,12 @@ arkada HIT veriyor — hicbir istek PHP'ye dusmuyor.
 > hizlandirmak bu sayiyi **degistirmez**. Istisna sepet/odeme: orada gercekten
 > PHP yavas (0. bolum).
 
-### OPcache — sepet/odeme yavasliginin sebebiydi (03.09.2026)
+### OPcache — sepet/odeme yavasliginin sebebiydi
 
-`/cart/` 2,9 sn suruyordu. Profil (gecici mu-plugin, `?fdprofil=`) sucluyu net
-gosterdi: **veritabani %1** (21 sorgu, 14 ms). Zaman PHP'nin her istekte
-**3.240 dosyayi yeniden derlemesinde** gidiyordu.
-
-```
-opcache: bellek 128/128 MB DOLU · isabet %22 · kacirma 106.213
-TOPLAM 2.761–3.330 ms · bellek tepe 186 MB
-```
-
-OPcache sunucuda **hic yapilandirilmamisti** — tamamen PHP varsayilani (128 MB,
-10.000 dosya, 8 MB interned). Kutuda **4 WordPress sitesi** var, her biri ~3.240
-dosya yukluyor.
-
-> **TUZAK: OPcache dolunca sessizce devre disi kalir.** Yeni script kabul etmez
-> ve **tahliye de yapmaz** — hangi sitenin dosyalari once girdiyse onlar kalir.
-> Kalanlar her istekte yeniden derlenir ve **her isci onlari kendi belleginde
-> tutar**. Canli ile dev arasindaki fark tam olarak buydu: ayni kod, ayni 12
-> eklenti, ayni veri; canli 2,9 sn / tepe **186 MB**, dev 1,2 sn / tepe **38 MB**.
-> `memory_get_peak_usage()` arasindaki bu ucurum OPcache doldugunun imzasidir.
-
-Cozum `/etc/php/8.5/fpm/conf.d/99-opcache-tuning.ini` (**sunucu geneli** —
-`opcache.memory_consumption` `PHP_INI_SYSTEM`, havuz basina ayarlanamaz; tek
-php-fpm ana sureci var, dolayisiyla dort siteyi birden etkiler; kullanici onayi
-alindi):
-
-Dosyanin kaynagi artik **depoda**: `deploy/php-fpm/99-opcache-tuning.ini`,
-`setup-server.sh` kurar. (09.09.2026'ya kadar yalnizca sunucuda duruyordu —
-sunucu sifirdan kurulsa ayar kaybolur ve `/cart/` 2,9 sn'ye geri donerdi.)
-
-```ini
-opcache.memory_consumption = 768   ; once 512 denendi, 509/512 ile doldu
-opcache.interned_strings_buffer = 64
-opcache.max_accelerated_files = 50000
-opcache.validate_timestamps = 1    ; deploy sonrasi elle reload gerekmesin
-opcache.revalidate_freq = 2
-```
-
-> **`interned_strings_buffer` AYRI bir tampondur; dolarsa sessizce etkisiz
-> kalir** ve `memory_consumption`'i buyutmek onu buyutmez. 09.09.2026'da olculdu:
-> 32 MB'in **16 bayti** bostu (326k dize). Dolu tamponda yeni dizeler
-> paylasilmaz, her script kendi kopyasini tutar. 32 → **64**; olcumden sonra
-> 33,6/64 MB, 30 MB bos.
-
-> **Ayar degistirince reload SART ve reload OPcache'i SIFIRLAR.** Reload sonrasi
-> ilk istek 3–4 sn surer, sonrakiler normale doner — hata degil, isinma.
-> Once `php-fpm8.5 -t`, sonra `systemctl reload php8.5-fpm`.
-
-Sonuc — ayni yontemle olculdu:
+`/cart/` 2,9 sn suruyordu ve sebep **veritabani degildi** (%1, 21 sorgu, 14 ms):
+PHP her istekte 3.240 dosyayi yeniden derliyordu. Tam olcum, alternatifler ve
+odenmis bedeller: **`ovgcloudukmultisite/adr/0003`**; isletme notlari genel
+CLAUDE.md 6g.
 
 | | once | sonra |
 |---|---|---|
@@ -215,70 +133,28 @@ Sonuc — ayni yontemle olculdu:
 | `/my-account/` | 2,6–2,9 sn | **0,74–0,95 sn** |
 | `/checkout/` | 1,7–2,0 sn | **0,40–0,48 sn** |
 | tepe bellek | 186 MB | **34 MB** |
-| OPcache isabet | %22 | **%89** (508/768 MB, 15.8k script) |
+| OPcache isabet | %22 | **%89** |
 
-Ana sayfa 17–21 ms, chestnyznak ikilisi 17–24 ms, dort site de 200. Kenar
-davranisi degismedi (`/` HIT, `/cart/` ve `/my-account/` DYNAMIC).
+> **TUZAK — imzasi su:** ayni iki site arasinda buyuk hiz VE bellek farki.
+> Canli 2,9 sn / tepe **186 MB**, dev 1,2 sn / tepe **38 MB** — ayni kod, ayni
+> 12 eklenti, ayni veri. `memory_get_peak_usage()` arasindaki ucurum OPcache'in
+> dolup **tahliye yapmadigini** gosterir.
 
 Kalan ~0,95 sn hala PHP (DB %1) — sonraki kazanc 3.240 dosyayi azaltmaktan,
 yani tema yukunden gecer.
 
-> `/checkout/` bos sepetle **302 → `/cart/`** doner; bu WooCommerce'in normal
+> `/checkout/` bos sepetle **302 → `/cart/`** doner; WooCommerce'in normal
 > davranisi, hata degil.
 
-### LCP on yukleme DENENDI, ISE YARAMADI (03.09.2026)
+### Mobil LCP — olculdu, uc mudahale denendi, ucu de birakildi
 
-Hero gorseli (`5.jpg.webp`, 287 KB) Elementor tarafindan satir ici
-`style="background-image: url(...)"` ile HTML'in **74.856. karakterinde**
-basiliyor; `</head>` 25.246'da bitiyor. CSS arka planlari on tarayiciya
-gorunmez, yani tarayici gorseli cok gec kesfediyor. Mantikli bir hedefti.
+Masaustu **sorun degil** (puan 85, LCP 1,99 sn). Mobilde puan 37-40,
+**LCP ~10,9 sn**, TBT 1,25 sn, TTI 13,3 sn, TTFB **58 ms** — bekleme degil,
+**tarayicida is**.
 
-`fd-lcp-onyukleme.php` yazildi (on sayfanin `_elementor_data`'sindan ilk
-`background_image` okunur, transient'te tutulur, `<head>`'e
-`<link rel=preload as=image fetchpriority=high>` basar). Dev'de dogrulandi:
-etiket 737. karakterde, adres 200.
-
-**Olcum (Observatory / me-west1, mobil):**
-
-| | once | preload ile |
-|---|---|---|
-| LCP | 12.211 ms | 12.309 ms |
-| Puan | 48 | 39 |
-
-**Fark yok.** Cunku darbogaz gorsel indirmek degil, JS calistirmak (0. bolum).
-Olculebilir kazanc olmadigi ve 287 KB'i yuksek oncelikle cekmenin bedeli
-oldugu icin **geri alindi**; dosya depoda da tutulmadi.
-
-> **Ders: "preload 0" bir belirti, tanı degil.** Once LCP elemaninin ne oldugunu
-> ve neyin bekledigini olcun. Lighthouse `mainthread-work-breakdown` ve
-> `bootup-time` denetimleri bunu dogrudan soyluyor; rapor JSON'una
-> `speed_api/.../tests/<id>` cevabindaki `jsonReportUrl` ile ulasilir.
-
-### Mobil LCP — nereye gidiyor (03.09.2026 tam olcum)
-
-Masaustu **sorun degil** (puan 81, LCP 2,3 sn). Sorun yalnizca mobilde:
-puan 39, FCP 3,0 sn, **LCP 10,8 sn**, TBT 1,25 sn, TTI 13,3 sn.
-TTFB 58 ms — yani bekleme degil, **tarayicida is**.
-
-Ana is dagilimi (Lighthouse, mobil emulasyon):
-
-| | ms |
-|---|---|
-| Style & Layout | **4.333** |
-| Other | 3.251 |
-| Script Evaluation | 1.766 |
-| jQuery (bootup toplami) | **4.819** |
-
-Sayfa **3.358 KB**, 111 istek:
-
-| tip | istek | KB |
-|---|---|---|
-| Gorsel | 19 | **1.332** |
-| XHR (Turnstile) | 3 | **769** |
-| Script | 39 | 397 |
-| Document (Turnstile) | 4 | 314 |
-| Font | 11 | 251 |
-| Stylesheet | 28 | 199 |
+Ana is dagilimi (Lighthouse, mobil emulasyon): Style & Layout **4.333 ms**,
+Other 3.251, Script Evaluation 1.766, jQuery bootup **4.819 ms**.
+Sayfa **3.159 KB / 111 istek**; gorsel 1.332 KB, Turnstile XHR+Document ~1.083 KB.
 
 Israf kalemleri:
 
@@ -288,96 +164,59 @@ Israf kalemleri:
 - `elementor-all-widgets.min.js` 135 KB, **%82 kullanilmiyor**.
 - CSS: `woocommerce-all.min.css` **%99**, `elementor-all-widgets.min.css` %92,
   `xstore.min.css` %90 kullanilmiyor.
-- Slayt 3 gorsel = **616 KB**, yalnizca birincisi gorunuyor.
-- Urun gorselleri **954x1000 inip 299x314 gosteriliyor** — `sizes` niteligi
-  `(max-width: 954px) 100vw, 954px`, yani tarayiciya "ekrani kaplayacak" deniyor.
-  WooCommerce kucuk resmi de **1000x1000**. Lighthouse tahmini kazanc 589 KB.
 
-**Denenen ve OLCULEN mudahaleler — ucu de yetmedi:**
+**Denenen uc mudahale ve neden birakildiklari: `ovgcloudukmultisite/adr/0011`.**
+Kisaca: hero gorseline `preload` **fark yaratmadi** (12.211 → 12.309 ms;
+darbogaz gorsel degil JS, `fd-lcp-onyukleme.php` geri alindi ve depodan cikarildi);
+Turnstile widget'i 2 → 1 −0,5 sn verdi ama **girisin korumasini da goturuyor**;
+`interaction-only` LCP'ye **hic** dokunmadi (TBT 1.220 → 750). Dev'deki butun
+deneme ayarlari geri alindi, **canliya hic dokunulmadi**.
 
-| deneme | mobil LCP | sonuc |
-|---|---|---|
-| hero gorseline `preload` | 12.211 → 12.309 ms | fark yok, geri alindi |
-| Turnstile widget'i 2 → 1 | 12.309 → 11.767 ms | −0,5 sn ama **girisin korumasi da gidiyor**, kabul edilemez |
-| `cfturnstile_appearance = interaction-only` | 12.233 ms | LCP'ye etkisi yok (TBT 1.220 → 750) |
+> **TUZAK: `cfturnstile_woo_login = 0` giris sayfasini da korumasiz birakir** —
+> ayar sayfa bazli degil. Dev'de olculdu: `/my-account/` uzerindeki
+> `cf-turnstile-woo-` alani da kayboldu.
 
-> **TUZAK: `cfturnstile_woo_login = 0` giris sayfasini da korumasiz birakir.**
-> Dev'de olculdu: `/my-account/` uzerindeki `cf-turnstile-woo-` alani da kayboldu,
-> geriye yalnizca altbilgi formununki kaldi. Ayar sayfa bazli degil.
+> **TUZAK: `appearance` yalnizca GORUNURLUGU degistirir**, calismayi ertelemez —
+> `interaction-only` ile de 20 istek / 1.071 KB cekmeye devam etti.
 
-> **TUZAK: `appearance` yalnizca GORUNURLUGU degistirir, calismayi ertelemez.**
-> `interaction-only` ile de Turnstile 20 istek / 1.071 KB cekmeye devam etti.
+> **Ders: "preload 0" bir belirti, tani degil.** Once LCP elemaninin ne oldugunu
+> ve neyin bekledigini olcun. Lighthouse `mainthread-work-breakdown` ve
+> `bootup-time` denetimleri bunu dogrudan soyluyor; rapor JSON'una
+> `speed_api/.../tests/<id>` cevabindaki `jsonReportUrl` ile ulasilir.
 
-Dev'de yapilan butun deneme ayarlari geri alindi; **canliya hic dokunulmadi**
-(`cfturnstile_woo_login = 1`, `appearance = always`).
+Kalan secenekler **`progress.md`**de — ikisi de tasarim karari.
 
-Kalan gercek secenekler tema/icerik kararidir — 0. bolume bakin.
+### Urun gorseli boyutu 1000 → 600
 
-### Urun gorseli boyutu (03.09.2026)
+Gercekte gosterilen olcu mobilde 299x314, masaustunde 165x165'ti. Gerekce,
+elenen alternatif ve sonuc tablosu: **`ovgcloudukmultisite/adr/0010`**. Sonuc:
+urun kucuk resmi 112 → **45 KB**, `/shop/` ~2.128 → **662 KB**, masaustu puan
+81 → **85**, LCP 2.306 → **1.992 ms**. Mobil degismedi (darbogaz JS).
 
-`woocommerce_thumbnail` **1000x1000** uretiliyordu. Gercekte gosterilen olcu:
-**mobilde 299x314, masaustunde 165x165**. Urun detay sayfasinin kendi gorseli
-(`woocommerce_single`) bile yalnizca **600** genisliginde — yani izgara kucuk
-resmi detay gorselinden buyuktu.
+Isletme sirasi: secenek → **`wp cache flush`** →
+`wp media regenerate --image_size=woocommerce_thumbnail` → `convert-webp.sh`
+(yeni dosyalarin `.webp` kopyasi yoksa `fd-webp-rewrite` JPEG'e duser, kazanc
+yanar) → nginx + kenar onbellegi temizligi.
 
-> **`sizes` niteligini duzeltmek TEK BASINA ISE YARAMAZ.** Once oyle planlandi,
-> sonra `srcset`'e bakildi: yalnizca **iki aday** var — `954w` ve `1w`. Cunku
-> `wp_calculate_image_srcset()` yalnizca **ayni en-boy oranindaki** boyutlari
-> aday yapar; `600x841`, `768x1076`, `300x300` hepsi farkli oranda. Kirpilmis
-> `woocommerce_thumbnail`'in kucuk kardesi yok. Tarayiciya daha kucugunu sec
-> desen de secebilecegi bir sey yok. Cozum boyutun kendisini kucultmek.
+> **`sizes` niteligini duzeltmek TEK BASINA ISE YARAMAZ.** `srcset`te yalnizca
+> **iki aday** vardi (`954w`, `1w`): `wp_calculate_image_srcset()` yalnizca
+> **ayni en-boy oranindaki** boyutlari aday yapar, kirpilmis
+> `woocommerce_thumbnail`in kucuk kardesi yok.
 
-Yeni deger **600** (`woocommerce_thumbnail_image_width`): mobil 299 CSS px x DPR 2
-= 598, masaustunde zaten fazlasiyla yeterli.
+> **TUZAK: `wc_get_image_size()` NESNE ONBELLEGINDEN okur.** Secenek 600
+> yapildi, fonksiyon hala 1000x1000 donuyordu ve ortada filtre yoktu — Redis
+> eski degeri tutuyor. **Boyut degisiminden sonra `wp cache flush` sart**, yoksa
+> yeniden uretim eski olcuyle calisir (ilk denemede tam bunu yapti).
 
-> **TUZAK: `wc_get_image_size()` NESNE ONBELLEGINDEN okur.** Secenek 600 yapildi,
-> fonksiyon hala `1000x1000` donuyordu ve ortada filtre yoktu. Redis kalici
-> nesne onbellegi eski degeri tutuyor. **Boyutu degistirdikten sonra
-> `wp cache flush` sart**, yoksa yeniden uretim eski olcuyle calisir (ilk
-> denemede tam bunu yapti, 3 dosya bosuna uretildi).
+> **TUZAK: `srcset`te eski temadan kalan artik aday.**
+> `woocommerce_thumbnail_preview` (1000x1000) artik ne temada ne eklentide
+> kayitli, yalnizca ek verisinde duruyor; ayni oranda oldugu icin aday yapiliyor
+> ve `.webp` kopyasi olmadigi icin **en agir dosya** seciliyordu.
+> `fd-urun-gorsel-srcset.php` onu eliyor (dosyalar diskte kalir).
 
-Sira: secenek → `wp cache flush` → `wp media regenerate --image_size=woocommerce_thumbnail`
-→ `convert-webp.sh` (yeni dosyalarin `.webp` kopyasi yoksa `fd-webp-rewrite`
-JPEG'e duser, kazanc yanar) → nginx + kenar onbellegi temizligi.
-
-Yedek (degisiklik oncesi secenekler): `/var/backups/claude-2026-09-03-gorsel/`.
-
-> **IKINCI TUZAK: boyut kuculdu ama tarayici hala 1000x1000 indiriyordu.**
-> `srcset`'te eski temadan kalan bir **artik** aday duruyordu:
-> `woocommerce_thumbnail_preview` (1000x1000). Bu boyut artik ne temada ne
-> eklentide kayitli — yalnizca ek verisinde duruyor ve ayni en-boy oraninda
-> oldugu icin `wp_calculate_image_srcset()` onu da aday yapiyor. `.webp`
-> kopyasi da olmadigi icin **en agir dosya (153 KB)** seciliyordu.
-> `fd-urun-gorsel-srcset.php` bu adayi listeden cikariyor (dosyalar diskte kalir).
->
-> `sizes` duzeltmesi burada da tek basina yetmezdi: tarayici gerekenden
-> **kucuk** olani secmez — slot 299 CSS px, DPR 2 ile 598 px gerekiyor; 618 px
-> gerektiginde 600w'yi atlayip 1000w'ye cikardi.
-
-**Sonuc (canli, 03.09.2026):**
-
-| | once | sonra |
-|---|---|---|
-| urun kucuk resmi | 954x1000, **112 KB** | 600x600, **45 KB** |
-| `/shop/` urun gorselleri (19 adet) | ~2.128 KB | **662 KB** |
-| ana sayfa toplam | 3.358 KB | **3.159 KB** |
-| masaustu puan / LCP | 81 / 2.306 ms | **85 / 1.992 ms** |
-| mobil puan / LCP | 39 / 10.800 ms | 37 / 10.888 ms (degismedi) |
-
-Mobil degismedi cunku orada darbogaz JS (0. bolum). Kazanc **indirilen veride**
-ve asil `/shop/` ve kategori sayfalarinda: ~1,4 MB.
-
-Kirpma artik gercekten 1:1 — eskiden ayar 1:1 diyordu ama genislik kaynak
-gorsellerden buyuk oldugu icin hic uygulanamiyor, boy 1000'e sabitleniyordu
-(954x1000, 927x1000, 879x1000...). Izgara artik duzgun kare. **Bu gorunur bir
-degisiklik**, kullanici onayiyla yapildi.
-
-Yeniden uretimde 670 ekin 652'si yenilendi; **basarisiz 18'in tamami SVG**
-(ImageMagick rasterleyemiyor, raster kucuk resim de gerekmez).
-
-Eski `954x1000` kucuk resimlerin `.jpeg` dosyalari `wp media regenerate`
-tarafindan silindi ama **`.jpeg.webp` kardeslerini WordPress bilmiyor**, diskte
-oksuz kaldilar (~70 MB). Zararsiz — hicbir yerde referans verilmiyor.
+Yedek: `/var/backups/claude-2026-09-03-gorsel/`. Yeniden uretimde 670 ekin
+652'si yenilendi; **basarisiz 18'in tamami SVG**. Eski `954x1000` `.jpeg.webp`
+kardesleri diskte oksuz kaldi (~70 MB, zararsiz).
 
 ### Site preloader kapatildi (03.09.2026)
 
@@ -1030,6 +869,7 @@ kanit olarak birakildi.
 | `deploy/cloudflare/` | `email-worker.js` |
 | `deploy/scripts/claude/` | **Claude oturum araclari — 9 arac + README.** Once `deploy/scripts/claude/README.md` okuyun. |
 | `deploy/php-fpm/` | `99-opcache-tuning.ini` (OPcache — `setup-server.sh` kurar, bkz. 3), `pool.conf.template` |
+| `.claude/commands/` | **`/canliya-al`** (yedek → dry → onay → uygula → onbellek → dogrula) ve **`/dogrula`** (bu siteye ozel olcutler). Genel depoda ayrica `/oturum-ac`, `/anahtar-ekle`, `/adr` var |
 
 Sunucuda ayni depo `/opt/fdartgalleryuk/` altinda.
 
