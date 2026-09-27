@@ -47,6 +47,32 @@ mudahaleler 3. bolumde. Kalan secenekler, olculen kazanc ve riskiyle —
 - **Blogun en eski 4 yazisi** hala Ingilizce demo slug'inda; 301 ister, tablo
   hazir (`fd-eski-adresler.php`). Ayrinti `deploy/blog/BACKLOG.md`.
 
+### Bu dosyayi bolmek — sonraki oturumun ilk isi (kullanici onayladi 27.09.2026)
+
+**Bu dosya 1.049 satir; 691'i tek bolumde (§3).** Genel dosyayla birlikte her
+oturumun basinda **1.540 satir** yukleniyor. Bu oturumda bir kez sikistirmaya
+girildi. Onerilen bolme:
+
+| Dosya | Icerik |
+|---|---|
+| `CLAUDE.md` | ~150 satir: site, yollar, komutlar, **tuzak listesi**, calisma kurallari, baglantilar |
+| `docs/hiz.md` | §3 (OPcache, APO, LCP, gorsel boyutlari) |
+| `docs/elementor.md` | slaytlar, hero, urun kartlari, filtreler, sablon yapisi |
+| `docs/formlar.md` | §5 |
+
+> **Tuzaklar bolunmez.** OPcache, `open_basedir` yedek tuzagi, SSH heredoc,
+> "genis fiyat araligiyla test etme", "row konteyner" — bunlarin **tek satirlik
+> ozeti CLAUDE.md'de kalir**, detayi `docs/`'a gider. Yanlis yerden bolunurse
+> bir tuzak kaybolur ve bu ancak bir sey kirildiginda fark edilir.
+>
+> Once **plan cikarin**, boldukten sonra her `docs/` dosyasinin CLAUDE.md'den
+> baglantili oldugunu ve hicbir tuzagin dusmedigini **sayarak** dogrulayin.
+
+Sirasi gelince yapilacak digerleri (27.09.2026 degerlendirmesi):
+`.claude/commands/` (`/canliya-al`, `/olc`, `/saglik`), pahali kararlar icin
+kisa ADR dosyalari (Elementor arsiv sablonlari, fastcgi_cache kurallari, APO,
+iyzico), oturum basina tek konu + "belgele ve temizle".
+
 Altyapi bekleyenleri (kalan 4 sitenin arsivi, SSH parola girisi,
 `VPS_SSH_PRIVATE_KEY`, PTR) **genel dosyanin 0. bolumunde**.
 
