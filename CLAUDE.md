@@ -910,6 +910,11 @@ Ortak kurallarin tamami **genel dosyanin 7. bolumunde**. Bu depoya ozgu:
   yazip **canlida** yapin.
 - Canliyi etkileyen her islemden **once yedek**, mumkunse kuru calistirma, sonra
   **kullanici onayi**.
+- **SSH komut dizesinin ICINE heredoc YAZMAYIN.** Tirnaklar sessizce bozulur;
+  01.09.2026'da canli + dev `wp-config.php` ayni anda kirildi. Script yerelde
+  dosyaya yazilir, base64 ile tasinir — `deploy/scripts/claude/gonder.sh` bunu
+  yapar. `wp-config.php` gibi kritik dosyada once kopya al, degistir, `php -l`
+  ile dogrula, bozuksa kopyadan geri yaz.
 - **Tekrar eden is icin once `deploy/scripts/claude/` bakin, sifirdan yazmayin.**
   SSH (`ssh-vps.sh`), base64 aktarim (`gonder.sh`), gorunurluk olcumu
   (`sayfa-olc.py`), origin denetimi (`sayfa-denetle.sh`), CF purge
