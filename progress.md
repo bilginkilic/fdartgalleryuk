@@ -210,5 +210,18 @@ Duzeltme: tablet + mobil `%100`, **masaustu 480px korundu**. Dev'de olculdu:
 Ayrica **Iletisim sayfasinda (#69) ayni hata vardi** — orada 536px. Kimse
 sikayet etmemisti; o da duzeltildi.
 
-Yedek: `/var/backups/claude-2026-10-10-ff-genislik/`.
-**Canli icin kullanici onayi bekliyor.**
+**CANLIYA ALINDI** (10.10.2026, kullanici onayiyla). Canlida widget'lar
+`#69 ec41b71` (536px) ve `#1041 21d63db` (480px) idi; ikisi de yazildi, geri
+okuma temiz. nginx + Cloudflare purge yapildi.
+
+Canlida olculen:
+
+| | sonuc |
+|---|---|
+| tasma: `/`, `/contact-us/`, `/shop/`, `/product-category/oil/`, blog yazisi | **hepsi 0px** |
+| masaustu 1440px form genisligi | **480px** (degismedi) |
+| mobil 390px form genisligi | **300px** |
+| sayfalar | / 200, /contact-us/ 200, /shop/ 200, /cart/ 200, /checkout/ 302 |
+| diger siteler | dev + iki chestnyznak 200 |
+
+Yedek: `/var/backups/claude-2026-10-10-ff-genislik/` (dev + canli oncesi).
