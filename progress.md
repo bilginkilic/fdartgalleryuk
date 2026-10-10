@@ -135,3 +135,42 @@ kapaniyor. Mobil degismedi.
 > gorunur ama DOM'da yoktur. Ayni tuzak `widget-title` icin de gecerli.
 
 Yedek: `/var/backups/claude-2026-09-27-kategori-paneli/`.
+
+## 10.10.2026 — Haftanin Seckisi blogu CANLIDA
+
+`claude/project-thread-mqhmdh` (34e5bf61) dalindaki is dev'de kuruldu, olculdu,
+sonra canliya alindi. Kullanici onayi alindi.
+
+| | dev | canli |
+|---|---|---|
+| yazi | #3809 | **#3899** |
+| ana sayfadaki `.fdsk-bolum` | 1 adet, 1440x830 | 1 adet, 1440x830 |
+| bolum altbilginin ustunde | evet (5358 < 6188) | evet (5393) |
+| yazidaki `.fdsk-eser` | 8 | **8** |
+| `<meta name="description">` | 1 (yazinin kendi) | 1 (yazinin kendi) |
+| `og:title` / JSON-LD | var / 1 | var / 1 |
+
+Kuru calistirma 8 eserin (3703, 3650, 3688, 3099, 3633, 3358, 2760, 3471)
+yayinda ve stokta oldugunu dogruladi. Icerik kayipsiz yazildi (9119 bayt).
+Kategori `haftanin-seckisi` (term 83) olustu.
+
+> **Canlida yazi YOKTU.** Devreye almadan once `wp post list --post_status=any`
+> **0** dondu. CLAUDE.md'deki "blogun en eski 4 yazisi Ingilizce demo
+> slug'inda" maddesi bu yuzden **eskimis** — kontrol edilmeli.
+
+> **TUZAK: yazi kaydinda `[Cloudflare] ERROR: Bad Request` cikar, ama purge
+> CALISIR.** Panige kapilmayin. Eklenti temizlikten once
+> `GET /zones/<id>/pagerules?status=active` cagiriyor; bizim belirtecimiz
+> **hesap sahipli (account-owned)** oldugu icin Cloudflare bunu
+> `400 / kod 1011 "Page Rules endpoint does not support account owned tokens"`
+> ile reddediyor. Eklenti hatayi basip devam ediyor ve asil `purge_cache`
+> istegi **200 / success:true** donuyor.
+>
+> Yanlis teshis koymayin: once "DELETE yerine POST olmali" sandim, sonra
+> "URL listesi bozuk" sandim — ikisi de YANLISTI. Ayni govde ayni yontemle
+> elle gonderildiginde 200 donuyor. Dogru yontem `http_api_debug` kancasiyla
+> **butun** giden istekleri yanit koduyla birlikte loglamak; hatali olan
+> ucuncu bir cagriydi. Duzeltmek icin kullanici sahipli belirtec gerekir;
+> islevsel kazanc yok, birakildi.
+
+Yedek: `/var/backups/claude-2026-10-10-secki/`.

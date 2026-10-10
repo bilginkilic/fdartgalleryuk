@@ -12,9 +12,19 @@ duzenleme** araclari icin.
 Tarayici olcumu icin (konteynerde, bir kez):
 
 ```sh
-pip install playwright                       # tarayici ZATEN kurulu
-certutil -d sql:$HOME/.pki/nssdb -N --empty-password     # yoksa
+python3 -m pip install playwright requests   # tarayici ZATEN kurulu
+apt-get install -y openssh-client            # taze konteynerde ssh yok
+curl -sSL -o /tmp/cloudflared \
+  https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
+chmod +x /tmp/cloudflared
 ```
+
+> **`pip` DEGIL, `python3 -m pip`.** Konteynerde `pip` 3.13'e, `python3` ise
+> /usr/local/bin'deki 3.11'e bakiyor; `pip install requests` "basarili" der ama
+> `python3` onu goremez.
+
+`ssh-vps.sh` anahtari `VPS_SSH_PRIVATE_KEY`'den kendi kurar. `IdentitiesOnly=yes`
+sart — yoksa ajandaki fazla anahtarlar "Too many authentication failures" verir.
 
 `playwright install` CALISTIRMAYIN — Chromium `/opt/pw-browsers/chromium`
 altinda hazir.
