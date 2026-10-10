@@ -225,3 +225,38 @@ Canlida olculen:
 | diger siteler | dev + iki chestnyznak 200 |
 
 Yedek: `/var/backups/claude-2026-10-10-ff-genislik/` (dev + canli oncesi).
+
+## 10.10.2026 — Varsayilan siralama "yeniden eskiye" (CANLI)
+
+Istek: ana sayfa ve toplu eser listeleri hep guncel gorunsun.
+
+> **Durum eskiden ALFABETIKTI, kimse farkinda degildi.**
+> `woocommerce_default_catalog_orderby` = `menu_order` idi; menu_order her
+> urunde 0 oldugu icin WooCommerce basliga dusuyor ve `/shop/` fiilen
+> A-Z siralaniyordu: Acorn, Agil, Alplerde, Antika, Armutlar, Aslan...
+> 8 Ekim'de eklenen eserler hicbir yerde gorunmuyordu.
+
+Iki ayri yerden geliyor, **ikisi de gerekli**:
+
+1. **Arsivler** (`/shop/` + 9 kategori sablonu): hicbirinde kendi siralamasi
+   yok, hepsi `woocommerce_default_catalog_orderby` seceneğine bakiyor.
+   `menu_order` -> **`date`**.
+2. **Elementor urun izgaralari** (#60 ana sayfa `521d25d`, #3510 `dc543cb`):
+   bunlar WC secenegini **DINLEMEZ**, kendi ayarlari gerekir.
+
+> **TUZAK: widget'in `orderby` varsayilani zaten `date` ama `order`
+> varsayilani `ASC`.** Yani yalnizca orderby verirseniz ESKIDEN YENIYE olur.
+> Ikisi birden yazilmali: `orderby=date`, `order=DESC`.
+
+Canlida dogrulandi — gorunen sira veritabanindaki `date DESC` ile birebir:
+
+| | 1 | 2 | 3 | 4 |
+|---|---|---|---|---|
+| ana sayfa | Esik dostu | Pink rose | Rose | Seftaliler |
+| `/shop/` | Esik dostu | Pink rose | Rose | Seftaliler |
+| veritabani (date DESC) | #3892 08.10 | #3883 08.10 | #3881 08.10 | #3874 30.09 |
+
+`/indirimdekiler/` dokunulmadi — o kisa kodla fiyata gore siralı, oyle kalmali.
+
+Yedek: `/var/backups/claude-2026-10-10-siralama/` (dev + canli oncesi,
+secenek degeri dahil).

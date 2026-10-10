@@ -40,6 +40,7 @@ altinda hazir.
 | `html-kiyas.py` | konteyner | iki HTML dosyasinin boyut/varlik farki |
 | `tasma-bul.py` | konteyner | **yatay tasmaya sebep olan ogeyi** bulur (mobil) |
 | `ff-genislik.php` | sunucu (wp) | FluentForm widget'larinin sabit px genisligini mobilde %100 yapar |
+| `siralama-yeni.php` | sunucu (wp) | varsayilan urun siralamasini "yeniden eskiye" yapar (WC secenegi + izgaralar) |
 | `sayfa-denetle.sh` | **sunucu** | HTTP kodu, boyut, varlik sayilari, onbellek durumu |
 | `isaret-say.sh` | **sunucu** | bir sayfada aranan isaretleri sayar |
 | `cf-purge.php` | sunucu (wp) | Cloudflare zone tam temizligi, zone adiyla aranir |
