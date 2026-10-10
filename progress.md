@@ -174,3 +174,41 @@ Kategori `haftanin-seckisi` (term 83) olustu.
 > islevsel kazanc yok, birakildi.
 
 Yedek: `/var/backups/claude-2026-10-10-secki/`.
+
+## 10.10.2026 — Mobilde yatay kayma (dev'de duzeldi, CANLI BEKLIYOR)
+
+Kullanici bildirimi: "ekranin sag kaymasi sorunu, cep telefonu versiyonunda,
+oncesinde yoktu". Sikayet hero'yu isaret ediyordu; **suclu hero degildi.**
+
+390px mobil Safari'de olculen: **belge 510px / ekran 390px -> 120px tasma.**
+Tek sebep **altbilgideki bulten formu**:
+
+```
+.elementor-1041 .elementor-element-<id> .fluentform-widget-wrapper{width:480px}
+```
+
+330px'lik kabin icinde 480px; sag kenari 510 = belge genisliginin kendisi.
+Butun sayfa saga kayiyor, hero da onunla suruklenıyor.
+
+> **TUZAK: kontrolun adi `form_container_max_width` ama Elementor bunu
+> `max-width` DEGIL `width` olarak basiyor.** Adi "max-width" oldugu icin
+> zararsiz sanilir; degildir.
+
+> **TUZAK: widget kimlikleri dev ve canlida FARKLI** (dev `5ee039e`,
+> canli `21d63db`). Kimlik gomulu bir script canlida hicbir sey bulamaz.
+> `ff-genislik.php` widgetType'a gore tarar. Revizyonlar da dislanir —
+> 12 eslesmenin 10'u revizyondu.
+
+Duzeltme: tablet + mobil `%100`, **masaustu 480px korundu**. Dev'de olculdu:
+
+| | once | sonra |
+|---|---|---|
+| masaustu 1440px | 480px | **480px** (degismedi) |
+| mobil 390px | 480px (tasiyor) | **300px** |
+| tasma: `/`, `/contact-us/`, `/shop/`, yeni blog yazisi | 120px | **0** |
+
+Ayrica **Iletisim sayfasinda (#69) ayni hata vardi** — orada 536px. Kimse
+sikayet etmemisti; o da duzeltildi.
+
+Yedek: `/var/backups/claude-2026-10-10-ff-genislik/`.
+**Canli icin kullanici onayi bekliyor.**

@@ -38,6 +38,8 @@ altinda hazir.
 | `sayfa-olc.py` | konteyner | **gorunurluk olcumu** — getBoundingClientRect + getComputedStyle |
 | `ekran-goruntusu.py` | konteyner | ekran goruntusu (masaustu/mobil) |
 | `html-kiyas.py` | konteyner | iki HTML dosyasinin boyut/varlik farki |
+| `tasma-bul.py` | konteyner | **yatay tasmaya sebep olan ogeyi** bulur (mobil) |
+| `ff-genislik.php` | sunucu (wp) | FluentForm widget'larinin sabit px genisligini mobilde %100 yapar |
 | `sayfa-denetle.sh` | **sunucu** | HTTP kodu, boyut, varlik sayilari, onbellek durumu |
 | `isaret-say.sh` | **sunucu** | bir sayfada aranan isaretleri sayar |
 | `cf-purge.php` | sunucu (wp) | Cloudflare zone tam temizligi, zone adiyla aranir |
@@ -56,7 +58,13 @@ sunucuda acilir.
 origin'e gitmez. Origin testleri sunucudan yapilir:
 `./gonder.sh sayfa-denetle.sh --sh fdartgallery.com / /shop/`
 
-**3. Varlik kontrolu gorunurluk kontrolu DEGILDIR.** 25.09.2026'da filtre
+**3. "Sayfa saga kayiyor" sikayetinde goze guvenmeyin — olcun.** 10.10.2026'da
+sikayet "hero mobilde saga kaymis" seklinde geldi. Hero masumdu: ALTBILGIDEKI
+bulten formu 390px ekranda 480px genisligindeydi, belge 510px'e cikiyor ve
+butun sayfa kayiyordu. `tasma-bul.py` kirpilmayan tasan ogeleri bulur ve
+sorumluyu gosterir.
+
+**4. Varlik kontrolu gorunurluk kontrolu DEGILDIR.** 25.09.2026'da filtre
 cubugu HTML'de vardi ama urun konteyneri `row` yonundeydi — cubuk izgaranin
 yanina sikisacakti. Sadece `sayfa-olc.py` gosterdi.
 
