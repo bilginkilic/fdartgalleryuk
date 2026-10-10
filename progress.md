@@ -52,6 +52,25 @@ Kalan iki secenek — **ikisi de kullanici karari**:
 > **Slayt 3 → 1 YAPILDI** (20.09.2026), artik secenek degil. Hero sonradan
 > **8 slaytlik kesif seridine** cevrildi (23.09) — CLAUDE.md 3.
 
+## Bekleyen: Haftanin Seckisi blogu (10.10.2026)
+
+Kod ve ilk yazi depoda, **sunucuya henuz konmadi** (oturumda tunel kimligi yoktu).
+Yedekten (25.08) kurulan yerel kopyada tarayiciyla dogrulandi: ana sayfada
+bolum altbilginin hemen ustunde, 8 eser karti, paylasim satiri, tek
+`description` + OG + JSON-LD (BlogPosting + ItemList).
+
+1. dev: `fd-blog-seckiler.php` → `wp-content/mu-plugins/`, sonra
+   `seckiler-yayinla.php` dry → taslak (tarif `deploy/blog/fdart-seckiler/README.md`).
+2. Dev'de bak: `/`'nin en alti, yazi sayfasi masaustu + mobil (`sayfa-olc.py`).
+3. Kullanici onayi → canli (`/canliya-al`). Canlida urunler 25.08'den beri
+   degismis olabilir: kuru calistirma her eserin yayin/stok durumunu listeler.
+
+Tek yazi sablonu #1053'te (Elementor) kullanicinin onayini bekleyen iki kusur:
+meta satiri **Ingilizce** ("4 min read", "Author:", "Published:") ve paylasim
+ikonlari Facebook / LinkedIn / Pinterest / **Skype** (kapandi). Mu-plugin bunlara
+dokunmuyor; kendi paylasim satirini (WhatsApp, Pinterest, Facebook, X, kopyala)
+yazinin sonuna ekliyor.
+
 ## Bekleyenler — kullanicidan
 
 | # | Is | Not |

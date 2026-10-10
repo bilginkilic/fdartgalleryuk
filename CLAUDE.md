@@ -85,6 +85,7 @@ Mail kayitlari (Brevo DKIM, DMARC, SPF, Email Routing MX) **degistirilmez**.
 | `fd-cerez-bildirimi.php` | cerez bildirimini onbellekli sayfada da kapatir (3) |
 | `fd-urun-gorsel-srcset.php` | srcset'ten artik `..._preview` (1000x1000) adayini eler (3) |
 | `fd-site-haritasi-durum.php` | `wp-sitemap*.xml` 200 dondurur (4) |
+| `fd-blog-seckiler.php` | ana sayfanin en altina blog bolumu, `[fd_eser]` karti, secki yazisinda paylasim + SEO (6) |
 
 Butun sitelerde ortak olanlar (`mu-plugins/`, `staging-mu-plugins/`) genel
 dosyanin 4. bolumunde; `lead-mu-plugins/` chestnyznak'indir.
@@ -850,9 +851,23 @@ kanit olarak birakildi.
   **saklanan** `rewrite_rules` anahtarlari diff'lenerek denetlendi: fark tam 20
   kural, hepsi kaldirilan eklentinin `mc4wp-form/...` kurallariydi. Yine de
   dogru bicimiyle tekrar flush edildi. (Kural genel dosyada 6f.)
-- Blog altyapisi burada ama **icerik chestnyznak'in**: `deploy/blog/` araclari ve
-  haftalik Routine (`trig_01Q2abbcd19d1CQem3fs5Z7M`, Sali 06:00 UTC) chestnyznak
-  blogunu besler. Uslup ve kuyruk: `deploy/blog/README.md`, `BACKLOG.md`.
+- `deploy/blog/` kok dizini **chestnyznak'in** blogudur: araclar ve haftalik
+  Routine (`trig_01Q2abbcd19d1CQem3fs5Z7M`, Sali 06:00 UTC) onu besler. Uslup ve
+  kuyruk: `deploy/blog/README.md`, `BACKLOG.md`.
+- **fdartgallery'nin blogu: "Haftanin Seckisi"** — `deploy/blog/fdart-seckiler/`
+  (uslup, dogruluk kurallari, yayin tarifi README'de) + `fd-blog-seckiler.php`.
+  Kategori `haftanin-seckisi`. Ana sayfa bolumu Elementor'a YAZILMAZ; altbilgi
+  konumunun kancasina (`elementor/theme/before_do_footer`) baglanir — XStore'un
+  `etheme_prefooter`'i Elementor altbilgisi varken hic calismaz (footer.php:12).
+  Tek yazi sablonu #1053 tam genislik; secki yazilarinda icerik sutunu CSS ile
+  860 px'e daraltilir (`body.fdsk-yazi`).
+
+> **TUZAK: XStore SEO `og:title` ve `og:description`'i HIC basmiyor.**
+> `et_seo_switcher` acik; ama `seo.php:67` `setup_postdata( $GLOBALS['post'] =&
+> $post_object )` global `$post`'u null'a cekiyor, baslik/ozet bos donuyor ve
+> bos etiket atlaniyor. Butun tekil sayfalarda boyle. `description`'i yazi basina
+> `_et_meta_description`'dan okur (bossa sitenin genel sloganini basar). Secki
+> yazilarinda eksik iki etiketi mu-plugin basar; ikinci bir `description` BASMAZ.
 
 ---
 
