@@ -6,6 +6,7 @@
  * {
  *   "slug","baslik","ozet","meta_aciklama","icerik_dosya",
  *   "kapak_urun": 3633,          // kapak = bu urunun one cikan gorseli
+ *   "kategori": "sanat-rehberi", // istege bagli; varsayilan haftanin-seckisi
  *   "durum": "draft"|"publish",  // varsayilan draft
  *   "yazar": 1
  * }
@@ -31,9 +32,15 @@ if ( ! shortcode_exists( 'fd_eser' ) || ! defined( 'FD_SECKI_KAT' ) ) {
 	echo "HATA: fd-blog-seckiler.php mu-plugin'i yuklu degil.\n";
 	return;
 }
-$kat = get_term_by( 'slug', FD_SECKI_KAT, 'category' );
+// Varsayilan kategori seckidir; rehber yazilari yukte "kategori": "sanat-rehberi" verir.
+$kat_slug = $m['kategori'] ?? FD_SECKI_KAT;
+if ( ! in_array( $kat_slug, [ FD_SECKI_KAT, defined( 'FD_REHBER_KAT' ) ? FD_REHBER_KAT : '' ], true ) ) {
+	printf( "HATA: bilinmeyen kategori '%s'\n", $kat_slug );
+	return;
+}
+$kat = get_term_by( 'slug', $kat_slug, 'category' );
 if ( ! $kat ) {
-	echo "HATA: '" . FD_SECKI_KAT . "' kategorisi yok (mu-plugin init'i bir kez calismali).\n";
+	echo "HATA: '" . $kat_slug . "' kategorisi yok (mu-plugin init'i bir kez calismali).\n";
 	return;
 }
 if ( $var = get_page_by_path( $m['slug'], OBJECT, 'post' ) ) {
@@ -113,4 +120,4 @@ printf( "yazildi: #%d %s — icerik %d bayt (kayipsiz: %s), kapak %s, kategori %
 	$id, get_permalink( $id ), strlen( $p->post_content ),
 	strlen( $p->post_content ) === strlen( $icerik ) ? 'evet' : 'HAYIR',
 	get_post_thumbnail_id( $id ) ?: 'YOK',
-	has_term( FD_SECKI_KAT, 'category', $id ) ? 'tamam' : 'YOK' );
+	has_term( $kat_slug, 'category', $id ) ? $kat_slug : 'YOK' );

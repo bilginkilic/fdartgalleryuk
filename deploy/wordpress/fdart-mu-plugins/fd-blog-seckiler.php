@@ -28,13 +28,16 @@
 defined( 'ABSPATH' ) || exit;
 
 const FD_SECKI_KAT = 'haftanin-seckisi';
+// Seçki dışındaki yazılar (tablo alma rehberi, ipuçları): aynı görünüm, paylaşım
+// ve SEO; ana sayfada öne çıkan kart yine en yeni SEÇKİ olur, bunlar yanda durur.
+const FD_REHBER_KAT = 'sanat-rehberi';
 
 /* ------------------------------------------------------------------ */
 /* 1) Kategori — bir kez oluşturulur                                    */
 /* ------------------------------------------------------------------ */
 
 add_action( 'init', function () {
-	if ( get_option( 'fd_secki_kat_v' ) === '1' ) {
+	if ( get_option( 'fd_secki_kat_v' ) === '2' ) {
 		return;
 	}
 	if ( ! term_exists( FD_SECKI_KAT, 'category' ) ) {
@@ -43,12 +46,24 @@ add_action( 'init', function () {
 			'description' => 'Her hafta galeriden bir avuç eser; arkalarındaki hikâye, ilham aldıkları ustalar ve size anlattıkları.',
 		] );
 	}
-	update_option( 'fd_secki_kat_v', '1', true );
+	if ( ! term_exists( FD_REHBER_KAT, 'category' ) ) {
+		wp_insert_term( 'Sanat Rehberi', 'category', [
+			'slug'        => FD_REHBER_KAT,
+			'description' => 'Orijinal tablo seçmek, almak ve evinizde yaşatmak üzerine yazılar.',
+		] );
+	}
+	update_option( 'fd_secki_kat_v', '2', true );
 }, 20 );
 
 function fd_secki_mi( $post = null ) {
 	$post = get_post( $post );
-	return $post && 'post' === $post->post_type && has_term( FD_SECKI_KAT, 'category', $post );
+	return $post && 'post' === $post->post_type && has_term( [ FD_SECKI_KAT, FD_REHBER_KAT ], 'category', $post );
+}
+
+// Yalnızca haftalık seçki mi (rehber yazısı değil)?
+function fd_secki_haftalik_mi( $post = null ) {
+	$post = get_post( $post );
+	return $post && has_term( FD_SECKI_KAT, 'category', $post );
 }
 
 /* ------------------------------------------------------------------ */
@@ -107,7 +122,7 @@ function fd_secki_stil() {
    uzuyordu. Yalnızca seçki yazılarında içerik sütunu daraltılır. */
 body.fdsk-yazi .elementor-widget-theme-post-etheme_content{max-width:860px!important;width:100%!important;margin-left:auto!important;margin-right:auto!important}
 body.fdsk-yazi .elementor-widget-theme-post-etheme_content p{font-size:18px;line-height:1.8}
-body.fdsk-yazi .elementor-widget-theme-post-etheme_content h2{font-family:Georgia,"Times New Roman",serif;font-weight:400;font-size:28px;line-height:1.3;margin:48px 0 16px}
+body.fdsk-yazi .elementor-widget-theme-post-etheme_content h2{font-family:Georgia,"Times New Roman",serif;font-weight:400;text-transform:none;font-size:28px;line-height:1.3;margin:48px 0 16px}
 /* paylaşım + önceki seçkiler */
 .fdsk-paylas{margin:48px 0 0;padding:28px;background:var(--fdsk-zemin);border:1px solid var(--fdsk-cizgi);text-align:center}
 .fdsk .fdsk-paylas-baslik{font-family:Georgia,"Times New Roman",serif;font-size:22px!important;margin:0 0 6px!important;color:var(--fdsk-yazi)}
@@ -377,8 +392,14 @@ add_filter( 'the_content', function ( $icerik ) {
 	$u      = rawurlencode( $adres );
 	$b      = rawurlencode( html_entity_decode( $baslik, ENT_QUOTES, 'UTF-8' ) );
 
-	$p  = '<aside class="fdsk fdsk-paylas"><p class="fdsk-paylas-baslik">Bu seçki birine iyi gelir mi?</p>';
-	$p .= '<p>Aklınıza gelen biri varsa gönderin; bazen bir tablo, söylenemeyeni söyler.</p>';
+	$haftalik = fd_secki_haftalik_mi( $post );
+	if ( $haftalik ) {
+		$p  = '<aside class="fdsk fdsk-paylas"><p class="fdsk-paylas-baslik">Bu seçki birine iyi gelir mi?</p>';
+		$p .= '<p>Aklınıza gelen biri varsa gönderin; bazen bir tablo, söylenemeyeni söyler.</p>';
+	} else {
+		$p  = '<aside class="fdsk fdsk-paylas"><p class="fdsk-paylas-baslik">Bu yazı birinin işine yarar mı?</p>';
+		$p .= '<p>Duvarına bir tablo arayan biri varsa gönderin.</p>';
+	}
 	$p .= '<div class="fdsk-paylas-dugmeler">';
 	$p .= '<a href="https://wa.me/?text=' . $b . '%20' . $u . '" target="_blank" rel="noopener">WhatsApp</a>';
 	if ( $gorsel ) {
@@ -399,7 +420,8 @@ add_filter( 'the_content', function ( $icerik ) {
 		'no_found_rows' => true,
 	] );
 	if ( $onceki ) {
-		$p .= '<nav class="fdsk fdsk-onceki" aria-label="Önceki seçkiler"><h2>Önceki seçkiler</h2><ul>';
+		$liste_adi = $haftalik ? 'Önceki seçkiler' : 'Haftanın seçkileri';
+		$p .= '<nav class="fdsk fdsk-onceki" aria-label="' . esc_attr( $liste_adi ) . '"><h2>' . esc_html( $liste_adi ) . '</h2><ul>';
 		foreach ( $onceki as $o ) {
 			$p .= '<li><a href="' . esc_url( get_permalink( $o ) ) . '">' . esc_html( get_the_title( $o ) ) . '</a><time datetime="' . esc_attr( get_the_date( 'c', $o ) ) . '">' . esc_html( get_the_date( 'j F Y', $o ) ) . '</time></li>';
 		}
@@ -495,7 +517,7 @@ add_action( 'wp_head', function () {
 		'inLanguage'       => 'tr-TR',
 		'author'           => $kurum,
 		'publisher'        => $kurum,
-		'articleSection'   => 'Haftanın Seçkisi',
+		'articleSection'   => fd_secki_haftalik_mi( $post ) ? 'Haftanın Seçkisi' : 'Sanat Rehberi',
 	];
 	if ( $gorsel ) {
 		$makale['image'] = $gorsel;
@@ -504,7 +526,7 @@ add_action( 'wp_head', function () {
 	if ( $liste ) {
 		$grafik[] = [
 			'@type'           => 'ItemList',
-			'name'            => $baslik . ' — seçkideki eserler',
+			'name'            => $baslik . ( fd_secki_haftalik_mi( $post ) ? ' — seçkideki eserler' : ' — yazıdaki eserler' ),
 			'itemListElement' => $liste,
 		];
 	}

@@ -79,3 +79,15 @@ nginx 10 dk, APO purge `/`'u da kapsar).
 | 11.10.2026 (taslak, yüklenmedi) | Şehir Tabloları: İstanbul'dan Mostar'a Sekiz Durak | `sehir-tablolari-istanbul-venedik-paris-seckisi` | 3642, 2921, 1488, 2868, 3474, 617, 3610, 1491 |
 
 Bir eser iki seçkide arka arkaya kullanılmaz.
+
+## Rehber yazıları (`sanat-rehberi` kategorisi)
+
+Seçki olmayan yazılar (tablo almanın avantajları, seçme ve asma ipuçları) yükte
+`"kategori": "sanat-rehberi"` ile yayınlanır. Görünüm, paylaşım satırı ve SEO
+seçkilerle aynıdır; ana sayfada öne çıkan kart yine en yeni **seçki** olur,
+rehber yazısı yandaki kartlarda durur. Rehberde yazılan her vaat sitenin kendi
+sayfalarından okunur (Hakkımızda, Teslimat ve iade şartları, ödeme yöntemleri).
+
+| Tarih | Başlık | Slug | Eserler |
+|---|---|---|---|
+| 11.10.2026 (taslak, yüklenmedi) | Orijinal Tablo Almak: Uygun Fiyata Gerçek Sanat Eseri | `orijinal-tablo-satin-almak-uygun-fiyatli-gercek-sanat` | 1594, 2974, 2912 |
