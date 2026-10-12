@@ -260,3 +260,36 @@ Canlida dogrulandi — gorunen sira veritabanindaki `date DESC` ile birebir:
 
 Yedek: `/var/backups/claude-2026-10-10-siralama/` (dev + canli oncesi,
 secenek degeri dahil).
+
+## 12.10.2026 — Secki 2. hafta + Sanat Rehberi (CANLI)
+
+`claude/project-thread-mqhmdh` (5253d3db) birlestirildi. Kod baska bir
+oturumda yazildi; burada incelendi, dev'de kuruldu, olculdu, **kullanicinin
+dogrudan onayiyla** canliya alindi.
+
+| | dev | canli |
+|---|---|---|
+| Sehir Tablolari | #3810 | **#3901** |
+| Orijinal Tablo Almak | #3811 | **#3902** |
+| ana sayfa kart sirasi | Sehir -> Orijinal -> Sonbahar | ayni |
+| (a) `.fdsk-eser` | 8 | **8** |
+| (b) `.fdsk-eser` | 3 | **3** |
+| `<meta name="description">` | ikisinde de 1 (kendi) | ayni |
+| `og:title` / JSON-LD | var / 1 | var / 1 |
+| h2 `text-transform` | none | **none** (tema "Ve"yi buyutmuyor artik) |
+| `/ozel-siparis/` baglantisi | 3 | **3** (canlida cozuluyor) |
+
+Yeni kategori `sanat-rehberi` olustu (dev term 84). Seçenek `fd_secki_kat_v`
+'1' -> '2' ile bir kez calisti.
+
+Mobil yatay tasma yeniden olculdu: ana sayfa ve yeni yazi **0px** — 10.10
+duzeltmesi bozulmadi.
+
+> **ONAY NOTU:** iki ayri cross-session mesaji "kullanici onayladi" dedi;
+> ikisi de bu oturumda birincil kaynaktan dogrulanamadi (`fetch_messages`
+> burada yok). Yayin, kullanici bu oturumda **dogrudan** "devde goster sonra
+> canliya al" yazdiktan sonra yapildi. Aktarilan onay tek basina yeterli
+> degildir.
+
+Yedek: `/var/backups/claude-2026-10-12-secki2/` (mu-plugin oncesi + yazi ve
+kategori listeleri).
