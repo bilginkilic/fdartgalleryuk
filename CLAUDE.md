@@ -876,7 +876,7 @@ kanit olarak birakildi.
 | Yol | Ne yapar |
 |---|---|
 | `deploy/nginx/` | vhost'lar, `snippets/`, `templates/`, `conf.d/` |
-| `deploy/scripts/` | **21 script — asagida tam liste** |
+| `deploy/scripts/` | **23 script — asagida tam liste** |
 | `deploy/wordpress/fdart-mu-plugins/` | **fdartgallery** mu-plugin'leri |
 | `deploy/wordpress/lead-mu-plugins/` | **chestnyznak** mu-plugin'leri |
 | `deploy/wordpress/i18n/` | chestnyznak uc dil scriptleri (01→16) + JSON sozlukler |
@@ -888,7 +888,7 @@ kanit olarak birakildi.
 
 Sunucuda ayni depo `/opt/fdartgalleryuk/` altinda.
 
-**`deploy/scripts/` tam envanteri** — genel dosya bu dizinden hic soz etmiyor,
+**`deploy/scripts/` tam envanteri** (23) — genel dosya bu dizinden hic soz etmiyor,
 burasi TEK listesi:
 
 | Grup | Dosyalar |
@@ -901,6 +901,7 @@ burasi TEK listesi:
 | Oturum erisimi | `claude-access.sh` (adlandirilmis tunel calisirken GEREKMEZ) |
 | wp-config yamalari | `wpconfig-redis.py`, `wpconfig-bildirim-sabitleri.py` |
 | Tek seferlik / icerik | `demo-icerik-temizle.php`, `eposta-alicilari.php`, `migrate-czlead-to-elementor.php` (son ikisi chestnyznak) |
+| **RTIB** (WordPress degil) | `rtib-dagit.sh` (oturumdan: yedek → rsync → restart → dogrula, `--dry` var), `rtib-yedek.sh` (sunucuda cron, 04:05). Karar: `ovgcloudukmultisite/adr/0013` |
 
 > chestnyznak araclarini **calistirmadan once** o sitenin kurallarini okuyun
 > (`chestnyznakuk/CLAUDE.md`): uc dil kurali, Elementor kurali, icerik kapatma
