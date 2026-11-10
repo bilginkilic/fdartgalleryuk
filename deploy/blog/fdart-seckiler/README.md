@@ -78,6 +78,7 @@ nginx 10 dk, APO purge `/`'u da kapsar).
 | 10.10.2026 (canlı #3899) | Sonbahar Tabloları: Hasattan İlk Kara Sekiz Eser | `sonbahar-tablolari-ekim-seckisi` | 3703, 3650, 3688, 3099, 3633, 3358, 2760, 3471 |
 | 11.10.2026 (taslak, yüklenmedi) | Şehir Tabloları: İstanbul'dan Mostar'a Sekiz Durak | `sehir-tablolari-istanbul-venedik-paris-seckisi` | 3642, 2921, 1488, 2868, 3474, 617, 3610, 1491 |
 | 10.11.2026 (canlı #4071, dev #3812) | Kış Tabloları: Kardan Mum Işığına Sekiz Eser | `kis-tablolari-kasim-seckisi` | 1588, 2763, 2723, 3183, 2980, 2876, 2582, 618 |
+| 10.11.2026 (canlı #4075, dev #3817) | Deniz Tabloları: Dalgadan Deniz Fenerine Sekiz Eser | `deniz-tablolari-kasim-seckisi` | 3796, 3618, 4013, 2721, 4043, 3016, 3022, 3063 |
 
 Bir eser iki seçkide arka arkaya kullanılmaz.
 
